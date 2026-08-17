@@ -1,0 +1,623 @@
+/* ==========================================================================
+   The Fixture and the Part — interactive guide
+   Design tokens are copied verbatim from the static essay and are the
+   visual thesis: steel = frozen machinery, amber = the moving part,
+   green = keys. Never swap them.
+   ========================================================================== */
+
+/* Fonts are loaded by the <link> in index.html, matching the static essay. */
+
+:root{
+  --bg:#10151C; --panel:#161D27; --panel2:#0D1218;
+  --steel:#5B7A99; --steel-dim:#3A4A5C;
+  --amber:#E8A33D; --amber-dim:#8A7A5A; --amber-bg:#241C10;
+  --green:#7FB069;
+  --text:#D8E0E8; --muted:#6B7A8A; --hair:#2A3441;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --display:'Space Grotesk',sans-serif;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html{-webkit-text-size-adjust:100%;}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'IBM Plex Sans',sans-serif;font-size:17px;line-height:1.65;
+  overflow-x:hidden;
+}
+
+/* --- essay chrome, ported from the static file ------------------------- */
+
+.wrap{max-width:760px;margin:0 auto;padding:0 24px 120px;}
+header{padding:88px 0 48px;}
+h1{font-family:var(--display);font-size:clamp(38px,7vw,58px);font-weight:700;line-height:1.05;letter-spacing:-0.02em;}
+h1 .amber{color:var(--amber);}
+.sub{margin-top:20px;color:var(--muted);font-size:19px;max-width:560px;}
+.legend{display:flex;flex-wrap:wrap;gap:16px 28px;margin-top:36px;font-family:var(--mono);font-size:12.5px;}
+.legend span{display:flex;align-items:center;gap:8px;color:var(--muted);}
+.sw{width:22px;height:10px;display:inline-block;flex:none;}
+.sw.steel{background:var(--steel);}
+.sw.amber{background:var(--amber);}
+.sw.green{background:var(--green);}
+.sentinel{height:1px;}
+
+.eyebrow{font-family:var(--mono);font-size:12.5px;letter-spacing:0.18em;color:var(--steel);margin:76px 0 6px;}
+.eyebrow.warm{color:var(--amber);}
+h2{font-family:var(--display);font-size:29px;font-weight:500;letter-spacing:-0.01em;padding-bottom:14px;border-bottom:1px solid var(--hair);margin-bottom:22px;}
+p{margin-bottom:18px;}
+p:last-child{margin-bottom:0;}
+strong{color:#fff;font-weight:600;}
+em{color:var(--text);}
+.k{color:var(--amber);}
+.s{color:var(--steel);}
+code{font-family:var(--mono);font-size:0.86em;background:var(--panel);border:1px solid var(--hair);border-radius:3px;padding:1px 6px;color:#A8BCCE;overflow-wrap:anywhere;}
+
+figure{margin:34px 0;}
+figcaption{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:10px;line-height:1.55;}
+
+.callout{background:var(--panel2);border:1px solid var(--hair);border-left:3px solid var(--amber);border-radius:4px;padding:20px 24px;margin:28px 0;font-size:16px;}
+.callout.cool{border-left-color:var(--steel);}
+.callout .lbl{font-family:var(--mono);font-size:11.5px;letter-spacing:0.14em;color:var(--amber);display:block;margin-bottom:8px;}
+.callout.cool .lbl{color:var(--steel);}
+
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:30px 0;}
+.card{border-radius:6px;padding:22px;font-size:15.5px;line-height:1.6;}
+.card h3{font-family:var(--display);font-size:16px;letter-spacing:0.04em;margin-bottom:12px;}
+.card.steelc{background:var(--panel);border:1px solid var(--steel);}
+.card.steelc h3{color:var(--steel);}
+.card.amberc{background:var(--amber-bg);border:1px solid var(--amber);}
+.card.amberc h3{color:var(--amber);}
+.card p{margin-bottom:10px;color:#B8C4D0;}
+.card.amberc p{color:#D8C9A8;}
+
+.foot{margin-top:100px;padding-top:28px;border-top:1px solid var(--hair);font-family:var(--mono);font-size:12px;color:var(--muted);line-height:1.9;}
+
+/* --- focus, always visible --------------------------------------------- */
+
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px;}
+
+/* --- mini legend -------------------------------------------------------- */
+
+.mini-legend{
+  position:fixed;right:14px;bottom:14px;z-index:20;
+  display:flex;flex-direction:column;gap:6px;
+  background:var(--panel2);border:1px solid var(--hair);border-radius:4px;
+  padding:10px 12px;font-family:var(--mono);font-size:10.5px;color:var(--muted);
+  letter-spacing:0.04em;line-height:1.2;
+  opacity:0;visibility:hidden;transform:translateY(6px);pointer-events:none;
+  transition:opacity .28s ease,transform .28s ease,visibility 0s linear .28s;
+}
+.mini-legend.show{opacity:1;visibility:visible;transform:translateY(0);transition-delay:0s;}
+.mini-legend span{display:flex;align-items:center;gap:7px;white-space:nowrap;}
+.mini-legend .sw{width:16px;height:8px;}
+.mini-legend .ml-note{color:var(--steel-dim);font-style:normal;}
+
+/* --- instrument shell --------------------------------------------------- */
+
+.instrument{
+  margin:34px 0;background:var(--panel2);
+  border:1px solid var(--hair);border-radius:6px;
+}
+.inst-head{
+  display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+  flex-wrap:wrap;
+  padding:12px 16px;border-bottom:1px solid var(--hair);
+  font-family:var(--mono);font-size:11px;letter-spacing:0.16em;
+}
+.inst-title{color:var(--steel);}
+.inst-note{color:var(--muted);letter-spacing:0.08em;text-transform:none;}
+.inst-body{padding:18px 16px 20px;}
+.instrument figcaption{padding:0 16px 14px;margin-top:0;}
+
+.field-label{
+  display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:0.16em;
+  color:var(--muted);margin-bottom:8px;
+}
+.teach{font-family:var(--mono);font-size:12px;color:var(--amber);margin:14px 0 0;letter-spacing:0.04em;}
+.teach.dim{color:var(--muted);margin-top:8px;letter-spacing:0.02em;line-height:1.6;}
+.empty-note{font-family:var(--mono);font-size:12px;color:var(--muted);margin:0;}
+
+/* A label and its info badge on one line. */
+.label-row{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:16px 0 8px;}
+.label-row .field-label{margin-bottom:0;}
+.label-row.tight{margin-top:0;}
+.label-gap{flex:0 0 10px;}
+.label-row + .token-strip{margin-top:0;}
+
+/* --- info badges (UI chrome: steel and muted, never amber) --------------- */
+
+.info-tag{
+  position:relative;flex:none;
+  display:inline-flex;align-items:center;justify-content:center;
+  width:15px;height:15px;padding:0;vertical-align:-3px;
+  font-family:var(--mono);font-size:9.5px;line-height:1;letter-spacing:0;
+  color:var(--muted);background:var(--panel);
+  border:1px solid var(--steel-dim);border-radius:2px;cursor:pointer;
+  transition:color .15s ease,border-color .15s ease;
+}
+/* Widens the hit area without taking any more layout space. */
+.info-tag::after{content:'';position:absolute;inset:-4px;}
+.info-tag:hover{color:var(--text);border-color:var(--steel);}
+.info-tag[aria-expanded="true"]{color:var(--steel);border-color:var(--steel);background:var(--panel2);}
+.counter .info-tag{margin-left:8px;}
+
+/* Portalled to <body> and fixed, so no parent overflow can clip it and
+   opening it cannot move anything on the page. */
+.info-pop{
+  position:fixed;z-index:40;
+  background:var(--panel2);border:1px solid var(--steel);border-radius:4px;
+  padding:11px 13px;
+  font-family:var(--mono);font-size:11px;line-height:1.65;
+  color:var(--text);letter-spacing:0.01em;
+  box-shadow:0 8px 24px rgba(0,0,0,.55);
+  animation:pop-in .14s ease-out;
+}
+.info-pop-title{
+  display:block;font-size:9.5px;letter-spacing:0.16em;
+  color:var(--steel);margin-bottom:6px;text-transform:uppercase;
+}
+@keyframes pop-in{
+  from{opacity:0;transform:translateY(-3px);}
+  to{opacity:1;transform:none;}
+}
+
+/* --- instrument A: tokenizer -------------------------------------------- */
+
+.text-input{
+  width:100%;background:var(--panel);color:var(--text);
+  border:1px solid var(--steel-dim);border-radius:3px;
+  padding:10px 12px;font-family:var(--mono);font-size:14px;line-height:1.4;
+}
+.text-input:focus{border-color:var(--steel);}
+
+.token-strip{
+  display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;
+  max-height:300px;overflow-y:auto;
+}
+.token-pill{
+  display:flex;flex-direction:column;gap:2px;
+  background:var(--amber-bg);border:1px solid var(--amber);border-radius:4px;
+  padding:6px 9px;min-width:0;
+}
+.token-idx{font-family:var(--mono);font-size:9.5px;color:var(--amber-dim);letter-spacing:0.12em;}
+.token-text{font-family:var(--mono);font-size:13px;color:var(--amber);}
+.token-vec{
+  font-family:var(--mono);font-size:10px;color:#8A7A5A;
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+
+/* --- instrument B: stepper + rack ---------------------------------------- */
+
+.controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:16px;}
+.btn{
+  font-family:var(--mono);font-size:11.5px;letter-spacing:0.14em;
+  color:var(--steel);background:var(--panel);
+  border:1px solid var(--steel-dim);border-radius:3px;
+  padding:7px 14px;cursor:pointer;
+  transition:border-color .15s ease,color .15s ease;
+}
+.btn:hover:not(:disabled){border-color:var(--steel);color:var(--text);}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn-on{color:var(--amber);border-color:var(--amber);}
+.controls-note{
+  font-family:var(--mono);font-size:10.5px;color:var(--muted);
+  margin-left:auto;letter-spacing:0.04em;
+}
+
+/* The shortlist for the next STEP. Height is fixed whatever it holds — full,
+   empty, or mid-animation — so pressing STEP shifts nothing below it. */
+.candidates{height:112px;margin-bottom:16px;}
+.cand-head{display:flex;align-items:center;gap:8px;height:18px;}
+/* Both halves truncate rather than wrap: the head must stay one line tall
+   at every width, since the panel's height is fixed. */
+.cand-head .field-label{
+  margin-bottom:0;white-space:nowrap;
+  min-width:0;overflow:hidden;text-overflow:ellipsis;
+  flex-shrink:0;
+}
+.cand-note{
+  margin-left:auto;font-family:var(--mono);font-size:10px;
+  color:var(--muted);letter-spacing:0.04em;white-space:nowrap;
+  min-width:0;overflow:hidden;text-overflow:ellipsis;
+}
+/* Below ~480px "considering next" + the badge + the note no longer share
+   one line without clipping mid-word. Let the head wrap to two lines
+   instead — still a fixed height for this breakpoint, so STEP still never
+   shifts anything below the panel, just a taller reserved box here. */
+@media(max-width:480px){
+  .candidates{height:132px;}
+  .cand-head{height:auto;flex-wrap:wrap;row-gap:4px;}
+  .cand-head .field-label{overflow:visible;text-overflow:clip;}
+  .cand-note{margin-left:0;overflow:visible;text-overflow:clip;}
+}
+.cand-list{
+  height:88px;margin-top:6px;overflow:hidden;
+  display:flex;flex-direction:column;gap:2px;
+}
+.cand{
+  display:grid;grid-template-columns:104px minmax(0,1fr) 36px;
+  align-items:center;gap:8px;height:20px;
+  border-left:2px solid transparent;padding-left:6px;
+  animation:cand-in .24s ease-out both;
+}
+.cand-word{
+  font-family:var(--mono);font-size:11.5px;color:var(--muted);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.cand-track{
+  display:block;height:8px;min-width:0;
+  background:var(--panel2);border:1px solid var(--hair);
+}
+.cand-fill{display:block;height:100%;background:var(--green);opacity:.5;}
+.cand-wt{
+  font-family:var(--mono);font-size:10px;color:var(--muted);
+  font-variant-numeric:tabular-nums;text-align:right;
+}
+/* The winner is the token about to move — amber, per the colour law. */
+.cand.is-winner{border-left-color:var(--amber);animation:cand-win .34s ease-out both;}
+.cand.is-winner .cand-word{color:var(--amber);}
+.cand.is-winner .cand-fill{opacity:1;}
+.cand.is-winner .cand-wt{color:var(--amber-dim);}
+@keyframes cand-in{
+  from{opacity:0;transform:translateY(-3px);}
+  to{opacity:1;transform:none;}
+}
+@keyframes cand-win{
+  0%{opacity:0;transform:translateY(-3px);background:var(--amber-bg);}
+  45%{opacity:1;background:var(--amber-bg);}
+  100%{opacity:1;transform:none;background:transparent;}
+}
+
+.stepper-panes{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.pane{min-width:0;}
+.pane-head{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  height:20px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:0.16em;
+  color:var(--muted);margin-bottom:8px;
+}
+.chip-legend{display:flex;align-items:center;gap:5px;letter-spacing:0;}
+.chip-legend .chip{width:22px;}
+.pane-box{
+  height:224px;background:var(--panel);
+  border:1px solid var(--hair);border-radius:4px;
+  position:relative;overflow:hidden;
+}
+.seq-box{display:flex;flex-wrap:wrap;align-content:flex-start;gap:6px;padding:10px;overflow-y:auto;}
+.seq-token{
+  font-family:var(--mono);font-size:12.5px;
+  color:var(--steel);opacity:.55;
+  border-bottom:1px solid var(--steel-dim);padding:1px 2px;
+}
+.seq-token.newest{color:var(--amber);opacity:1;font-weight:500;border-bottom-color:var(--amber);}
+
+.rack-list{list-style:none;height:100%;overflow-y:auto;padding:6px;margin:0;}
+.rack-row{
+  display:grid;grid-template-columns:22px 12px minmax(0,1fr) 26px 26px;
+  align-items:center;gap:6px;height:26px;
+  border-bottom:1px solid var(--hair);
+  animation:settle .28s ease-out;
+}
+.rack-row:last-child{border-bottom:0;}
+.rack-idx{font-family:var(--mono);font-size:9.5px;color:var(--muted);font-variant-numeric:tabular-nums;}
+.rack-bolt{font-size:7px;color:var(--steel-dim);line-height:1;}
+.rack-token{
+  font-family:var(--mono);font-size:11.5px;color:var(--text);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.chip{
+  font-family:var(--mono);font-size:9.5px;letter-spacing:0.06em;
+  text-align:center;border-radius:2px;padding:2px 0;
+}
+.chip-k{color:var(--green);border:1px solid var(--green);background:#151E12;}
+.chip-v{color:var(--amber-dim);border:1px solid var(--amber-dim);background:#1A1610;}
+.chip-v.off{opacity:.35;}
+
+/* Racked chips are buttons: clicking one opens the K/V inspector below.
+   The selected ring sits outside the chip's own border, so selecting a chip
+   changes no geometry, and it reads differently from the amber focus ring. */
+.chip-btn{
+  display:block;width:100%;line-height:1.2;
+  cursor:pointer;
+  transition:box-shadow .15s ease,background-color .15s ease;
+}
+.chip-k.chip-btn:hover{background:#1B2717;}
+.chip-v.chip-btn:hover{background:#241E14;}
+.chip-k.chip-btn.is-sel{background:#22331B;box-shadow:0 0 0 1px var(--green);}
+.chip-v.chip-btn.is-sel{background:#2A2214;box-shadow:0 0 0 1px var(--amber-dim);color:var(--amber);}
+
+.sweep{
+  position:absolute;left:0;right:0;top:0;height:2px;
+  background:var(--green);opacity:.65;z-index:2;pointer-events:none;
+  animation:sweep .45s linear 1;
+}
+/* Animates `top` as a percentage of the rack box, so the sweep always
+   crosses the full rack whatever height the box has at this breakpoint. */
+@keyframes sweep{
+  from{top:0;opacity:.7;}
+  to{top:100%;opacity:0;}
+}
+@keyframes settle{
+  from{opacity:0;transform:translateX(-8px);}
+  to{opacity:1;transform:translateX(0);}
+}
+
+.counter{
+  font-family:var(--mono);font-size:12px;color:var(--steel);
+  margin:14px 0 0;letter-spacing:0.06em;font-variant-numeric:tabular-nums;
+}
+
+/* --- instrument B: K/V inspector ----------------------------------------- */
+
+/* Height is fixed at every breakpoint whether the panel is empty or full, so
+   selecting, switching or clearing a chip moves nothing on the page. Every
+   box inside it is fixed too, for the same reason. */
+.kv-inspector{
+  height:228px;margin-top:16px;overflow:hidden;
+  border-top:1px solid var(--hair);padding-top:12px;
+}
+.kv-head{display:flex;align-items:center;gap:8px;height:16px;}
+.kv-head .field-label{margin-bottom:0;white-space:nowrap;}
+.kv-note{
+  margin-left:auto;font-family:var(--mono);font-size:10px;
+  color:var(--muted);letter-spacing:0.04em;white-space:nowrap;
+}
+/* 26px is the head plus this margin, so the body always fills exactly the
+   space the panel reserves — the empty state's dashed box included. */
+.kv-body{margin-top:10px;height:calc(100% - 26px);}
+.kv-empty{
+  height:100%;display:flex;align-items:center;justify-content:center;
+  padding:0 14px;text-align:center;
+  border:1px dashed var(--hair);border-radius:4px;
+}
+.kv-stack{animation:kv-in .18s ease-out both;}
+
+.kv-pipe{
+  display:grid;grid-template-columns:1fr auto 0.78fr auto 1fr;
+  align-items:start;gap:8px;
+}
+.kv-stage{display:flex;flex-direction:column;gap:5px;min-width:0;}
+.kv-stage-label{
+  font-family:var(--mono);font-size:9.5px;line-height:13px;height:26px;
+  letter-spacing:0.08em;color:var(--muted);overflow:hidden;
+}
+.kv-stage-label .info-tag{margin-left:5px;}
+.kv-arrow{
+  align-self:center;font-family:var(--mono);font-size:14px;
+  color:var(--steel-dim);line-height:1;
+}
+
+/* Stage 1 — the same amber pill instrument A shows, same six numbers. */
+.kv-pill{padding:5px 7px;gap:2px;}
+.kv-pill .token-idx{line-height:12px;}
+.kv-pill .token-text{
+  line-height:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.kv-pill .token-vec{
+  font-size:9.5px;line-height:13px;height:26px;white-space:normal;
+}
+
+/* Stage 2 — frozen machinery, so steel. The two dies not used on this pass
+   are still shown, ghosted: one blank, three dies. */
+.kv-dies{display:flex;gap:5px;}
+.kv-die{
+  font-family:var(--mono);font-size:10px;line-height:12px;
+  padding:3px 5px;border-radius:2px;
+  border:1px solid var(--steel-dim);background:var(--panel);color:var(--steel-dim);
+}
+.kv-die.is-on{border-color:var(--steel);color:var(--steel);background:#141C25;}
+.kv-die.is-off{opacity:.45;}
+.kv-die-note{
+  font-family:var(--mono);font-size:9.5px;line-height:13px;height:26px;
+  color:var(--muted);overflow:hidden;
+}
+
+/* Stage 3 — the vector that falls out: green for a key, amber-dim for a
+   value, matching the chips that opened the panel. */
+.kv-vec{
+  display:block;font-family:var(--mono);font-size:9.5px;line-height:13px;
+  height:36px;padding:4px 6px;border-radius:3px;border:1px solid;
+  font-variant-numeric:tabular-nums;overflow:hidden;
+}
+.kv-vec-k{color:var(--green);border-color:var(--green);background:#151E12;}
+.kv-vec-v{color:var(--amber-dim);border-color:var(--amber-dim);background:#1A1610;}
+
+.kv-goes{
+  font-family:var(--mono);font-size:10.5px;line-height:1.55;
+  color:var(--text);letter-spacing:0.02em;margin:10px 0 0;
+}
+.kv-prov{
+  font-family:var(--mono);font-size:10.5px;line-height:1.55;
+  color:var(--muted);letter-spacing:0.02em;margin:6px 0 0;
+}
+@keyframes kv-in{
+  from{opacity:0;transform:translateY(-2px);}
+  to{opacity:1;transform:none;}
+}
+
+/* --- instrument C: attention inspector ----------------------------------- */
+
+/* Fixed heights on the strip and the table reserve space up front, so STEP
+   and token clicks never reflow anything below the instrument. */
+.query-strip{
+  display:flex;flex-wrap:wrap;align-content:flex-start;gap:6px;
+  height:68px;overflow-y:auto;margin-bottom:18px;
+}
+.query-token{
+  font-family:var(--mono);font-size:12.5px;
+  color:var(--steel);background:var(--panel);
+  border:1px solid var(--steel-dim);border-radius:3px;
+  padding:4px 8px;cursor:pointer;
+  transition:border-color .15s ease,color .15s ease;
+}
+.query-token:hover{border-color:var(--steel);color:var(--text);}
+.query-token.is-query{
+  color:var(--amber);border-color:var(--amber);border-width:2px;
+  background:var(--amber-bg);font-weight:500;padding:3px 7px;
+}
+
+.attn-table{
+  border:1px solid var(--hair);border-radius:4px;background:var(--panel);
+  height:282px;overflow-y:auto;
+}
+.attn-row{
+  display:grid;
+  grid-template-columns:78px minmax(0,1fr) 46px 152px 26px;
+  align-items:center;gap:10px;
+  height:32px;padding:0 10px;
+  border-bottom:1px solid var(--hair);
+}
+.attn-row:last-child{border-bottom:0;}
+.attn-head{
+  height:26px;font-family:var(--mono);font-size:9.5px;
+  letter-spacing:0.14em;color:var(--muted);
+  position:sticky;top:0;z-index:1;background:var(--panel);
+}
+.c-tok{
+  font-family:var(--mono);font-size:12px;color:var(--text);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.c-k{
+  font-family:var(--mono);font-size:10px;color:var(--green);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.c-score{
+  font-family:var(--mono);font-size:11px;color:var(--muted);
+  font-variant-numeric:tabular-nums;text-align:right;
+}
+.c-bar{display:flex;align-items:center;gap:8px;}
+.track{
+  flex:1 1 auto;height:10px;min-width:0;
+  background:var(--panel2);border:1px solid var(--hair);
+  display:block;
+}
+.fill{
+  display:block;height:100%;background:var(--green);
+  transition:width .45s cubic-bezier(.22,.7,.3,1);
+}
+.wt{
+  font-family:var(--mono);font-size:10px;color:var(--muted);
+  font-variant-numeric:tabular-nums;width:44px;text-align:right;flex:none;
+}
+.c-v{display:flex;justify-content:flex-end;}
+.c-v .chip{width:26px;}
+.attn-row.locked{background:#121821;}
+.attn-row.locked .c-tok,.attn-row.locked .c-k{color:var(--steel-dim);}
+.attn-row.self{background:var(--amber-bg);}
+.attn-row.self .c-tok{color:var(--amber);font-weight:500;}
+.attn-row.self .c-k,.attn-row.self .wt{color:var(--amber-dim);}
+
+.budget{display:flex;align-items:center;gap:12px;margin-top:14px;}
+.budget .field-label{margin-bottom:0;flex:none;}
+.budget-track{
+  flex:1 1 auto;display:flex;height:12px;min-width:0;
+  background:var(--panel2);border:1px solid var(--hair);
+}
+.budget-seg{
+  display:block;height:100%;background:var(--green);
+  border-right:1px solid var(--panel2);
+  transition:width .45s cubic-bezier(.22,.7,.3,1);
+}
+.budget-seg:last-child{border-right:0;}
+
+.blend{
+  font-family:var(--mono);font-size:12px;color:var(--steel);
+  margin:16px 0 0;letter-spacing:0.03em;
+}
+.blend-target{color:var(--amber);}
+.blend-plain{
+  font-family:var(--mono);font-size:12px;color:var(--amber);
+  margin:6px 0 0;letter-spacing:0.03em;line-height:1.5;min-height:36px;
+}
+
+/* --- responsive ---------------------------------------------------------- */
+
+@media(max-width:620px){
+  .duo{grid-template-columns:1fr;}
+}
+
+@media(max-width:700px){
+  /* Stacked, so the two boxes no longer need matching heights. Both stay
+     fixed so appending rack rows scrolls instead of reflowing the page. */
+  .stepper-panes{grid-template-columns:1fr;}
+  .seq-box{height:118px;}
+  .rack-box{height:212px;}
+
+  /* The pipeline stacks: x above the die above the vector, arrows turned
+     to point down. Labels fit one line at this width, so their reserved
+     height drops with them — the panel's own height is still fixed. */
+  .kv-inspector{height:362px;}
+  .kv-pipe{grid-template-columns:1fr;gap:4px;}
+  .kv-stage-label{height:13px;}
+  .kv-die-note{height:13px;}
+  .kv-vec{height:23px;}
+  .kv-pill .token-vec{height:13px;}
+  /* Turned to point down the stack. Width is pinned first: rotating a
+     full-width grid item would swing its box across its neighbours. */
+  .kv-arrow{
+    align-self:start;justify-self:start;width:14px;text-align:center;
+    font-size:12px;transform:rotate(90deg);
+  }
+  .kv-goes,.kv-prov{font-size:10px;line-height:1.5;}
+}
+
+@media(max-width:640px){
+  body{font-size:16px;}
+  .wrap{padding:0 18px 90px;}
+  header{padding:60px 0 36px;}
+  .sub{font-size:17px;}
+  h2{font-size:24px;}
+  .eyebrow{margin-top:56px;}
+  .callout{padding:18px;}
+  .controls-note{margin-left:0;width:100%;}
+
+  .attn-row{
+    grid-template-columns:minmax(0,1fr) 46px 26px;
+    grid-template-areas:
+      "tok score v"
+      "k   k     k"
+      "bar bar   bar";
+    height:auto;min-height:78px;
+    row-gap:3px;column-gap:8px;
+    padding:8px 10px;align-content:center;
+  }
+  .attn-table{height:352px;}
+  .attn-head{display:none;}
+  .query-strip{height:100px;}
+  .c-tok{grid-area:tok;}
+  .c-score{grid-area:score;}
+  .c-v{grid-area:v;}
+  .c-k{grid-area:k;white-space:normal;}
+  .c-bar{grid-area:bar;}
+  .cand{grid-template-columns:84px minmax(0,1fr) 34px;padding-left:5px;}
+  /* Tighter tracking and gaps so the rack head plus its two chip badges
+     still fit on one line at 390px. */
+  .pane-head{letter-spacing:0.1em;}
+  .chip-legend{gap:4px;}
+  .chip-legend .chip{width:20px;}
+  .budget{flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px;}
+  .budget-track{flex:1 1 100%;}
+  .mini-legend{right:10px;bottom:10px;padding:7px 9px;font-size:9.5px;}
+  .mini-legend .ml-note{display:none;}
+}
+
+/* Narrower than a phone. The inspector's two prose lines drop one step so
+   they still fit the height reserved for them at this breakpoint. */
+@media(max-width:380px){
+  .kv-inspector{height:386px;}
+  .kv-goes,.kv-prov{font-size:9.5px;}
+}
+
+/* --- reduced motion ------------------------------------------------------ */
+
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:.001ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.001ms !important;
+    scroll-behavior:auto !important;
+  }
+  .sweep{display:none;}
+  /* New in this pass: the candidate rows and the info popover appear at
+     their final state instead of animating in. */
+  .cand,.cand.is-winner,.info-pop,.kv-stack{animation:none;}
+}
