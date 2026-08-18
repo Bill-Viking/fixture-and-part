@@ -2,6 +2,7 @@ import { memo, useEffect, useRef, useState } from 'react'
 import { LAYERS } from '../lib/toyModel.js'
 import InfoTag from '../components/InfoTag.jsx'
 import KVInspector from '../components/KVInspector.jsx'
+import TeachPair from '../components/TeachPair.jsx'
 
 const RUN_INTERVAL_MS = 800
 
@@ -44,40 +45,50 @@ const RackRow = memo(function RackRow({ index, token, selectedRole, onSelect }) 
  * The shortlist for the coming STEP. Fixed height whether it is full or empty,
  * so pressing STEP never moves anything below it.
  */
-function Candidates({ candidates, scripted, stepTick, hasInput }) {
+function Candidates({ candidates, scripted, stepTick, hasInput, real, pending }) {
   return (
     <div className="candidates" role="group" aria-label="candidate next tokens">
       <div className="cand-head">
         <span className="field-label">considering next</span>
-        <InfoTag topic="candidates" />
+        <InfoTag topic={real ? 'candidatesReal' : 'candidates'} />
         <span className="cand-note">
-          {scripted ? 'scripted · illustrative' : 'illustrative'}
+          {real
+            ? 'distilgpt2 · greedy'
+            : scripted
+              ? 'scripted · illustrative'
+              : 'illustrative'}
         </span>
       </div>
       <div className="cand-list" key={stepTick}>
-        {candidates.length === 0 && (
+        {pending && <p className="empty-note">running distilgpt2&hellip;</p>}
+        {!pending && candidates.length === 0 && (
           <p className="empty-note">
             {hasInput
               ? 'generation cap reached — RESET to run it again.'
               : 'no input — type something into instrument A.'}
           </p>
         )}
-        {candidates.map((c) => (
-          <div
-            className={`cand${c.wins ? ' is-winner' : ''}`}
-            key={c.token}
-            title={`illustrative score ${c.score.toFixed(2)}`}
-          >
-            <span className="cand-word">{c.token}</span>
-            <span className="cand-track">
-              <span
-                className="cand-fill"
-                style={{ width: `${c.weight * 100}%` }}
-              />
-            </span>
-            <span className="cand-wt">{c.weight.toFixed(2)}</span>
-          </div>
-        ))}
+        {!pending &&
+          candidates.map((c) => (
+            <div
+              className={`cand${c.wins ? ' is-winner' : ''}`}
+              key={`${c.id ?? ''}-${c.token}`}
+              title={
+                real
+                  ? `logit ${c.score.toFixed(2)} · probability ${c.weight.toFixed(4)}`
+                  : `illustrative score ${c.score.toFixed(2)}`
+              }
+            >
+              <span className="cand-word">{c.token}</span>
+              <span className="cand-track">
+                <span
+                  className="cand-fill"
+                  style={{ width: `${c.weight * 100}%` }}
+                />
+              </span>
+              <span className="cand-wt">{c.weight.toFixed(2)}</span>
+            </div>
+          ))}
       </div>
     </div>
   )
@@ -94,12 +105,18 @@ export default function Stepper({
   candidates,
   scriptedNext,
   kvSelection,
+  real,
+  vectors,
+  pending,
   onKvSelect,
   onStep,
   onReset,
 }) {
   const [running, setRunning] = useState(false)
   const rackRef = useRef(null)
+  // When the last token was committed, so the loop can hold the cadence
+  // steady regardless of how long the model took to answer.
+  const lastCommitRef = useRef(0)
 
   // Keep the newest row in view. The rack scrolls inside its own fixed box,
   // so this never moves anything else on the page.
@@ -108,15 +125,47 @@ export default function Stepper({
     if (node) node.scrollTop = node.scrollHeight
   }, [sequence.length])
 
+  /**
+   * RUN, in both modes.
+   *
+   * A plain interval works when a step is instant, but in real mode each step
+   * waits on a forward pass, and firing on a fixed beat would either overlap
+   * runs or stall the loop the moment a step was not ready. So the loop is a
+   * chain instead: while a pass is in flight it schedules nothing and simply
+   * waits to be re-run when `pending` clears, then it times the next commit
+   * from the previous one. Inference that takes 300 ms is followed by 500 ms
+   * of pause; inference that takes longer than the target commits as soon as
+   * it lands. The reader gets one token roughly every RUN_INTERVAL_MS either
+   * way.
+   *
+   * Pausing clears the pending timeout, and the commit only ever happens
+   * inside that timeout, so a pass that resolves after PAUSE cannot append a
+   * token behind the reader's back. RESET does the same by way of
+   * `handleReset`.
+   */
   useEffect(() => {
     if (!running) return undefined
+    if (pending) return undefined
     if (!canStep) {
       setRunning(false)
       return undefined
     }
-    const id = setInterval(onStep, RUN_INTERVAL_MS)
-    return () => clearInterval(id)
-  }, [running, canStep, onStep])
+    const wait = Math.max(0, RUN_INTERVAL_MS - (Date.now() - lastCommitRef.current))
+    const id = setTimeout(() => {
+      lastCommitRef.current = Date.now()
+      onStep()
+    }, wait)
+    return () => clearTimeout(id)
+  }, [running, pending, canStep, onStep, stepTick])
+
+  const handleRun = () => {
+    setRunning((wasRunning) => {
+      // Starting: hold the first token back by one full beat, the way the
+      // interval used to, rather than firing it on the click.
+      if (!wasRunning) lastCommitRef.current = Date.now()
+      return !wasRunning
+    })
+  }
 
   const handleReset = () => {
     setRunning(false)
@@ -139,7 +188,9 @@ export default function Stepper({
     <figure className="instrument">
       <div className="inst-head">
         <span className="inst-title">INSTRUMENT B — FORWARD PASS &amp; KV RACK</span>
-        <span className="inst-note">illustrative continuation</span>
+        <span className="inst-note">
+          {real ? 'real distilgpt2 continuation · greedy' : 'illustrative continuation'}
+        </span>
       </div>
 
       <div className="inst-body">
@@ -155,8 +206,8 @@ export default function Stepper({
           <button
             type="button"
             className={`btn${running ? ' btn-on' : ''}`}
-            onClick={() => setRunning((r) => !r)}
-            disabled={!canStep && !running}
+            onClick={handleRun}
+            disabled={!canStep && !running && !pending}
             aria-pressed={running}
           >
             {running ? 'PAUSE' : 'RUN'}
@@ -176,6 +227,8 @@ export default function Stepper({
           scripted={scriptedNext}
           stepTick={stepTick}
           hasInput={baseTokens.length > 0}
+          real={real}
+          pending={pending}
         />
 
         <div className="stepper-panes">
@@ -231,12 +284,14 @@ export default function Stepper({
           <InfoTag topic="cache" />
         </p>
 
-        <KVInspector selection={selection} />
+        <KVInspector selection={selection} real={real} vectors={vectors} />
 
-        <p className="teach dim">
-          every new token scans the whole rack. racked rows are byte-identical
-          before and after — nothing above the newest row ever changes.
-        </p>
+        <TeachPair
+          className="teach dim"
+          show={real ? 'b' : 'a'}
+          a="every new token scans the whole rack. racked rows are byte-identical before and after — nothing above the newest row ever changes."
+          b="every new token scans the whole rack, and racked rows never change. STEP takes the highest-probability token every time, which is why a real greedy run can settle into repeating itself."
+        />
       </div>
 
       <figcaption>

@@ -4,6 +4,7 @@ import {
   kVector,
   vVector,
 } from '../lib/toyModel.js'
+import { KV_LAYER, formatRealVector } from '../lib/realModel.js'
 import InfoTag from './InfoTag.jsx'
 
 /**
@@ -39,15 +40,27 @@ const ROLES = {
   },
 }
 
-export default function KVInspector({ selection }) {
+export default function KVInspector({ selection, real, vectors }) {
   const role = selection ? ROLES[selection.role] : null
+
+  // In real mode the three stages are all distilgpt2's own numbers: the row
+  // its embedding table holds for this id, and the key or value its layer-0
+  // cache holds for this position. Six of 768 either way.
+  const index = selection ? selection.index : -1
+  const realEmbed = real ? (vectors?.embeddings?.[index] ?? null) : null
+  const realOut = real ? (vectors?.[selection?.role]?.[index] ?? null) : null
+  const showReal = real && realEmbed !== null && realOut !== null
 
   return (
     <section className="kv-inspector" aria-label="K/V inspector">
       <div className="kv-head">
         <span className="field-label">K/V inspector</span>
         <span className="kv-note">
-          {selection ? 'illustrative vectors' : 'nothing selected'}
+          {!selection
+            ? 'nothing selected'
+            : showReal
+              ? `real vectors · layer ${KV_LAYER} · first 6 of 768`
+              : 'illustrative vectors'}
         </span>
       </div>
 
@@ -69,10 +82,20 @@ export default function KVInspector({ selection }) {
                   embedding &mdash; the token&rsquo;s vector, x
                 </span>
                 <span className="token-pill kv-pill">
-                  <span className="token-idx">{selection.index}</span>
+                  <span className="token-idx">
+                    {selection.index}
+                    {showReal && vectors.ids[index] !== undefined && (
+                      <span className="token-id"> &middot; id {vectors.ids[index]}</span>
+                    )}
+                  </span>
                   <span className="token-text">{selection.token}</span>
-                  <span className="token-vec" title="illustrative vector">
-                    {formatVector(hashTokenToVector(selection.token, 6))}
+                  <span
+                    className="token-vec"
+                    title={showReal ? 'first 6 of 768 real dims' : 'illustrative vector'}
+                  >
+                    {showReal
+                      ? formatRealVector(realEmbed)
+                      : formatVector(hashTokenToVector(selection.token, 6))}
                   </span>
                 </span>
               </div>
@@ -109,9 +132,11 @@ export default function KVInspector({ selection }) {
                 <span className="kv-stage-label">{role.outLabel}</span>
                 <span
                   className={`kv-vec ${role.outClass}`}
-                  title="illustrative vector"
+                  title={showReal ? 'first 6 of 768 real dims' : 'illustrative vector'}
                 >
-                  {formatVector(role.vector(selection.token))}
+                  {showReal
+                    ? formatRealVector(realOut)
+                    : formatVector(role.vector(selection.token))}
                 </span>
               </div>
             </div>
