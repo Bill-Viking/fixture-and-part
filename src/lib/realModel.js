@@ -43,13 +43,20 @@ export const SAMPLING = 'greedy · whitespace skipped'
 // [query x key] attention matrix instead of only the newest row.
 const MODEL_FILE = 'decoder_model'
 const MODEL_DTYPE = 'q8'
-const ONNX_FILE = 'decoder_model_quantized.onnx'
+/**
+ * The one file the fetch patch rewrites — and the one the lens worker reads
+ * back out of the cache instead of downloading a second copy.
+ */
+export const ONNX_FILE = 'decoder_model_quantized.onnx'
 
 // Our own cache bucket, so a patched model can never be confused with an
 // unpatched one left behind by some other page on the same origin. Bump the
 // version whenever PROMOTED_OUTPUTS changes: the cached copy carries the
 // fragment that was current when it was written.
-const CACHE_KEY = 'fixture-and-part-distilgpt2-v2'
+export const CACHE_KEY = 'fixture-and-part-distilgpt2-v3'
+// Buckets an earlier fragment wrote. Nothing will ever read them again, and
+// each one holds 83 MB, so the load drops them on its way past.
+const STALE_CACHE_KEYS = ['fixture-and-part-distilgpt2-v2']
 
 const ATTENTION_OUTPUTS = Array.from(
   { length: REAL_LAYERS },
@@ -57,7 +64,26 @@ const ATTENTION_OUTPUTS = Array.from(
 )
 /** distilgpt2's token embedding table, the Gather that reads one row per id. */
 const EMBED_OUTPUT = '/transformer/wte/Gather_output_0'
-const PROMOTED_OUTPUTS = [...ATTENTION_OUTPUTS, EMBED_OUTPUT]
+// The residual stream at every depth, which is what instrument D reads: the
+// sum of the token and position embeddings that enters block 0, then the
+// stream as it leaves each block. Seven stops for six layers. A block writes
+// its result back into the same running vector, so these are seven readings
+// of one thing rather than seven different things.
+const RESIDUAL_OUTPUTS = [
+  '/transformer/Add_output_0',
+  ...Array.from(
+    { length: REAL_LAYERS },
+    (_, layer) => `/transformer/h.${layer}/Add_1_output_0`,
+  ),
+]
+const PROMOTED_OUTPUTS = [
+  ...ATTENTION_OUTPUTS,
+  EMBED_OUTPUT,
+  ...RESIDUAL_OUTPUTS,
+]
+
+/** How many depths the glass pass reads. */
+export const RESIDUAL_STOPS = RESIDUAL_OUTPUTS.length
 
 /** How many dimensions of a 768-wide vector the instruments print. */
 export const PREVIEW_DIMS = 6
@@ -226,11 +252,22 @@ async function build(device, transformers) {
   return { tokenizer, session, Tensor, backend: device }
 }
 
+function dropStaleCaches() {
+  if (typeof caches === 'undefined') return
+  for (const key of STALE_CACHE_KEYS) {
+    caches.delete(key).catch(() => {
+      // The bucket was already gone, or storage said no. Either way the load
+      // is not waiting on it.
+    })
+  }
+}
+
 async function doLoad() {
   const transformers = await import('@huggingface/transformers')
   const { env } = transformers
   env.allowLocalModels = false
   env.cacheKey = CACHE_KEY
+  dropStaleCaches()
   installFetchPatch(env)
 
   progressSink({ phase: 'files', loaded: 0, total: 0, percent: 0 })
@@ -411,6 +448,23 @@ function previewRows(data, width, n) {
   return rows
 }
 
+/** The two int64 tensors the no-cache decoder graph takes. */
+function feedFor(Tensor, ids) {
+  const n = ids.length
+  return {
+    input_ids: new Tensor(
+      'int64',
+      BigInt64Array.from(ids, (v) => BigInt(v)),
+      [1, n],
+    ).ort_tensor,
+    attention_mask: new Tensor(
+      'int64',
+      new BigInt64Array(n).fill(1n),
+      [1, n],
+    ).ort_tensor,
+  }
+}
+
 // One-entry memo. The stepper asks for the pass it is about to commit and the
 // effect that drives instrument C asks for the same one; this keeps that to a
 // single run of the model.
@@ -418,9 +472,9 @@ let lastRun = null
 
 /**
  * Runs distilgpt2 over the whole sequence once. The result carries everything
- * the three instruments need: real embeddings for A, the next-token shortlist
- * and layer-0 K/V for B, and the full attention matrix — all layers, all
- * heads — for C.
+ * the four instruments need: real embeddings for A, the next-token shortlist
+ * and layer-0 K/V for B, the full attention matrix — all layers, all heads —
+ * for C, and the residual stream at all seven depths for D.
  *
  * @param {number[]} ids
  */
@@ -435,21 +489,10 @@ export function realForward(ids) {
       return {
         key: '', ids: [], tokens: [], n: 0,
         candidates: [], attention: [], embeddings: [], k: [], v: [],
+        residuals: [],
       }
     }
-    const feed = {
-      input_ids: new Tensor(
-        'int64',
-        BigInt64Array.from(ids, (v) => BigInt(v)),
-        [1, n],
-      ).ort_tensor,
-      attention_mask: new Tensor(
-        'int64',
-        new BigInt64Array(n).fill(1n),
-        [1, n],
-      ).ort_tensor,
-    }
-    const outputs = await session.run(feed)
+    const outputs = await session.run(feedFor(Tensor, ids))
 
     const logits = outputs.logits
     const vocab = logits.dims[2]
@@ -478,6 +521,15 @@ export function realForward(ids) {
     const k = previewRows(await tensorData(keyTensor), keyTensor.dims[3], n)
     const v = previewRows(await tensorData(valueTensor), valueTensor.dims[3], n)
 
+    // The whole stream, all seven depths, full width — n x 768 per stop, so
+    // under a megabyte at the lengths this page runs. The glass pass prints
+    // six of those numbers and sends all 768 to the lens, and neither can be
+    // reconstructed from a preview, so the rows are kept whole.
+    const residuals = []
+    for (const name of RESIDUAL_OUTPUTS) {
+      residuals.push(new Float32Array(await tensorData(outputs[name])))
+    }
+
     // The embedding table is a lookup, so a piece's vector is the same
     // wherever it lands. Remembering it keeps instrument A populated while a
     // later pass is still running.
@@ -494,14 +546,67 @@ export function realForward(ids) {
       embeddings,
       k,
       v,
+      residuals,
     }
     return lastRun
+  })
+}
+
+/**
+ * The graph's own logits row for one position.
+ *
+ * A pass does not keep the full [n x 50257] block — it is eight megabytes at
+ * these lengths and nothing on the page reads it — so this runs the model
+ * again and copies out the single row asked for. It exists to check the glass
+ * pass against the machine it claims to be reading; see logitLens.js.
+ *
+ * @param {number[]} ids
+ * @param {number} index
+ */
+export function graphLogitsRow(ids, index) {
+  return serialize(async () => {
+    const { session, Tensor } = requireReady()
+    if (ids.length === 0) return null
+    const i = Math.min(Math.max(index, 0), ids.length - 1)
+    const outputs = await session.run(feedFor(Tensor, ids))
+    const logits = outputs.logits
+    const vocab = logits.dims[2]
+    const data = await tensorData(logits)
+    return new Float32Array(data.subarray(i * vocab, (i + 1) * vocab))
   })
 }
 
 /** The real embedding row for one id, once any pass has seen it. */
 export function realEmbedding(id) {
   return embeddingCache.get(id) ?? null
+}
+
+/**
+ * `PREVIEW_DIMS` numbers off the residual stream at one depth and one
+ * position — what instrument D prints beside each stop.
+ */
+export function residualPreview(run, stop, index) {
+  const data = run?.residuals?.[stop]
+  if (!data || index < 0 || index >= run.n) return null
+  const out = []
+  const base = index * REAL_HIDDEN
+  for (let d = 0; d < PREVIEW_DIMS; d++) out.push(data[base + d])
+  return out
+}
+
+/**
+ * All seven stops at one position, full width, packed end to end — the block
+ * the lens worker consumes. Its buffer is handed straight to the worker, so
+ * it is a fresh copy rather than a view into the pass.
+ */
+export function residualStops(run, index) {
+  if (!run?.residuals?.length || index < 0 || index >= run.n) return null
+  const out = new Float32Array(RESIDUAL_STOPS * REAL_HIDDEN)
+  for (let s = 0; s < RESIDUAL_STOPS; s++) {
+    const base = index * REAL_HIDDEN
+    out.set(run.residuals[s].subarray(base, base + REAL_HIDDEN), s * REAL_HIDDEN)
+  }
+  return out
 }
 
 /**

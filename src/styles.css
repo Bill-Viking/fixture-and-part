@@ -637,6 +637,107 @@ figcaption{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:
   margin:6px 0 0;letter-spacing:0.03em;line-height:1.5;min-height:36px;
 }
 
+/* --- instrument D: glass pass -------------------------------------------- */
+
+/* Every one of the seven rows is drawn at full height from the moment the
+   panel mounts, whether or not its numbers have arrived — the worker answers
+   one depth at a time, and a row that grew as its answer landed would walk
+   the page down under the reader. Same reason the residual column reserves
+   three lines: a real residual can be four digits wide. */
+.lens-head,.lens-row{
+  display:grid;
+  grid-template-columns:96px 156px minmax(0,1fr) 54px;
+  align-items:center;gap:10px;padding:0 10px;
+}
+.lens-head{
+  height:18px;
+  font-family:var(--mono);font-size:9.5px;letter-spacing:0.14em;color:var(--muted);
+}
+.lens-head .field-label{margin-bottom:0;}
+.lens-head-res,.lens-head-cand,.lens-head-trace{
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.lens-head-trace{text-align:right;}
+.lens-rows{
+  margin-top:6px;
+  background:var(--panel);border:1px solid var(--hair);border-radius:4px;
+}
+.lens-row{height:72px;border-bottom:1px solid var(--hair);}
+.lens-row:last-child{border-bottom:0;}
+/* The last row is not another sample of the stack: it is the end of it, and
+   the numbers on it are the model's own output. Steel, because the seam it
+   marks is machinery rather than a value. */
+.lens-row.is-final{border-top:1px solid var(--steel-dim);background:#141C25;}
+
+.lens-stop{
+  font-family:var(--mono);font-size:9.5px;letter-spacing:0.06em;
+  color:var(--muted);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+/* The running vector itself, so amber. Six of 768, three reserved lines. */
+.lens-res{
+  font-family:var(--mono);font-size:9.5px;line-height:12px;height:36px;
+  color:var(--amber-dim);font-variant-numeric:tabular-nums;
+  overflow:hidden;
+}
+
+.lens-cands{display:flex;flex-direction:column;gap:3px;min-width:0;}
+.lens-bar{
+  display:grid;grid-template-columns:56px minmax(0,1fr) 30px;
+  align-items:center;gap:6px;height:14px;
+}
+.lens-word{
+  font-family:var(--mono);font-size:10px;line-height:14px;color:var(--muted);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.lens-track{
+  display:block;height:7px;min-width:0;
+  background:var(--panel2);border:1px solid var(--hair);
+}
+/* Probabilities in flight — amber, and the widths are the probabilities
+   themselves rather than a share of the row, so an early depth's bars are
+   honestly almost nothing. */
+.lens-fill{
+  display:block;height:100%;background:var(--amber);opacity:.5;
+  transition:width .35s cubic-bezier(.22,.7,.3,1);
+}
+.lens-wt{
+  font-family:var(--mono);font-size:9.5px;line-height:14px;color:var(--muted);
+  font-variant-numeric:tabular-nums;text-align:right;
+}
+.lens-bar.is-top .lens-word{color:var(--amber);}
+.lens-bar.is-top .lens-fill{opacity:1;}
+.lens-bar.is-top .lens-wt{color:var(--amber-dim);}
+
+/* One token priced at every depth. It starts steel — a rumour the stack is
+   carrying — and ends amber, which is the whole reading in one column. */
+.lens-trace{
+  display:flex;flex-direction:column;align-items:flex-end;gap:4px;
+  color:var(--steel-dim);
+}
+.lens-trace-val{
+  font-family:var(--mono);font-size:10px;line-height:14px;
+  font-variant-numeric:tabular-nums;color:inherit;
+}
+.lens-trace-track{
+  display:block;width:100%;height:3px;
+  background:var(--panel2);border:1px solid var(--hair);
+}
+.lens-trace-fill{
+  display:block;height:100%;background:currentColor;
+  transition:width .35s cubic-bezier(.22,.7,.3,1);
+}
+
+/* Two reserved lines: what is on screen, or why it is not. */
+.lens-note{
+  font-family:var(--mono);font-size:10.5px;line-height:15px;height:30px;
+  color:var(--muted);letter-spacing:0.03em;margin:10px 0 0;overflow:hidden;
+}
+.lens-final{
+  font-family:var(--mono);font-size:10.5px;line-height:1.55;
+  color:var(--text);letter-spacing:0.02em;margin:0;
+}
+
 /* --- responsive ---------------------------------------------------------- */
 
 @media(max-width:620px){
@@ -704,6 +805,24 @@ figcaption{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:
   .chip-legend .chip{width:20px;}
   .budget{flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px;}
   .budget-track{flex:1 1 100%;}
+
+  /* The four columns no longer fit side by side, so the row folds into three
+     bands: the depth and its winner share a line, the residual takes the
+     next, the shortlist the rest. Still one fixed height per row. */
+  .lens-head{display:none;}
+  .lens-row{
+    grid-template-columns:minmax(0,1fr) 64px;
+    grid-template-areas:
+      "stop  trace"
+      "res   res"
+      "cands cands";
+    height:142px;row-gap:5px;padding:8px 10px;align-content:center;
+  }
+  .lens-stop{grid-area:stop;}
+  .lens-res{grid-area:res;}
+  .lens-cands{grid-area:cands;}
+  .lens-trace{grid-area:trace;flex-direction:row;align-items:center;gap:6px;}
+  .lens-trace-track{width:24px;flex:none;}
   .mini-legend{right:10px;bottom:10px;padding:7px 9px;font-size:9.5px;}
   .mini-legend .ml-note{display:none;}
 
@@ -749,4 +868,7 @@ figcaption{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:
   /* Phase 2: the download bar jumps to each reported percentage rather than
      sliding to it. It still reports, it just does not move. */
   .mode-fill{transition:none;}
+  /* Phase 3: the glass pass fills a depth at a time either way, but the bars
+     appear at their width instead of growing into it. */
+  .lens-fill,.lens-trace-fill{transition:none;}
 }

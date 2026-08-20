@@ -84,6 +84,11 @@ export const sections = [
         html: 'A new token&rsquo;s query is scored against every cached key; the scores pass through a softmax so they sum to one — attention paid to one token is attention taken from another — and the token receives the correspondingly weighted blend of the values, folded into its own representation. That blend is how &ldquo;it&rdquo; comes to internally <em>mean</em> the engine. The scheme itself — what to ask, how to advertise, what to hand over — lives in the weight matrices, learned by gradient descent and designed by no one. The organizing principle is frozen in the steel; the organization is re-stamped onto each token as it arrives, in parallel across dozens of heads per layer, each head asking a different kind of question.',
       },
       { type: 'instrument', name: 'attention' },
+      {
+        type: 'p',
+        html: 'A stack of layers is not a sealed press. Every layer writes into the same running vector, so that vector can be tapped at any depth and pushed through the model&rsquo;s own output head early &mdash; a glass window cut into the side of the machine. What comes back is the next-word belief as it stood at that depth, and reading the depths in order shows a guess narrowing from noise to a word.',
+      },
+      { type: 'instrument', name: 'glass' },
     ],
   },
   {

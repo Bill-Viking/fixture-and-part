@@ -3,6 +3,7 @@ import { header, sections, footerHtml, miniLegend } from './content/essay.js'
 import Tokenizer from './instruments/Tokenizer.jsx'
 import Stepper from './instruments/Stepper.jsx'
 import AttentionInspector from './instruments/AttentionInspector.jsx'
+import GlassPass from './instruments/GlassPass.jsx'
 import ModeControl from './components/ModeControl.jsx'
 import {
   DEFAULT_SENTENCE,
@@ -14,11 +15,15 @@ import {
   tokenize,
 } from './lib/toyModel.js'
 import {
+  RESIDUAL_STOPS,
   attentionRows,
   loadModel,
   realForward,
   realTokenize,
+  residualStops,
+  tokenText,
 } from './lib/realModel.js'
+import { readLens } from './lib/logitLens.js'
 
 function Html({ as: Tag = 'p', html, className }) {
   return (
@@ -86,6 +91,14 @@ export default function App() {
   // Which rack chip instrument B's K/V inspector is showing: {index, role}
   // where role is 'k' or 'v', or null for nothing selected.
   const [kvSelection, setKvSelection] = useState(null)
+  // Where instrument D's window sits, and the reading taken through it. The
+  // reading is only ever taken on a click: in real mode it is a third of a
+  // second of arithmetic per position, so nothing here recomputes on its own.
+  const [lensIndex, setLensIndex] = useState(
+    () => Math.max(0, tokenize(DEFAULT_SENTENCE).length - 1),
+  )
+  const [lensReading, setLensReading] = useState(null)
+  const lensCancel = useRef(null)
   const [legendVisible, setLegendVisible] = useState(false)
   const sentinelRef = useRef(null)
 
@@ -109,7 +122,13 @@ export default function App() {
   const isReal = mode === 'real' && modelStatus === 'ready'
 
   const wordTokens = useMemo(() => tokenize(text), [text])
-  const baseTokens = isReal ? (realBase?.tokens ?? []) : wordTokens
+  // Memoised because instrument D keys a reset off it: a fresh array every
+  // render would throw the glass pass back to its default position on every
+  // render rather than on every retokenization.
+  const baseTokens = useMemo(
+    () => (isReal ? (realBase?.tokens ?? []) : wordTokens),
+    [isReal, realBase, wordTokens],
+  )
   const sequence = useMemo(
     () => [...baseTokens, ...generated],
     [baseTokens, generated],
@@ -122,12 +141,19 @@ export default function App() {
   const runReady = Boolean(realRun) && realRun.key === runKey
   const realPending = isReal && sequenceIds.length > 0 && !runReady
 
+  const clearLens = useCallback(() => {
+    lensCancel.current?.()
+    lensCancel.current = null
+    setLensReading(null)
+  }, [])
+
   const resetSequence = useCallback(() => {
     setGenerated([])
     setGeneratedIds([])
     setStepTick(0)
     setKvSelection(null)
-  }, [])
+    clearLens()
+  }, [clearLens])
 
   // Typing in Instrument A rebuilds the shared sequence from scratch.
   const handleTextChange = useCallback(
@@ -228,6 +254,76 @@ export default function App() {
     setQueryIndex(realQueryIndex(text, realBase.tokens))
   }, [isReal, realBase, text])
 
+  // A reading belongs to the exact sequence it was taken from, and appending
+  // a token invalidates it even though attention only looks backwards.
+  //
+  // That is worth stating plainly, because the obvious optimisation — compare
+  // only the prefix up to the position being read, since a causal model
+  // cannot let later tokens change an earlier one — is wrong here, and was
+  // measured to be wrong rather than assumed. This export is dynamically
+  // quantized: twenty-four DynamicQuantizeLinear nodes take their scale from
+  // the min and max of a whole [1, n, 768] activation, so a token appended at
+  // the end moves the scale and with it, slightly, every position's numbers.
+  // The wte + wpe stop is untouched, being a plain lookup; by the last stop
+  // the drift measured about 2% of the vector's largest component. Small, but
+  // not nothing, and the panel does not print numbers the machine has stopped
+  // agreeing with.
+  const lensStale =
+    isReal &&
+    Boolean(lensReading) &&
+    (lensReading.index !== lensIndex || lensReading.key !== runKey)
+
+  /**
+   * Moves the window, and in real mode reads through it. The seven depths
+   * come back one at a time, so the panel fills from the top instead of
+   * appearing at once; a click during a reading cancels the one in flight
+   * rather than queueing behind it.
+   */
+  const handleLensSelect = useCallback(
+    (index) => {
+      setLensIndex(index)
+      if (!isReal || !runReady) return
+      const stops = residualStops(realRun, index)
+      if (!stops) return
+      lensCancel.current?.()
+      const key = realRun.key
+      setLensReading({
+        index,
+        key,
+        status: 'pending',
+        stops: Array(RESIDUAL_STOPS).fill(null),
+        trace: null,
+        winner: null,
+        message: null,
+      })
+      const patch = (change) =>
+        setLensReading((prev) =>
+          prev && prev.index === index && prev.key === key
+            ? { ...prev, ...change(prev) }
+            : prev,
+        )
+      lensCancel.current = readLens(stops, {
+        onStop: (stop, candidates) =>
+          patch((prev) => ({
+            stops: prev.stops.map((row, i) =>
+              i === stop
+                ? candidates.map((candidate, rank) => ({
+                    token: tokenText(candidate.id),
+                    weight: candidate.probability,
+                    wins: rank === 0,
+                  }))
+                : row,
+            ),
+          })),
+        onTrace: (winnerId, probabilities) =>
+          patch(() => ({ winner: tokenText(winnerId), trace: probabilities })),
+        onDone: () => patch(() => ({ status: 'done' })),
+        onError: (message) => patch(() => ({ status: 'error', message })),
+      })
+    },
+    [isReal, runReady, realRun],
+  )
+
   // Clicking the selected chip again clears the panel; any other chip
   // switches it.
   const handleKvSelect = useCallback((index, role) => {
@@ -291,7 +387,17 @@ export default function App() {
     // The rack RESET rebuilds is the rack the selection pointed into, so the
     // selection goes with it rather than silently re-pointing at another row.
     setKvSelection(null)
-  }, [isReal, realBase, text, wordTokens])
+    setLensIndex(Math.max(0, baseTokens.length - 1))
+    clearLens()
+  }, [isReal, realBase, text, wordTokens, baseTokens.length, clearLens])
+
+  // A rebuilt base sequence — typing, a mode switch, a fresh tokenization —
+  // puts the glass pass back on its last token and drops the reading, which
+  // was taken through a window that no longer exists.
+  useEffect(() => {
+    setLensIndex(Math.max(0, baseTokens.length - 1))
+    clearLens()
+  }, [baseTokens, clearLens])
 
   // Keep the query inside the sequence if it ever shrinks.
   useEffect(() => {
@@ -299,6 +405,13 @@ export default function App() {
       setQueryIndex(Math.max(0, sequence.length - 1))
     }
   }, [queryIndex, sequence.length])
+
+  // Same for the glass pass's window.
+  useEffect(() => {
+    if (lensIndex > sequence.length - 1) {
+      setLensIndex(Math.max(0, sequence.length - 1))
+    }
+  }, [lensIndex, sequence.length])
 
   // Same for a selected chip whose row no longer exists.
   useEffect(() => {
@@ -319,6 +432,7 @@ export default function App() {
   }, [])
 
   const safeQuery = Math.min(queryIndex, Math.max(0, sequence.length - 1))
+  const safeLens = Math.min(lensIndex, Math.max(0, sequence.length - 1))
   const realRows = useMemo(
     () => (isReal && runReady ? attentionRows(realRun, layer, head, safeQuery) : null),
     [isReal, runReady, realRun, layer, head, safeQuery],
@@ -376,6 +490,19 @@ export default function App() {
         head={head}
         onLayerChange={setLayer}
         onHeadChange={setHead}
+      />
+    ),
+    glass: (
+      <GlassPass
+        sequence={sequence}
+        baseTokens={baseTokens}
+        lensIndex={safeLens}
+        onSelect={handleLensSelect}
+        real={isReal}
+        run={isReal && runReady ? realRun : null}
+        reading={lensReading}
+        stale={lensStale}
+        pending={realPending}
       />
     ),
   }
