@@ -46,6 +46,14 @@ export const explainers = {
     title: 'considering next',
     body: 'distilgpt2 scores all 50,257 tokens in its vocabulary and softmax turns those scores into shares of one budget. these are the top four real probabilities, so they do not add up to 1 — the rest of the budget is spread across every other token. STEP appends the top one, which is greedy sampling.',
   },
+  lens: {
+    title: 'the glass pass',
+    body: 'every layer writes into one running vector, so that vector can be read part-way down the stack and asked what word it would commit to if the stack stopped there. the seven readings here are illustrative, and the last one is pinned to whatever instrument B is about to append.',
+  },
+  lensReal: {
+    title: 'the glass pass',
+    body: 'each depth is distilgpt2’s own running vector for this position, pushed through its own final layernorm and its own embedding table used backwards. that is the arithmetic the stack runs once at the end, run seven times instead — which is why the last row is not an estimate of the model’s output but literally is it.',
+  },
   budget: {
     title: 'the budget of 1.0',
     body: 'softmax rescales the raw scores so the weights sum to exactly one. attention paid to one token is attention taken from another, which is why every bar shares one fixed track.',

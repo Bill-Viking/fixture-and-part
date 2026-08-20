@@ -104,7 +104,7 @@ export default function ModeControl({
         className="mode-manifest"
         show={mode === 'real' ? 'b' : 'a'}
         a="everything here is illustrative — deterministic stand-ins, no model running."
-        b="read from distilgpt2: bpe pieces and ids, embeddings, keys and values, next-token probabilities, generation, and attention for every layer and head. the rack drawing and its sweep are diagrams of the mechanism, not measurements."
+        b="read from distilgpt2: bpe pieces and ids, embeddings, keys and values, next-token probabilities, generation, attention for every layer and head, the residual stream at all seven depths, and the lens on each of them. the rack drawing and its sweep are diagrams of the mechanism, not measurements."
       />
 
       <p className="mode-note">

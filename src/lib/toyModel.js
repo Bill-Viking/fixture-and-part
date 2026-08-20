@@ -7,6 +7,15 @@ export const DEFAULT_SENTENCE = 'The engine roared and it shut down.'
 // Number of layers quoted by the KV rack counter. Illustrative, fixed.
 export const LAYERS = 6
 
+// The depths the glass pass reads: the stream as it enters the stack, then
+// once more after every layer. One more stop than there are layers, because
+// the stream exists before the first one touches it.
+export const STOP_LABELS = [
+  'wte + wpe',
+  ...Array.from({ length: LAYERS }, (_, layer) => `after layer ${layer}`),
+]
+export const LENS_STOPS = STOP_LABELS.length
+
 // Hard ceiling on generated tokens so RUN cannot grow without bound.
 export const MAX_GENERATED = 12
 
@@ -56,6 +65,11 @@ export function hashString(str, salt = 0) {
 export const EMBED_SALT = 0
 export const K_SALT = 64
 export const V_SALT = 128
+// One base per depth of the glass pass, so the running vector reads as
+// something that keeps being rewritten rather than the same six numbers
+// carried down the stack. Depth 0 is the embedding itself, which is what the
+// stream is before any layer has touched it.
+export const RESIDUAL_SALT = 192
 
 export function hashTokenToVector(token, dims = 6, saltBase = EMBED_SALT) {
   const out = []
@@ -74,6 +88,12 @@ export function kVector(token, dims = 6) {
 /** The token's value vector: the same x through W_v instead. Illustrative. */
 export function vVector(token, dims = 6) {
   return hashTokenToVector(token, dims, V_SALT)
+}
+
+/** The token's running vector at one depth of the stack. Illustrative. */
+export function residualVector(token, stop, dims = 6) {
+  const salt = stop === 0 ? EMBED_SALT : RESIDUAL_SALT + (stop - 1) * 8
+  return hashTokenToVector(token, dims, salt)
 }
 
 export function formatVector(vec) {
@@ -434,4 +454,162 @@ export function topRow(rows) {
 export function defaultQueryIndex(tokens) {
   if (isDefaultSequence(tokens)) return 4 // "it"
   return Math.max(0, tokens.length - 1)
+}
+
+// ---------------------------------------------------------------------------
+// The glass pass (Instrument D)
+//
+// The lens asks, at each depth, what word the machine would commit to if the
+// stack stopped there. Nothing here has a stack to stop, so the reading is
+// built from its own answer backwards: the word the sequence actually commits
+// to is the one the last row settles on, and the rows above walk that word up
+// out of the noise while a handful of plausible neighbours fall away.
+//
+// Two rules hold it together. The last row must agree with instrument B —
+// they are the same claim about the same position, and a page that disagrees
+// with itself teaches nothing. And the trace, which is one word priced at
+// every depth, must be the same number as that word's bar wherever the word
+// appears in a row, so the reader can check the story against itself.
+// ---------------------------------------------------------------------------
+
+// How the winner's share climbs, depth by depth, and how high the crowd it
+// climbs past sits. Early on the winner is nowhere near the shortlist; by the
+// fourth stop it is in it; by the last it owns half the budget on show.
+const LENS_RAMP = [0.005, 0.012, 0.028, 0.058, 0.17, 0.34, 0.55]
+const LENS_CROWD = [0.052, 0.05, 0.049, 0.062, 0.058, 0.05, 0.044]
+
+// What an early depth is full of: the words that are common everywhere and
+// therefore mean nothing in particular here.
+const LENS_FUNCTION_WORDS = [
+  'the', 'and', 'of', 'to', 'in', 'a', 'that', 'is',
+  'it', 'for', 'was', 'with', 'as', 'on',
+]
+
+// Hand-tuned readings for the two positions of the default sentence a reader
+// is most likely to open: the pronoun instrument C is already pointed at, and
+// the full stop the panel opens on. Keyed by position, with the word each one
+// resolves to, so a table can never be shown against a sequence that would
+// resolve to something else.
+const LENS_TUNED = {
+  4: {
+    target: 'shut',
+    trace: [0.005, 0.009, 0.024, 0.061, 0.17, 0.35, 0.52],
+    rows: [
+      [['is', 0.049], ['was', 0.041], ['has', 0.033], ['and', 0.027]],
+      [['was', 0.052], ['is', 0.043], ['had', 0.031], ['would', 0.026]],
+      [['was', 0.058], ['had', 0.04], ['started', 0.03], ['would', 0.025]],
+      [['was', 0.066], ['shut', 0.061], ['started', 0.038], ['had', 0.029]],
+      [['shut', 0.17], ['was', 0.062], ['started', 0.041], ['died', 0.03]],
+      [['shut', 0.35], ['was', 0.05], ['started', 0.037], ['died', 0.028]],
+      [['shut', 0.52], ['was', 0.043], ['started', 0.031], ['stopped', 0.024]],
+    ],
+  },
+  7: {
+    target: 'The',
+    trace: [0.006, 0.011, 0.028, 0.071, 0.19, 0.38, 0.57],
+    rows: [
+      [[',', 0.05], ['and', 0.041], ['of', 0.032], ['in', 0.027]],
+      [['and', 0.048], ['in', 0.039], ['a', 0.031], ['of', 0.026]],
+      [['and', 0.052], ['a', 0.041], ['it', 0.033], ['in', 0.028]],
+      [['a', 0.082], ['The', 0.071], ['and', 0.044], ['it', 0.03]],
+      [['The', 0.19], ['a', 0.07], ['and', 0.05], ['It', 0.036]],
+      [['The', 0.38], ['a', 0.06], ['It', 0.044], ['and', 0.033]],
+      [['The', 0.57], ['a', 0.05], ['It', 0.038], ['They', 0.026]],
+    ],
+  },
+}
+
+/** The word this position resolves to — what the last row has to agree with. */
+function lensTarget(baseTokens, generated, index) {
+  const sequence = [...baseTokens, ...generated]
+  if (index < sequence.length - 1) return sequence[index + 1]
+  // The last position is the one instrument B is about to fill, so its answer
+  // is instrument B's answer. Past the generation cap B has no answer to
+  // agree with, and the shortlist it would have offered stands in.
+  const committed = nextToken(baseTokens, generated)
+  return committed ?? illustrativeWords(sequence, generated.length)[0]
+}
+
+/** True when this reading comes from the hand-tuned table rather than a hash. */
+export function isHandTunedLens(baseTokens, generated, index) {
+  const entry = LENS_TUNED[index]
+  if (!entry || !isDefaultSequence(baseTokens)) return false
+  return lensTarget(baseTokens, generated, index) === entry.target
+}
+
+function lensJitter(context, salt) {
+  return 0.85 + (hashString(context, salt) % 30) / 100
+}
+
+/** The crowd one depth's winner has to climb past. Never repeats the winner. */
+function lensCrowd(sequence, index, stop, target, context) {
+  // Deep enough in, the crowd is words that would actually fit the slot;
+  // early on it is whatever is common in the language.
+  const pool =
+    stop >= 3
+      ? illustrativeWords(sequence.slice(0, index + 1), index)
+      : LENS_FUNCTION_WORDS
+  const seen = new Set([target.toLowerCase()])
+  const out = []
+  const draw = (from, salt) => {
+    const offset = hashString(context, salt + stop)
+    for (let i = 0; out.length < CANDIDATE_COUNT && i < from.length; i++) {
+      const word = from[(offset + i) % from.length]
+      if (seen.has(word.toLowerCase())) continue
+      seen.add(word.toLowerCase())
+      out.push(word)
+    }
+  }
+  draw(pool, 130)
+  draw(LENS_FUNCTION_WORDS, 150)
+  draw(NOUN_POOL, 170)
+  return out
+}
+
+/**
+ * The whole reading for one position: seven shortlists, and the winner's
+ * share at each of the seven depths. Deterministic in the sequence and the
+ * position. Every number is illustrative and the panel says so.
+ *
+ * @param {string[]} baseTokens
+ * @param {string[]} generated
+ * @param {number} index
+ */
+export function illustrativeLens(baseTokens, generated, index) {
+  const sequence = [...baseTokens, ...generated]
+  if (sequence.length === 0 || index < 0 || index >= sequence.length) return null
+
+  const target = lensTarget(baseTokens, generated, index)
+  const tuned = isHandTunedLens(baseTokens, generated, index)
+  if (tuned) {
+    const entry = LENS_TUNED[index]
+    return {
+      target,
+      tuned: true,
+      trace: entry.trace.slice(),
+      stops: entry.rows.map((row) =>
+        row.map(([token, weight], rank) => ({ token, weight, wins: rank === 0 })),
+      ),
+    }
+  }
+
+  const context = `${sequence.slice(0, index + 1).join(' ')}#${index}`
+  const trace = LENS_RAMP.map((share, stop) =>
+    Math.round(share * lensJitter(context, 210 + stop) * 1000) / 1000,
+  )
+  const stops = trace.map((share, stop) => {
+    const top = LENS_CROWD[stop] * lensJitter(context, 190 + stop)
+    const rows = lensCrowd(sequence, index, stop, target, context).map(
+      (token, rank) => ({
+        token,
+        weight: Math.round(top * (1 - 0.14 * rank) * 1000) / 1000,
+      }),
+    )
+    rows.push({ token: target, weight: share })
+    rows.sort((a, b) => b.weight - a.weight)
+    return rows
+      .slice(0, CANDIDATE_COUNT)
+      .map((row, rank) => ({ ...row, wins: rank === 0 }))
+  })
+  return { target, tuned: false, trace, stops }
 }
