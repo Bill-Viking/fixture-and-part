@@ -4,7 +4,7 @@
 # Close this Terminal window (or press Ctrl+C) to stop the server.
 
 export PATH="/opt/homebrew/bin:$PATH"
-cd "$(dirname "$0")"
+cd "/Users/bill/Projects/fixture-and-part"
 
 echo "Starting The Fixture and the Part…"
 npm run dev -- --open
