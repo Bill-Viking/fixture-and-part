@@ -200,7 +200,7 @@ export default function GlassPass({
         <TeachPair
           className="lens-final"
           show={real ? 'b' : 'a'}
-          a="the last row is the machine’s next-word distribution — the same numbers instrument B’s shortlist reads for this position."
+          a="the last row is where the belief settles — hand-tuned so its winner is the token instrument B appends next."
           b="the last row is the machine’s next-word distribution — the same numbers instrument B’s shortlist reads for this position, before the sampler skips whitespace, so ␣ and ⏎ pieces appear here and not there."
         />
 
