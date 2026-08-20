@@ -53,7 +53,7 @@ function Candidates({ candidates, scripted, stepTick, hasInput, real, pending })
         <InfoTag topic={real ? 'candidatesReal' : 'candidates'} />
         <span className="cand-note">
           {real
-            ? 'distilgpt2 · greedy'
+            ? 'distilgpt2 · greedy · whitespace skipped'
             : scripted
               ? 'scripted · illustrative'
               : 'illustrative'}
@@ -189,7 +189,7 @@ export default function Stepper({
       <div className="inst-head">
         <span className="inst-title">INSTRUMENT B — FORWARD PASS &amp; KV RACK</span>
         <span className="inst-note">
-          {real ? 'real distilgpt2 continuation · greedy' : 'illustrative continuation'}
+          {real ? 'real distilgpt2 continuation · greedy, whitespace skipped' : 'illustrative continuation'}
         </span>
       </div>
 

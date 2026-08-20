@@ -35,7 +35,7 @@ export const REAL_LAYERS = 6
 export const REAL_HEADS = 12
 export const REAL_HIDDEN = 768
 /** The sampling rule instrument B uses in real mode, named in the UI. */
-export const SAMPLING = 'greedy'
+export const SAMPLING = 'greedy · whitespace skipped'
 
 // The no-cache decoder graph: input_ids + attention_mask in, logits out. We
 // re-run the whole sequence on every step rather than carrying a KV cache,
@@ -344,26 +344,43 @@ function softmaxInPlace(row) {
   return out
 }
 
+// Greedy distilgpt2 on a short prompt often collapses into predicting "\n"
+// forever — real behavior, but it reads as a broken instrument. Tokens whose
+// text is nothing but whitespace are skipped, along with <|endoftext|>, and
+// the UI's sampling label says so.
+const END_OF_TEXT_ID = 50256
+
+function isSkippedToken(tokenizer, id) {
+  if (id === END_OF_TEXT_ID) return true
+  return /^\s*$/.test(tokenizer.decode([id]))
+}
+
 function topCandidates(tokenizer, logitsRow, probs, count) {
+  // Gather extra, then drop the skipped ones, so the shortlist stays full
+  // even when a whitespace token would have ranked in it.
+  const gather = count + 8
   const best = []
   for (let id = 0; id < probs.length; id++) {
     const p = probs[id]
-    if (best.length < count) {
+    if (best.length < gather) {
       best.push({ id, p })
-      if (best.length === count) best.sort((a, b) => b.p - a.p)
+      if (best.length === gather) best.sort((a, b) => b.p - a.p)
     } else if (p > best[best.length - 1].p) {
       best[best.length - 1] = { id, p }
       best.sort((a, b) => b.p - a.p)
     }
   }
   best.sort((a, b) => b.p - a.p)
-  return best.map((entry, i) => ({
-    id: entry.id,
-    token: displayToken(tokenizer, entry.id),
-    score: logitsRow[entry.id],
-    weight: entry.p,
-    wins: i === 0,
-  }))
+  return best
+    .filter((entry) => !isSkippedToken(tokenizer, entry.id))
+    .slice(0, count)
+    .map((entry, i) => ({
+      id: entry.id,
+      token: displayToken(tokenizer, entry.id),
+      score: logitsRow[entry.id],
+      weight: entry.p,
+      wins: i === 0,
+    }))
 }
 
 /**
