@@ -472,6 +472,9 @@ export default function App() {
         real={isReal}
         vectors={isReal && runReady ? realRun : null}
         pending={realPending}
+        modelStatus={modelStatus}
+        progress={progress}
+        onLoad={handleLoad}
         onKvSelect={handleKvSelect}
         onStep={handleStep}
         onReset={handleReset}
@@ -486,6 +489,9 @@ export default function App() {
         realRows={realRows}
         realIds={isReal && runReady ? realRun.ids : null}
         pending={realPending}
+        modelStatus={modelStatus}
+        progress={progress}
+        onLoad={handleLoad}
         layer={layer}
         head={head}
         onLayerChange={setLayer}
@@ -503,6 +509,9 @@ export default function App() {
         reading={lensReading}
         stale={lensStale}
         pending={realPending}
+        modelStatus={modelStatus}
+        progress={progress}
+        onLoad={handleLoad}
       />
     ),
   }

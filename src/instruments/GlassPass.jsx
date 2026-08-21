@@ -9,6 +9,7 @@ import {
 } from '../lib/toyModel.js'
 import { formatRealVector, residualPreview } from '../lib/realModel.js'
 import InfoTag from '../components/InfoTag.jsx'
+import LoadNote from '../components/LoadNote.jsx'
 import TeachPair from '../components/TeachPair.jsx'
 
 const SLOTS = Array.from({ length: CANDIDATE_COUNT }, (_, i) => i)
@@ -18,10 +19,15 @@ const LAST_STOP = LENS_STOPS - 1
  * The winner's share, painted steel where it is still a rumour and amber
  * where it has become the answer. The colour is doing the same job the bars
  * do — showing a value move — so it comes off the same two tokens.
+ *
+ * The ramp saturates before the top of the range rather than at it, so the
+ * bottom row of a real reading arrives at unmistakable amber instead of at a
+ * near miss, and it starts a little off the floor so the faintest share still
+ * reads as carried-but-barely rather than as nothing at all.
  */
 function traceColour(share) {
   if (share == null) return undefined
-  const mix = Math.round(Math.min(1, share / 0.6) * 100)
+  const mix = Math.round((0.08 + 0.92 * Math.min(1, share / 0.45)) * 100)
   return `color-mix(in srgb, var(--amber) ${mix}%, var(--steel-dim))`
 }
 
@@ -73,6 +79,9 @@ export default function GlassPass({
   reading,
   stale,
   pending,
+  modelStatus,
+  progress,
+  onLoad,
 }) {
   const generated = useMemo(
     () => sequence.slice(baseTokens.length),
@@ -114,13 +123,18 @@ export default function GlassPass({
     <figure className="instrument">
       <div className="inst-head">
         <span className="inst-title">INSTRUMENT D — GLASS PASS</span>
-        <span className="inst-note">
-          {real
-            ? 'real distilgpt2 residual stream · real logit lens'
-            : toyReading?.tuned
-              ? 'illustrative lens — hand-tuned'
-              : 'illustrative lens — heuristic'}
-        </span>
+        <LoadNote
+          label={
+            real
+              ? 'real distilgpt2 residual stream · real logit lens'
+              : toyReading?.tuned
+                ? 'illustrative lens — hand-tuned'
+                : 'illustrative lens — heuristic'
+          }
+          status={modelStatus}
+          progress={progress}
+          onLoad={onLoad}
+        />
       </div>
 
       <div className="inst-body">

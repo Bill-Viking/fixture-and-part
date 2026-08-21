@@ -98,19 +98,49 @@ figcaption{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:
   border:1px solid var(--hair);border-radius:6px;
 }
 .inst-head{
-  display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
   flex-wrap:nowrap;
-  padding:12px 16px;border-bottom:1px solid var(--hair);
+  /* 8px on the right plus the note's own 8px puts the note's text back on the
+     same 16px margin as the title. */
+  padding:12px 8px 12px 16px;border-bottom:1px solid var(--hair);
   font-family:var(--mono);font-size:11px;letter-spacing:0.16em;
 }
 .inst-title{color:var(--steel);flex:none;}
 /* The note says which numbers are on screen, and it changes length when the
    mode changes. It is pinned to exactly one line so that swap can never add
-   or drop a row in the head. */
+   or drop a row in the head.
+   In instruments B, C and D the same box is also where the real model is
+   fetched from: label, download progress and button all carry identical
+   padding, border and line box, and the box's right edge is pinned by the
+   head's space-between, so the three states swap without moving anything. */
 .inst-note{
   color:var(--muted);letter-spacing:0.08em;text-transform:none;
   flex:0 1 auto;min-width:0;text-align:right;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  font-family:var(--mono);font-size:11px;font-weight:400;line-height:18px;
+  margin:0;padding:3px 8px;border:1px solid transparent;border-radius:3px;
+  background:none;
+}
+/* Outlined, not filled: the one filled control on the page is the load button
+   in instrument A, and these must not compete with it.
+   Set tighter than the label it replaces, because it says the same thing plus
+   the command, and the longest of the three has to fit beside its title
+   without losing the words that matter. The line box is fixed at 18px, so the
+   smaller glyphs change the width and nothing else. */
+button.inst-note{
+  cursor:pointer;color:var(--amber);
+  background:var(--amber-bg);border-color:var(--amber);
+  font-size:10.5px;letter-spacing:0.02em;
+  transition:background-color .15s ease,border-color .15s ease;
+}
+button.inst-note:hover{background:color-mix(in srgb,var(--amber) 16%,var(--amber-bg));}
+.inst-note.is-loading{color:var(--amber);}
+/* Wide enough to hold "downloading distilgpt2 — 100%", so the percentage
+   ticking up does not resize the box. Only reserved where there is room for
+   it; narrower than this the note has a line to itself and its width is
+   already fixed by the head. */
+@media(min-width:760px){
+  .inst-note.is-loading{min-width:30ch;}
 }
 .inst-body{padding:18px 16px 20px;}
 .instrument figcaption{padding:0 16px 14px;margin-top:0;}
@@ -207,11 +237,30 @@ figcaption{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:
   color:var(--muted);letter-spacing:0.04em;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;
 }
-.mode-load{height:30px;overflow:hidden;}
+.mode-load{height:38px;overflow:hidden;}
 .mode-load .btn{flex:none;padding:6px 12px;font-size:10.5px;letter-spacing:0.12em;}
+/* The one filled control on the page. The reader could not find this command
+   while it looked like every other steel button, so it takes the amber it is
+   asking for — the moving part — and everything else in the bar stays quiet.
+   The row's height is reserved for it, so the button, the progress track and
+   the ready line all sit in the same box. */
+.mode-load .btn-primary{flex:none;padding:8px 14px;font-size:11.5px;letter-spacing:0.14em;}
+/* Doubled up so it outranks `.btn`, which is declared further down the file. */
+.btn.btn-primary{
+  color:var(--bg);background:var(--amber);border-color:var(--amber);
+  font-weight:600;
+}
+.btn.btn-primary:hover:not(:disabled){
+  color:var(--bg);
+  background:color-mix(in srgb,var(--amber) 82%,var(--text));
+  border-color:color-mix(in srgb,var(--amber) 82%,var(--text));
+}
+/* An amber ring around an amber control reads as a smudge; these two take the
+   text colour instead so the ring is always visible. */
+.btn-primary:focus-visible,button.inst-note:focus-visible{outline-color:var(--text);}
 .mode-track{
-  flex:0 0 140px;display:block;height:8px;
-  background:var(--panel2);border:1px solid var(--hair);
+  flex:0 0 140px;display:block;height:10px;
+  background:var(--hair);border:1px solid var(--steel-dim);
 }
 .mode-fill{display:block;height:100%;background:var(--steel);transition:width .25s linear;}
 .mode-hint,.mode-progress{
@@ -256,8 +305,11 @@ figcaption{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:
 /* The model's own id for this piece, sat next to the position. */
 .token-id{color:var(--amber-dim);letter-spacing:0.06em;}
 .token-text{font-family:var(--mono);font-size:13px;color:var(--amber);}
+/* The six numbers are the vector — the thing the instrument exists to show —
+   so they take the full moving-part amber. The index and the id above them
+   stay dim; they are labels, not values. */
 .token-vec{
-  font-family:var(--mono);font-size:10px;color:#8A7A5A;
+  font-family:var(--mono);font-size:10px;color:var(--amber);
   font-variant-numeric:tabular-nums;white-space:nowrap;
 }
 /* The BPE leading-space marker: present, readable, and quiet. */
@@ -319,23 +371,27 @@ figcaption{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:
   animation:cand-in .24s ease-out both;
 }
 .cand-word{
-  font-family:var(--mono);font-size:11.5px;color:var(--muted);
+  font-family:var(--mono);font-size:11.5px;color:var(--text);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
+/* The track is the machinery the value runs in, so it is drawn whether or not
+   anything has filled it — a probability of 0.01 has to read as a short bar
+   rather than as a missing one. */
 .cand-track{
-  display:block;height:8px;min-width:0;
-  background:var(--panel2);border:1px solid var(--hair);
+  display:block;height:10px;min-width:0;
+  background:var(--hair);border:1px solid var(--steel-dim);
 }
-.cand-fill{display:block;height:100%;background:var(--green);opacity:.5;}
+/* Candidate probabilities are values in flight, not keys: amber. */
+.cand-fill{display:block;height:100%;background:var(--amber);opacity:.6;}
 .cand-wt{
-  font-family:var(--mono);font-size:10px;color:var(--muted);
+  font-family:var(--mono);font-size:10px;color:var(--text);
   font-variant-numeric:tabular-nums;text-align:right;
 }
 /* The winner is the token about to move — amber, per the colour law. */
 .cand.is-winner{border-left-color:var(--amber);animation:cand-win .34s ease-out both;}
 .cand.is-winner .cand-word{color:var(--amber);}
 .cand.is-winner .cand-fill{opacity:1;}
-.cand.is-winner .cand-wt{color:var(--amber-dim);}
+.cand.is-winner .cand-wt{color:var(--amber);}
 @keyframes cand-in{
   from{opacity:0;transform:translateY(-3px);}
   to{opacity:1;transform:none;}
@@ -364,7 +420,7 @@ figcaption{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:
 .seq-box{display:flex;flex-wrap:wrap;align-content:flex-start;gap:6px;padding:10px;overflow-y:auto;}
 .seq-token{
   font-family:var(--mono);font-size:12.5px;
-  color:var(--steel);opacity:.55;
+  color:var(--steel);opacity:.8;
   border-bottom:1px solid var(--steel-dim);padding:1px 2px;
 }
 .seq-token.newest{color:var(--amber);opacity:1;font-weight:500;border-bottom-color:var(--amber);}
@@ -388,7 +444,9 @@ figcaption{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:
   text-align:center;border-radius:2px;padding:2px 0;
 }
 .chip-k{color:var(--green);border:1px solid var(--green);background:#151E12;}
-.chip-v{color:var(--amber-dim);border:1px solid var(--amber-dim);background:#1A1610;}
+/* A value is the part that moves, so the chip reads at full amber. Only the
+   masked ones — rows the query cannot see yet — are held back. */
+.chip-v{color:var(--amber);border:1px solid var(--amber);background:#1A1610;}
 .chip-v.off{opacity:.35;}
 
 /* Racked chips are buttons: clicking one opens the K/V inspector below.
@@ -402,17 +460,17 @@ figcaption{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:
 .chip-k.chip-btn:hover{background:#1B2717;}
 .chip-v.chip-btn:hover{background:#241E14;}
 .chip-k.chip-btn.is-sel{background:#22331B;box-shadow:0 0 0 1px var(--green);}
-.chip-v.chip-btn.is-sel{background:#2A2214;box-shadow:0 0 0 1px var(--amber-dim);color:var(--amber);}
+.chip-v.chip-btn.is-sel{background:#2A2214;box-shadow:0 0 0 1px var(--amber);color:var(--amber);}
 
 .sweep{
-  position:absolute;left:0;right:0;top:0;height:2px;
-  background:var(--green);opacity:.65;z-index:2;pointer-events:none;
+  position:absolute;left:0;right:0;top:0;height:3px;
+  background:var(--green);opacity:.8;z-index:2;pointer-events:none;
   animation:sweep .45s linear 1;
 }
 /* Animates `top` as a percentage of the rack box, so the sweep always
    crosses the full rack whatever height the box has at this breakpoint. */
 @keyframes sweep{
-  from{top:0;opacity:.7;}
+  from{top:0;opacity:.85;}
   to{top:100%;opacity:0;}
 }
 @keyframes settle{
@@ -498,7 +556,7 @@ figcaption{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:
   font-variant-numeric:tabular-nums;overflow:hidden;
 }
 .kv-vec-k{color:var(--green);border-color:var(--green);background:#151E12;}
-.kv-vec-v{color:var(--amber-dim);border-color:var(--amber-dim);background:#1A1610;}
+.kv-vec-v{color:var(--amber);border-color:var(--amber);background:#1A1610;}
 
 .kv-goes{
   font-family:var(--mono);font-size:10.5px;line-height:1.55;
@@ -550,17 +608,23 @@ figcaption{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:
   display:flex;flex-wrap:wrap;align-content:flex-start;gap:6px;
   height:68px;overflow-y:auto;margin-bottom:18px;
 }
+/* These strips are the sequence itself — tokens in flight — so they are amber
+   pills like instrument A's, not neutral steel chips. The one under the
+   window keeps its heavier border and a lifted ground so the selection still
+   reads at a glance; the geometry is unchanged, the 2px border eats a pixel
+   of padding on each side exactly as it did before. */
 .query-token{
   font-family:var(--mono);font-size:12.5px;
-  color:var(--steel);background:var(--panel);
-  border:1px solid var(--steel-dim);border-radius:3px;
+  color:var(--amber);background:var(--amber-bg);
+  border:1px solid var(--amber-dim);border-radius:3px;
   padding:4px 8px;cursor:pointer;
-  transition:border-color .15s ease,color .15s ease;
+  transition:border-color .15s ease,background-color .15s ease;
 }
-.query-token:hover{border-color:var(--steel);color:var(--text);}
+.query-token:hover{border-color:var(--amber);}
 .query-token.is-query{
   color:var(--amber);border-color:var(--amber);border-width:2px;
-  background:var(--amber-bg);font-weight:500;padding:3px 7px;
+  background:color-mix(in srgb,var(--amber) 14%,var(--amber-bg));
+  font-weight:500;padding:3px 7px;
 }
 
 .attn-table{
@@ -593,9 +657,10 @@ figcaption{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:
   font-variant-numeric:tabular-nums;text-align:right;
 }
 .c-bar{display:flex;align-items:center;gap:8px;}
+/* The full budget, drawn whether or not this row spent any of it. */
 .track{
-  flex:1 1 auto;height:10px;min-width:0;
-  background:var(--panel2);border:1px solid var(--hair);
+  flex:1 1 auto;height:12px;min-width:0;
+  background:var(--hair);border:1px solid var(--steel-dim);
   display:block;
 }
 .fill{
@@ -603,22 +668,26 @@ figcaption{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:
   transition:width .45s cubic-bezier(.22,.7,.3,1);
 }
 .wt{
-  font-family:var(--mono);font-size:10px;color:var(--muted);
+  font-family:var(--mono);font-size:10px;color:var(--text);
   font-variant-numeric:tabular-nums;width:44px;text-align:right;flex:none;
 }
 .c-v{display:flex;justify-content:flex-end;}
 .c-v .chip{width:26px;}
 .attn-row.locked{background:#121821;}
-.attn-row.locked .c-tok,.attn-row.locked .c-k{color:var(--steel-dim);}
+.attn-row.locked .c-tok,.attn-row.locked .c-k,.attn-row.locked .wt{color:var(--steel-dim);}
+/* A row the mask hides spent none of the budget and is not going to, so its
+   track drops back to the unlit ground the live rows are drawn against. */
+.attn-row.locked .track{background:var(--panel2);border-color:var(--hair);}
 .attn-row.self{background:var(--amber-bg);}
 .attn-row.self .c-tok{color:var(--amber);font-weight:500;}
-.attn-row.self .c-k,.attn-row.self .wt{color:var(--amber-dim);}
+.attn-row.self .c-k{color:var(--amber-dim);}
+.attn-row.self .wt{color:var(--amber);}
 
 .budget{display:flex;align-items:center;gap:12px;margin-top:14px;}
 .budget .field-label{margin-bottom:0;flex:none;}
 .budget-track{
-  flex:1 1 auto;display:flex;height:12px;min-width:0;
-  background:var(--panel2);border:1px solid var(--hair);
+  flex:1 1 auto;display:flex;height:14px;min-width:0;
+  background:var(--hair);border:1px solid var(--steel-dim);
 }
 .budget-seg{
   display:block;height:100%;background:var(--green);
@@ -674,10 +743,12 @@ figcaption{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:
   color:var(--muted);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-/* The running vector itself, so amber. Six of 768, three reserved lines. */
+/* The running vector itself, so amber — and full amber, because it is the
+   thing this instrument is about, not an echo of it. Six of 768, three
+   reserved lines. */
 .lens-res{
   font-family:var(--mono);font-size:9.5px;line-height:12px;height:36px;
-  color:var(--amber-dim);font-variant-numeric:tabular-nums;
+  color:var(--amber);font-variant-numeric:tabular-nums;
   overflow:hidden;
 }
 
@@ -687,27 +758,28 @@ figcaption{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:
   align-items:center;gap:6px;height:14px;
 }
 .lens-word{
-  font-family:var(--mono);font-size:10px;line-height:14px;color:var(--muted);
+  font-family:var(--mono);font-size:10px;line-height:14px;color:var(--text);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .lens-track{
-  display:block;height:7px;min-width:0;
-  background:var(--panel2);border:1px solid var(--hair);
+  display:block;height:8px;min-width:0;
+  background:var(--hair);border:1px solid var(--steel-dim);
 }
 /* Probabilities in flight — amber, and the widths are the probabilities
    themselves rather than a share of the row, so an early depth's bars are
-   honestly almost nothing. */
+   honestly almost nothing. The track behind them is drawn at all times, so
+   "almost nothing" reads as a short bar rather than as no bar. */
 .lens-fill{
-  display:block;height:100%;background:var(--amber);opacity:.5;
+  display:block;height:100%;background:var(--amber);opacity:.62;
   transition:width .35s cubic-bezier(.22,.7,.3,1);
 }
 .lens-wt{
-  font-family:var(--mono);font-size:9.5px;line-height:14px;color:var(--muted);
+  font-family:var(--mono);font-size:9.5px;line-height:14px;color:var(--text);
   font-variant-numeric:tabular-nums;text-align:right;
 }
 .lens-bar.is-top .lens-word{color:var(--amber);}
 .lens-bar.is-top .lens-fill{opacity:1;}
-.lens-bar.is-top .lens-wt{color:var(--amber-dim);}
+.lens-bar.is-top .lens-wt{color:var(--amber);}
 
 /* One token priced at every depth. It starts steel — a rumour the stack is
    carrying — and ends amber, which is the whole reading in one column. */
@@ -716,12 +788,12 @@ figcaption{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:
   color:var(--steel-dim);
 }
 .lens-trace-val{
-  font-family:var(--mono);font-size:10px;line-height:14px;
+  font-family:var(--mono);font-size:11px;line-height:14px;
   font-variant-numeric:tabular-nums;color:inherit;
 }
 .lens-trace-track{
-  display:block;width:100%;height:3px;
-  background:var(--panel2);border:1px solid var(--hair);
+  display:block;width:100%;height:6px;
+  background:var(--hair);border:1px solid var(--steel-dim);
 }
 .lens-trace-fill{
   display:block;height:100%;background:currentColor;
@@ -742,6 +814,17 @@ figcaption{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:
 
 @media(max-width:620px){
   .duo{grid-template-columns:1fr;}
+}
+
+/* The head's single line stops being wide enough for the note plus its load
+   command well above the phone breakpoint — instrument C's title is long and
+   so is its label. From here down the note takes a line of its own, where its
+   width is the head's own and therefore identical in every state. */
+@media(max-width:780px){
+  .inst-head{flex-wrap:wrap;}
+  /* The negative margin pulls the note's padding back so its text still
+     starts on the title's margin. */
+  .inst-note{flex:1 1 100%;text-align:left;margin-left:-8px;}
 }
 
 @media(max-width:700px){
@@ -822,17 +905,19 @@ figcaption{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:
   .lens-res{grid-area:res;}
   .lens-cands{grid-area:cands;}
   .lens-trace{grid-area:trace;flex-direction:row;align-items:center;gap:6px;}
+  .lens-trace-val{font-size:10px;}
   .lens-trace-track{width:24px;flex:none;}
   .mini-legend{right:10px;bottom:10px;padding:7px 9px;font-size:9.5px;}
   .mini-legend .ml-note{display:none;}
 
-  /* Below this width the instrument note no longer shares a line with the
-     title, so it takes its own — one line, in every mode. */
-  .inst-head{flex-wrap:wrap;}
-  .inst-note{flex:1 1 100%;text-align:left;font-size:10px;}
+  /* The note has had a line to itself since 780px; here it also drops a step
+     in size, one line still, in every mode. */
+  .inst-note{font-size:10px;}
+  /* The longest of the three load commands still has to fit one line here. */
+  button.inst-note{font-size:9.5px;letter-spacing:0;padding:3px 6px;}
   /* Two reserved lines: the button or the track on one, the status on the
      other. The ready state uses only one and centres inside the same box. */
-  .mode-load{height:52px;flex-wrap:wrap;align-content:center;}
+  .mode-load{height:60px;flex-wrap:wrap;align-content:center;}
   .mode-hint,.mode-progress{flex:1 1 100%;}
   .token-strip{height:300px;}
   /* Selectors on one line, their note on the next, in both modes. */

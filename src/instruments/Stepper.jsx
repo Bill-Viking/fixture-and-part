@@ -2,6 +2,7 @@ import { memo, useEffect, useRef, useState } from 'react'
 import { LAYERS } from '../lib/toyModel.js'
 import InfoTag from '../components/InfoTag.jsx'
 import KVInspector from '../components/KVInspector.jsx'
+import LoadNote from '../components/LoadNote.jsx'
 import TeachPair from '../components/TeachPair.jsx'
 
 const RUN_INTERVAL_MS = 800
@@ -108,6 +109,9 @@ export default function Stepper({
   real,
   vectors,
   pending,
+  modelStatus,
+  progress,
+  onLoad,
   onKvSelect,
   onStep,
   onReset,
@@ -188,9 +192,16 @@ export default function Stepper({
     <figure className="instrument">
       <div className="inst-head">
         <span className="inst-title">INSTRUMENT B — FORWARD PASS &amp; KV RACK</span>
-        <span className="inst-note">
-          {real ? 'real distilgpt2 continuation · greedy, whitespace skipped' : 'illustrative continuation'}
-        </span>
+        <LoadNote
+          label={
+            real
+              ? 'real distilgpt2 continuation · greedy, whitespace skipped'
+              : 'illustrative continuation'
+          }
+          status={modelStatus}
+          progress={progress}
+          onLoad={onLoad}
+        />
       </div>
 
       <div className="inst-body">
