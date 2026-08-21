@@ -7,6 +7,7 @@ import {
 } from '../lib/toyModel.js'
 import { REAL_HEADS, REAL_LAYERS } from '../lib/realModel.js'
 import InfoTag from '../components/InfoTag.jsx'
+import LoadNote from '../components/LoadNote.jsx'
 import TeachPair from '../components/TeachPair.jsx'
 
 const LAYER_OPTIONS = Array.from({ length: REAL_LAYERS }, (_, i) => i)
@@ -35,6 +36,9 @@ export default function AttentionInspector({
   realRows,
   realIds,
   pending,
+  modelStatus,
+  progress,
+  onLoad,
   layer,
   head,
   onLayerChange,
@@ -56,13 +60,18 @@ export default function AttentionInspector({
     <figure className="instrument">
       <div className="inst-head">
         <span className="inst-title">INSTRUMENT C — ATTENTION INSPECTOR</span>
-        <span className="inst-note">
-          {real
-            ? `real distilgpt2 attention · layer ${layer} · head ${head}`
-            : tuned
-              ? 'illustrative weights — hand-tuned'
-              : 'illustrative weights — heuristic'}
-        </span>
+        <LoadNote
+          label={
+            real
+              ? `real distilgpt2 attention · layer ${layer} · head ${head}`
+              : tuned
+                ? 'illustrative weights — hand-tuned'
+                : 'illustrative weights — heuristic'
+          }
+          status={modelStatus}
+          progress={progress}
+          onLoad={onLoad}
+        />
       </div>
 
       <div className="inst-body">

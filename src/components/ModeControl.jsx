@@ -1,5 +1,6 @@
 import { MODEL_ID } from '../lib/realModel.js'
 import TeachPair from './TeachPair.jsx'
+import { progressLabel } from '../lib/loadProgress.js'
 
 /**
  * The mode switch that governs all three instruments.
@@ -13,13 +14,12 @@ import TeachPair from './TeachPair.jsx'
  * Every row here has a fixed height. Loading, finishing, failing and toggling
  * all swap text inside boxes that were already reserved, so nothing on the
  * page moves.
+ *
+ * The load button is the one filled control on the page. It was a steel
+ * outline like every other button here and readers did not find it; it is now
+ * amber on amber-dark text, and the rest of the bar is deliberately quiet so
+ * that it carries.
  */
-
-const PHASE_TEXT = {
-  files: 'fetching the tokenizer',
-  model: 'downloading distilgpt2',
-  session: 'preparing distilgpt2',
-}
 
 export default function ModeControl({
   mode,
@@ -76,14 +76,13 @@ export default function ModeControl({
               role="status"
               aria-live="polite"
             >
-              {PHASE_TEXT[progress.phase] ?? PHASE_TEXT.model}
-              {progress.phase === 'model' && percent > 0 ? ` — ${percent}%` : ''}
+              {progressLabel(progress)}
             </span>
           </>
         ) : (
           <>
             {!loaded && (
-              <button type="button" className="btn" onClick={onLoad}>
+              <button type="button" className="btn btn-primary" onClick={onLoad}>
                 LOAD REAL MODEL (~90 MB)
               </button>
             )}
