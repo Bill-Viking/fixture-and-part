@@ -1,10 +1,12 @@
 // The main-thread half of instrument E.
 //
-// Three questions, all answered by the shared worker out of the copy of the
-// model file already sitting in the browser's cache: what tensors are in the
-// file and where, what the raw bytes of one of them look like, and how the
-// values of a whole one are distributed. Every answer is cached here, so
-// moving back to a tensor already read costs nothing and re-reads nothing.
+// Four questions, all answered by the shared worker out of the copy of the
+// model file already in this browser: what tensors are in the file and where,
+// what the raw bytes of one of them look like, how the values of a whole one
+// are distributed, and — asked again whenever the reader changes the text —
+// what the whole file hashes to now. The first three are cached here, so
+// moving back to a tensor already read costs nothing and re-reads nothing;
+// the fourth deliberately is not.
 //
 // Nothing in this module talks about the shipped fileFacts.json. The panel
 // decides which of the two it is showing and says so; this side only ever
@@ -83,6 +85,23 @@ export function readWindow(name, row0 = 0, col0 = 0) {
     })
   windows.set(key, request)
   return request
+}
+
+/**
+ * The hash of the file in this browser, taken again right now.
+ *
+ * Deliberately not cached. Every other read in this module is memoised
+ * because asking twice for the same bytes is waste; this one exists to be
+ * asked twice. The panel calls it when the reader changes the text and the
+ * model runs on it, so that the claim "the file did not change" is a reading
+ * rather than a memory.
+ *
+ * Resolves to null where there is no SubtleCrypto — a non-secure origin —
+ * and the panel says nothing about the file in that case rather than claiming
+ * something it did not check.
+ */
+export function readSha() {
+  return ask({ type: 'file-rehash' }, 'file-rehash').then((reply) => reply.sha)
 }
 
 /** True once the live manifest has been asked for and has landed. */

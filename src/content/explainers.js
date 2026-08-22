@@ -6,19 +6,19 @@
 export const explainers = {
   file: {
     title: 'this file',
-    body: 'the file is an ONNX export rather than a safetensors one, but the idea is the same: a header naming every tensor and its shape, then one long blob of numbers. this export stores its big weights as 8-bit integers with a single scale per tensor, so a weight is recovered as scale × (byte − zero point) and 82 of the file’s 83.5 megabytes are that blob.',
+    body: 'the list below is every tensor in the model — a tensor being a named grid of numbers. the file is a header naming each grid and its shape, and then all the numbers, one after another. the big grids are stored as single bytes rather than as full decimals, with one multiplier per grid, so a weight is recovered as multiplier × (byte − zero point). 82 of the file’s 83.5 megabytes are the numbers.',
   },
   fileHeader: {
     title: 'the file, drawn to scale',
-    body: 'the bar is the whole file left to right, byte for byte, in the order the file stores things. the graph comes first — 1703 nodes describing what multiplies what — and everything after it is weights, with the 50,257-row embedding table taking nearly half of it on its own. segments narrower than a pixel are not widened; they get a tick above the bar instead.',
+    body: 'the bar is the whole file left to right, byte for byte, in the order it stores things. the plan of the calculation comes first — 1703 steps saying what multiplies what — and everything after it is weights, with the 50,257-row word table taking nearly half of the file on its own. a piece too small to be a pixel wide is not widened to make it visible; it gets a tick above the bar instead.',
   },
   fileBlob: {
     title: 'what a byte becomes',
-    body: 'for the quantized weights, each square is one byte of the file, and the readout underneath does the arithmetic: byte, minus the tensor’s zero point, times the tensor’s scale, and that float is what the model multiplies with. the f32 norms and biases are stored as written, so there each square is one 32-bit float and the readout is simply the number. squares are shaded by magnitude either way. a row of the embedding table is one token id, so the row number is the piece of vocabulary it holds — the low ids are single raw bytes and print as one replacement character. that table is also the unembedding: the last step of a pass transposes this same tensor rather than storing a second one.',
+    body: 'in the big grids each square is one byte of the file, and the line underneath does the arithmetic: the byte, minus that grid’s zero point, times that grid’s multiplier, and the number that falls out is what the model multiplies with. the small grids are stored as full decimals instead, so there each square is one of those and the line is simply the number. either way a square is shaded by how large it is, not by whether it is positive. a row of the word table is one token, so the row number names the piece of text it holds — the lowest rows are single raw bytes and print as one replacement character. that same table is used backwards at the end of a pass to turn the answer into words, so the model does not store a second copy of it.',
   },
   fileCurve: {
     title: 'why it is bell-shaped',
-    body: 'training nudges every weight a little at a time from a small random start, and the result is a pile around zero with thin tails — the shape gradient descent leaves behind. for the quantized weights there is one bar per possible byte value, so the curve is also the whole story of the quantization: each of those weights is one of 256 values, and the bars are how often each value was used. the f32 norms and biases are stored as written and get a plain 64-bin curve instead — ln_f’s gain is the odd one, piled around 1.45 rather than around zero, because it scales the stream rather than mixing it.',
+    body: 'training nudges every weight a little at a time from a small random start, and what that leaves is a pile around zero with thin tails. for the big grids there is one bar per possible byte, so this curve is also the whole story of the shortcut: every weight in that grid is one of 256 values, and the bars are how often each one was used. the small grids are stored as full decimals and get a plain 64-bar curve instead — ln_f’s gain is the odd one, piled around 1.45 rather than around zero, because its job is to scale the running vector rather than to mix it.',
   },
   token: {
     title: 'a token',

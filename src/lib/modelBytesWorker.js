@@ -315,6 +315,24 @@ async function sendWindow({ requestId, config, name, row0, col0 }) {
   postMessage({ type: 'file-window', requestId, window: { ...view, data } }, [data.buffer])
 }
 
+/**
+ * The hash again, taken from scratch.
+ *
+ * `fileState` computes it once and keeps it, which is right for the panel's
+ * first reading. This does not use that: the whole point of the request is to
+ * answer "is it still the same file" out of the bytes rather than out of a
+ * variable, so it re-digests the published span every time it is asked. About
+ * 300 ms for 83.5 MB, off the main thread.
+ */
+async function sendReHash({ requestId, config }) {
+  const state = await fileState(config)
+  postMessage({
+    type: 'file-rehash',
+    requestId,
+    sha: await digest(state.bytes, state.manifest.bytes),
+  })
+}
+
 async function sendHistogram({ requestId, config, name }) {
   const state = await fileState(config)
   postMessage({
@@ -333,6 +351,7 @@ const FILE_TASKS = {
   'file-manifest': sendManifest,
   'file-window': sendWindow,
   'file-histogram': sendHistogram,
+  'file-rehash': sendReHash,
 }
 
 self.onmessage = (event) => {
