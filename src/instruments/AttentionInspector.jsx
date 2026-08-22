@@ -10,6 +10,7 @@ import InfoTag from '../components/InfoTag.jsx'
 import LoadNote from '../components/LoadNote.jsx'
 import ReadingLine from '../components/ReadingLine.jsx'
 import TeachPair from '../components/TeachPair.jsx'
+import InstrumentHead from '../components/InstrumentHead.jsx'
 
 const LAYER_OPTIONS = Array.from({ length: REAL_LAYERS }, (_, i) => i)
 const HEAD_OPTIONS = Array.from({ length: REAL_HEADS }, (_, i) => i)
@@ -60,21 +61,25 @@ export default function AttentionInspector({
 
   return (
     <figure className="instrument">
-      <div className="inst-head">
-        <span className="inst-title">INSTRUMENT C — ATTENTION INSPECTOR</span>
-        <LoadNote
-          label={
-            real
-              ? `real distilgpt2 attention · layer ${layer} · head ${head}`
-              : tuned
-                ? 'illustrative weights — hand-tuned'
-                : 'illustrative weights — heuristic'
-          }
-          status={modelStatus}
-          progress={progress}
-          onLoad={onLoad}
-        />
-      </div>
+      <InstrumentHead
+        eyebrow="INSTRUMENT C"
+        title="The attention inspector"
+        purpose="Which earlier tokens the chosen token reads, and how much of its attention each one gets."
+        note={
+          <LoadNote
+            label={
+              real
+                ? `real distilgpt2 attention · layer ${layer} · head ${head}`
+                : tuned
+                  ? 'illustrative weights — hand-tuned'
+                  : 'illustrative weights — heuristic'
+            }
+            status={modelStatus}
+            progress={progress}
+            onLoad={onLoad}
+          />
+        }
+      />
 
       <div className="inst-body">
         <ReadingLine text={text} />

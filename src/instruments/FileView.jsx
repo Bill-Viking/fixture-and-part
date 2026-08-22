@@ -10,6 +10,7 @@ import {
 } from '../lib/fileBytes.js'
 import { WINDOW_COLS, WINDOW_ROWS, rawValue } from '../lib/onnxScan.js'
 import { tokenText } from '../lib/realModel.js'
+import InstrumentHead from '../components/InstrumentHead.jsx'
 
 /**
  * Instrument E — the file.
@@ -926,16 +927,21 @@ export default function FileView({ text, ranKey, modelStatus, progress, onLoad }
 
   return (
     <figure className="instrument">
-      <div className="inst-head is-stacked">
-        <span className="inst-title">INSTRUMENT E &mdash; THE FILE</span>
-        <LoadNote
-          label={label}
-          action="load the model to read it live"
-          status={modelStatus}
-          progress={progress}
-          onLoad={onLoad}
-        />
-      </div>
+      <InstrumentHead
+        stacked
+        eyebrow="INSTRUMENT E"
+        title="The file"
+        purpose="The model file itself — every tensor it holds, one window of its raw bytes, and the spread of one tensor’s values."
+        note={
+          <LoadNote
+            label={label}
+            action="load the model to read it live"
+            status={modelStatus}
+            progress={progress}
+            onLoad={onLoad}
+          />
+        }
+      />
 
       <div className="inst-body">
         <div className="label-row tight">

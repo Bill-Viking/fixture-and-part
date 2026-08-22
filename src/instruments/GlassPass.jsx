@@ -12,6 +12,7 @@ import InfoTag from '../components/InfoTag.jsx'
 import LoadNote from '../components/LoadNote.jsx'
 import ReadingLine from '../components/ReadingLine.jsx'
 import TeachPair from '../components/TeachPair.jsx'
+import InstrumentHead from '../components/InstrumentHead.jsx'
 
 const SLOTS = Array.from({ length: CANDIDATE_COUNT }, (_, i) => i)
 const LAST_STOP = LENS_STOPS - 1
@@ -125,21 +126,25 @@ export default function GlassPass({
 
   return (
     <figure className="instrument">
-      <div className="inst-head">
-        <span className="inst-title">INSTRUMENT D — GLASS PASS</span>
-        <LoadNote
-          label={
-            real
-              ? 'real distilgpt2 residual stream · real logit lens'
-              : toyReading?.tuned
-                ? 'illustrative lens — hand-tuned'
-                : 'illustrative lens — heuristic'
-          }
-          status={modelStatus}
-          progress={progress}
-          onLoad={onLoad}
-        />
-      </div>
+      <InstrumentHead
+        eyebrow="INSTRUMENT D"
+        title="The glass pass"
+        purpose="One token’s running vector at each depth, and what the model would say next from there."
+        note={
+          <LoadNote
+            label={
+              real
+                ? 'real distilgpt2 residual stream · real logit lens'
+                : toyReading?.tuned
+                  ? 'illustrative lens — hand-tuned'
+                  : 'illustrative lens — heuristic'
+            }
+            status={modelStatus}
+            progress={progress}
+            onLoad={onLoad}
+          />
+        }
+      />
 
       <div className="inst-body">
         <ReadingLine text={text} />

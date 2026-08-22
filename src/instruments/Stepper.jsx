@@ -5,6 +5,7 @@ import KVInspector from '../components/KVInspector.jsx'
 import LoadNote from '../components/LoadNote.jsx'
 import ReadingLine from '../components/ReadingLine.jsx'
 import TeachPair from '../components/TeachPair.jsx'
+import InstrumentHead from '../components/InstrumentHead.jsx'
 
 const RUN_INTERVAL_MS = 800
 
@@ -192,19 +193,23 @@ export default function Stepper({
 
   return (
     <figure className="instrument">
-      <div className="inst-head is-stacked">
-        <span className="inst-title">INSTRUMENT B — FORWARD PASS &amp; KV RACK</span>
-        <LoadNote
-          label={
-            real
-              ? 'real distilgpt2 continuation · greedy, whitespace skipped'
-              : 'illustrative continuation'
-          }
-          status={modelStatus}
-          progress={progress}
-          onLoad={onLoad}
-        />
-      </div>
+      <InstrumentHead
+        eyebrow="INSTRUMENT B"
+        title="The forward pass and the KV rack"
+        purpose="One step at a time: the shortlist for the next token, the sequence so far, and the K/V rack it reads from."
+        note={
+          <LoadNote
+            label={
+              real
+                ? 'real distilgpt2 continuation · greedy, whitespace skipped'
+                : 'illustrative continuation'
+            }
+            status={modelStatus}
+            progress={progress}
+            onLoad={onLoad}
+          />
+        }
+      />
 
       <div className="inst-body">
         <ReadingLine text={text} />
