@@ -9,6 +9,13 @@
 // bytes, and a second worker would mean a second 83 MB, so they share this
 // one and take their turns in one queue.
 //
+// One copy, and the order they ask in does not change that. Whichever client
+// gets here first pulls the file in and it is kept; everything either of them
+// holds afterwards is a view into those same bytes, not a second copy of part
+// of them. That costs a lens-only reader the difference between holding the
+// 38.6 MB table and holding the whole file — and saves a reader who uses both
+// instruments, which on this page is the ordinary case, from holding 121 MB.
+//
 // The worker never downloads anything if it can help it: the model file is
 // already in the cache bucket the page wrote when it loaded distilgpt2, so it
 // opens that bucket, finds the request whose URL ends in the ONNX file name,
@@ -71,9 +78,8 @@ const WANTED = {
 /** @type {{table:Uint8Array,scale:number,zeroPoint:number,gain:Float32Array,bias:Float32Array,vocab:number}|null} */
 let parts = null
 
-// The whole file, kept only once instrument E has asked for something that
-// needs it. Instrument D on its own holds the 38.6 MB table and three small
-// vectors instead, as it always did.
+// The whole file, kept from the first request that needs it, whichever
+// instrument that request came from.
 /** @type {Uint8Array|null} */
 let held = null
 /** @type {ReturnType<typeof scanManifest>|null} */
@@ -121,14 +127,20 @@ async function digest(bytes, length) {
   return hex(buffer)
 }
 
+/** The file, fetched once and then kept. */
+async function bytesOf(config) {
+  if (!held) held = await modelBytes(config)
+  return held
+}
+
 /** The file, the walk of it, and its hash — each done once. */
 async function fileState(config) {
-  if (!held) held = await modelBytes(config)
+  const bytes = await bytesOf(config)
   if (!manifest) {
-    manifest = scanManifest(held)
-    sha = await digest(held, manifest.bytes)
+    manifest = scanManifest(bytes)
+    sha = await digest(bytes, manifest.bytes)
   }
-  return { bytes: held, manifest, sha }
+  return { bytes, manifest, sha }
 }
 
 // ---------------------------------------------------------------------------
@@ -137,11 +149,9 @@ async function fileState(config) {
 
 async function init(config) {
   if (parts) return
-  // If instrument E has already pulled the file in, the table is a view into
-  // those bytes rather than a second copy of 38.6 MB of them. On its own the
-  // lens still holds only what it needs and lets the 83 MB go.
-  const retained = Boolean(held)
-  const bytes = held ?? (await modelBytes(config))
+  // The table is a view into the retained file, never a copy of it, and that
+  // is true whether instrument E asked first or the lens did.
+  const bytes = await bytesOf(config)
   const names = new Set(Object.values(WANTED))
   const found = findInitializers(bytes, names)
   for (const name of names) {
@@ -149,8 +159,7 @@ async function init(config) {
   }
   const table = found.get(WANTED.table)
   if (!table.raw) throw new Error(`${WANTED.table} is not stored as raw bytes`)
-  const span = bytes.subarray(table.raw[0], table.raw[1])
-  const quantized = retained ? span : new Uint8Array(span)
+  const quantized = bytes.subarray(table.raw[0], table.raw[1])
   const vocab = table.dims[0] || quantized.length / HIDDEN
   if (quantized.length !== vocab * HIDDEN) {
     throw new Error(
@@ -263,10 +272,7 @@ async function read({ requestId, stops, count, depths }) {
     await yieldToQueue()
   }
 
-  if (cancelled.has(requestId)) {
-    cancelled.delete(requestId)
-    return
-  }
+  if (cancelled.has(requestId)) return
 
   // The crystallizing trace: one token — whichever one the last stop settles
   // on — priced at every depth, so the reader can watch the belief that won
@@ -337,23 +343,12 @@ self.onmessage = (event) => {
   }
   const fileTask = FILE_TASKS[message.type]
   if (fileTask) {
-    queue = queue.then(async () => {
-      try {
-        await fileTask(message)
-      } catch (error) {
-        postMessage({
-          type: 'error',
-          requestId: message.requestId,
-          message: error instanceof Error ? error.message : String(error),
-        })
-      }
-      await yieldToQueue()
-    })
+    queue = queue.then(() => run(message, () => fileTask(message)))
     return
   }
   if (message.type !== 'lens') return
-  queue = queue.then(async () => {
-    try {
+  queue = queue.then(() =>
+    run(message, async () => {
       await init(message.config)
       await read({
         requestId: message.requestId,
@@ -361,12 +356,30 @@ self.onmessage = (event) => {
         count: message.count,
         depths: message.depths,
       })
-    } catch (error) {
-      postMessage({
-        type: 'error',
-        requestId: message.requestId,
-        message: error instanceof Error ? error.message : String(error),
-      })
-    }
-  })
+    }),
+  )
+}
+
+/**
+ * One queued task, however it ends.
+ *
+ * The `finally` is the point: a request id is only in `cancelled` so that a
+ * task already in flight can notice and stop. Once the task is over — done,
+ * cancelled, thrown, or never started because a cancel beat it to the queue —
+ * the id means nothing, and leaving it there would grow the set for the life
+ * of the page.
+ */
+async function run(message, task) {
+  try {
+    await task()
+  } catch (error) {
+    postMessage({
+      type: 'error',
+      requestId: message.requestId,
+      message: error instanceof Error ? error.message : String(error),
+    })
+  } finally {
+    cancelled.delete(message.requestId)
+    await yieldToQueue()
+  }
 }

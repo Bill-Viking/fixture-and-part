@@ -8,10 +8,14 @@ Spec: `interactive-guide-spec.md`.
 
 ## Status
 
-**Phase 1 complete.** No ML dependency — every number on the page is an
-illustrative heuristic from `src/lib/toyModel.js` and is labelled as such.
-Phase 2 (real `distilgpt2` attention via transformers.js) is a separate branch
-and is not referenced anywhere in this build.
+Phases 1, 2 and 3A are merged and deployed: the illustrative build, real
+`distilgpt2` running in the browser behind a load button, and the glass pass
+(instrument D). Instrument E — the file itself — is on the `the-file` branch.
+
+The page works with no model loaded; in that state every number outside
+instrument E is an illustrative heuristic from `src/lib/toyModel.js` and is
+labelled as such. Instrument E has no illustrative mode: its numbers are read
+from the real model file either way, ahead of time or live.
 
 ## Run
 
@@ -84,7 +88,9 @@ can show it to a reader who has not downloaded anything,
 `scripts/read-model-file.mjs` reads the file ahead of time and writes
 `src/content/fileFacts.json`: every initializer with its dtype, shape, byte
 length and absolute offset; a byte-exact distribution of each of them; and a
-32x96 window of raw bytes out of every weight. Provenance is recorded with it
+window of raw values out of every one — 32 rows by 96 columns for each of the
+26 quantized weights, and the first 96 values of each of the 50 f32 norms and
+biases. Provenance is recorded with it
 — the URL, the sha256 and the date — and the script refuses to write facts
 about a file that hashes to something else.
 

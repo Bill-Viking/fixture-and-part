@@ -842,7 +842,10 @@ button.inst-note:hover{background:color-mix(in srgb,var(--amber) 16%,var(--amber
   transition:background-color .15s ease;
 }
 .file-row:last-child{border-bottom:0;}
-.file-row:hover{background:#131A23;}
+/* Derived from the tokens rather than picked: one step of the page's own
+   ground mixed into the list's panel, which keeps hover distinct from the
+   selected row's #141C25 without inventing a colour. */
+.file-row:hover{background:color-mix(in srgb,var(--panel) 80%,var(--bg));}
 /* An inset rule rather than a border: a selected row must not be one pixel
    narrower than an unselected one. */
 .file-row.is-on{background:#141C25;box-shadow:inset 2px 0 0 var(--steel);}
