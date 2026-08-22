@@ -78,6 +78,14 @@ export const explainers = {
     title: 'the glass pass',
     body: 'each depth is distilgpt2’s own running vector for this position, pushed through its own final layernorm and its own embedding table used backwards. that is the arithmetic the stack runs once at the end, run seven times instead — which is why the last row is not an estimate of the model’s output but literally is it.',
   },
+  map: {
+    title: 'the forward pass',
+    body: 'this is the whole model in one drawing: the two tables that turn tokens into vectors, six identical blocks of normalise, attend, normalise, multiply, and the same word table used backwards at the end to turn the answer into words. the shapes and byte counts on the boxes are read out of the real file. the columns are not: no model is running here, so what they carry is the same deterministic stand-in the rest of this mode uses.',
+  },
+  mapReal: {
+    title: 'the forward pass',
+    body: 'the boxes are distilgpt2\u2019s own tensors at their own sizes, read out of the file. down the right, one column per token in your sentence, with a node at each of the seven depths: the node is bright in proportion to the length of that token\u2019s running vector there, which is the one honest thing a single number can say about a point in the residual stream. in the selected block, the threads are that token\u2019s attention averaged over the twelve heads, and the twelve squares are lit by how much of its attention each head spends on tokens other than itself.',
+  },
   budget: {
     title: 'the budget of 1.0',
     body: 'softmax rescales the raw scores so the weights sum to exactly one. attention paid to one token is attention taken from another, which is why every bar shares one fixed track.',

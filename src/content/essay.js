@@ -52,6 +52,7 @@ export const sections = [
         html: 'What moves is the <strong class="k">activation</strong>: a single vector, thousands of numbers long, that represents the text being processed. A word enters as one vector and is multiplied through grid after grid — a hundred-plus layers — picking up meaning as it goes. After a few layers, the vector that entered as &ldquo;rocket&rdquo; encodes <em>rocket, the propulsion kind, subject of this sentence</em>. That running vector is called the residual stream, and it is where concepts actually live: as directions and distances in a high-dimensional space, constructed fresh at runtime and gone milliseconds later.',
       },
       { type: 'instrument', name: 'tokenizer' },
+      { type: 'instrument', name: 'forward' },
     ],
   },
   {
