@@ -3,6 +3,7 @@ import { hashTokenToVector, formatVector } from '../lib/toyModel.js'
 import { formatRealVector, realEmbedding } from '../lib/realModel.js'
 import InfoTag from '../components/InfoTag.jsx'
 import TeachPair from '../components/TeachPair.jsx'
+import InstrumentHead from '../components/InstrumentHead.jsx'
 
 /** A BPE piece prints its leading-space marker dim, so the split reads. */
 function TokenText({ token }) {
@@ -43,12 +44,22 @@ export default function Tokenizer({
 
   return (
     <figure className="instrument" aria-labelledby={`${inputId}-cap`}>
-      <div className="inst-head">
-        <span className="inst-title">INSTRUMENT A — TOKENIZER</span>
-        <span className="inst-note">
-          {real ? 'real bpe pieces, ids and embeddings' : 'illustrative embeddings'}
-        </span>
-      </div>
+      <InstrumentHead
+        eyebrow="INSTRUMENT A"
+        title="The tokenizer"
+        purpose="How your sentence becomes token ids, and the vector each token starts with."
+        note={
+          <span className="inst-note">
+            <TeachPair
+              as="span"
+              wrapAs="span"
+              show={real ? 'b' : 'a'}
+              a="illustrative embeddings"
+              b="real bpe pieces, ids and embeddings"
+            />
+          </span>
+        }
+      />
 
       <div className="inst-body">
         {control}

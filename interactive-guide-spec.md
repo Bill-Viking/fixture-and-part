@@ -162,6 +162,29 @@ softmax weight). Respect `prefers-reduced-motion`.
 
 ## 4. Page structure
 
+### Instrument head hierarchy
+
+Every instrument head (A–E) carries the same four lines, in descending order
+of loudness, so a first-time reader is told what he is looking at before he is
+told where its numbers came from:
+
+| line | content | style |
+|---|---|---|
+| eyebrow | `INSTRUMENT C` — the identifier alone, no long name | mono 10.5px, `0.18em`, `--frozen`, matching the section eyebrows one level up |
+| status note | where these numbers came from, e.g. `real distilgpt2 attention · layer 0 · head 0` | mono 11px `--muted`, right of the eyebrow on wide screens, its own line below 780px. In B, C, D and E this same box is also the load command (`LoadNote`), and its three states share one box |
+| title | the instrument's name in sentence case — "The attention inspector" | Space Grotesk 600, 18px, `--ink` |
+| purpose | one plain sentence saying what the reader is about to see | IBM Plex Sans 13.5px, `--ink` — not muted; this is the line that orients |
+
+The eyebrow and the note share the top row the way a drawing's title block puts
+the sheet number opposite its revision; the title and the purpose have the full
+width under them. DOM order is eyebrow, title, purpose, note — the order to
+hear them in — and the note is lifted back to the top row by its grid area.
+
+The reading line under the head (B, C, D) follows the same rule: the label
+`reading` stays a small muted mono label, and the sentence itself is set at
+14px `--ink` in the body face, because the sentence is what the reader has to
+recognise as his own.
+
 Single scrolling page, sections 01–10 mirroring the essay. Prose imported from the HTML. Three sections get live instruments replacing their static figures:
 
 ### Instrument A — Tokenizer strip (Section 02)

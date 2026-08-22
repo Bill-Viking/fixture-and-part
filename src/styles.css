@@ -191,28 +191,79 @@ figcaption{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:
   margin:34px 0;background:var(--card);
   border:1px solid var(--rule);border-radius:6px;
 }
+/* Four lines in descending order of loudness, so a reader meeting an
+   instrument for the first time is told what it is before he is told where
+   its numbers came from:
+
+     eyebrow  which instrument this is        mono, tracked, blue
+     note     where these numbers came from   mono, muted, opposite the eyebrow
+     title    the instrument's name           display face, ink, 18px
+     purpose  what the reader is about to see body face, ink, 13.5px
+
+   The eyebrow and the note share the top row the way a drawing's title block
+   puts the sheet number opposite its revision; the title and the purpose have
+   the full width under them. DOM order is eyebrow, title, purpose, note — the
+   order to hear them in — and the note is lifted back to the top row by its
+   grid area.
+
+   The right column is minmax(0,1fr) rather than auto so that a note wider
+   than the space beside the eyebrow is ellipsized instead of widening the
+   head. 8px of padding on the right plus the note's own 8px puts its text
+   back on the same 16px margin as the title. */
 .inst-head{
-  display:flex;justify-content:space-between;align-items:center;gap:12px;
-  flex-wrap:nowrap;
-  /* 8px on the right plus the note's own 8px puts the note's text back on the
-     same 16px margin as the title. */
-  padding:12px 8px 12px 16px;border-bottom:1px solid var(--rule);
-  font-family:var(--mono);font-size:11px;letter-spacing:0.16em;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  grid-template-areas:
+    "eyebrow note"
+    "title   title"
+    "purpose purpose";
+  align-items:center;column-gap:12px;
+  padding:12px 8px 14px 16px;border-bottom:1px solid var(--rule);
 }
-.inst-title{color:var(--frozen);flex:none;}
-/* Instrument E's label is the longest on the page — it names the file, its
+.inst-eyebrow{
+  grid-area:eyebrow;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:0.18em;
+  line-height:18px;color:var(--frozen);
+}
+/* The one heading inside an instrument. Ink, not the eyebrow's blue: the
+   eyebrow is a tag and the title is the thing being named. */
+.inst-title{
+  grid-area:title;
+  font-family:var(--display);font-size:18px;font-weight:600;
+  letter-spacing:-0.005em;line-height:24px;color:var(--ink);
+  margin:5px 0 0;
+}
+/* The line that orients a first-time reader, so it is ink at body weight
+   rather than another muted label. Its text never changes with the model's
+   state, so its height is whatever its wrapping makes it and cannot move. */
+.inst-purpose{
+  grid-area:purpose;
+  font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;line-height:19px;
+  font-weight:400;letter-spacing:0;color:var(--ink);
+  margin:4px 8px 0 0;
+}
+/* Instrument E's note is the longest on the page — it names the file, its
    size and the command in one sentence — so its head gives the note a row of
-   its own at every width instead of ellipsizing the words that matter. Two
-   rows, always, so nothing swaps height.
+   its own at every width instead of ellipsizing the words that matter.
    This note is the one that wraps rather than truncates, so its box carries
    the height of its longest state up front: one line above 760px, two below,
    where the words no longer fit on one. The shorter states — loading, and the
    loaded label — sit inside the same box, so no state change moves the page.
    26px is one 18px line plus 6 of padding and 2 of border. */
-.inst-head.is-stacked{flex-wrap:wrap;}
+.inst-head.is-stacked{
+  grid-template-columns:minmax(0,1fr);
+  grid-template-areas:
+    "eyebrow"
+    "title"
+    "purpose"
+    "note";
+}
 .inst-head.is-stacked .inst-note{
-  flex:1 1 100%;text-align:left;margin-left:-8px;
-  white-space:normal;height:26px;
+  justify-self:stretch;text-align:left;margin:8px 0 0 -8px;
+  white-space:normal;max-width:none;height:26px;
+  /* The box is reserved for the tallest wording it can hold, so the shorter
+     ones centre inside it rather than hanging from its top edge. */
+  display:flex;align-items:center;
 }
 @media(max-width:760px){
   .inst-head.is-stacked .inst-note{height:44px;}
@@ -220,13 +271,14 @@ figcaption{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:
 /* The note says which numbers are on screen, and it changes length when the
    mode changes. It is pinned to exactly one line so that swap can never add
    or drop a row in the head.
-   In instruments B, C and D the same box is also where the real model is
+   In instruments B, C, D and E the same box is also where the real model is
    fetched from: label, download progress and button all carry identical
-   padding, border and line box, and the box's right edge is pinned by the
-   head's space-between, so the three states swap without moving anything. */
+   padding, border and line box, and the box is pinned to the right edge of
+   the head's own column, so the three states swap without moving anything. */
 .inst-note{
+  grid-area:note;justify-self:end;
   color:var(--muted);letter-spacing:0.08em;text-transform:none;
-  flex:0 1 auto;min-width:0;text-align:right;
+  min-width:0;max-width:100%;text-align:right;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   font-family:var(--mono);font-size:11px;font-weight:400;line-height:18px;
   margin:0;padding:3px 8px;border:1px solid transparent;border-radius:3px;
@@ -265,13 +317,22 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 /* Which sentence the instrument is reading. A and its input are three
    sections up by the time B, C and D are on screen, and the page never said
    out loud that all four run on the same text. One reserved line per
-   instrument, always drawn, so it can never move anything. */
+   instrument, always drawn, so it can never move anything.
+
+   The label stays a label — small, mono, muted — and the sentence itself is
+   set at reading size in ink, because the sentence is the thing the reader is
+   meant to recognise as his own. The line box is fixed at 22px, which is
+   taller than either size needs, so the empty wording and the quoted one
+   cannot differ by a pixel. */
 .inst-reading{
-  font-family:var(--mono);font-size:10.5px;line-height:15px;height:15px;
+  font-family:var(--mono);font-size:10.5px;line-height:22px;height:22px;
   color:var(--muted);letter-spacing:0.02em;margin:0 0 14px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
-.inst-reading b{color:var(--ink);font-weight:400;}
+.inst-reading b{
+  font-family:'IBM Plex Sans',sans-serif;font-size:14px;font-weight:600;
+  color:var(--ink);letter-spacing:0;
+}
 .teach.dim{color:var(--muted);margin-top:8px;letter-spacing:0.02em;line-height:1.6;}
 
 /* Both wordings of a mode-dependent line occupy one grid cell, so the cell is
@@ -295,7 +356,9 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
   position:relative;flex:none;
   display:inline-flex;align-items:center;justify-content:center;
   width:15px;height:15px;padding:0;vertical-align:-3px;
-  font-family:var(--mono);font-size:9.5px;line-height:1;letter-spacing:0;
+  /* 10px is the floor for text anywhere on this page, and the badge's glyph
+     is text. Its box stays 15px square, so raising the glyph moves nothing. */
+  font-family:var(--mono);font-size:10px;line-height:1;letter-spacing:0;
   color:var(--muted);background:var(--card);
   border:1px solid var(--rule);border-radius:2px;cursor:pointer;
   transition:color .15s ease,border-color .15s ease;
@@ -357,8 +420,12 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
    row below says why it is not available yet. */
 .mode-btn.is-locked{opacity:.45;cursor:not-allowed;}
 .mode-btn.is-locked:hover{color:var(--muted);}
+/* Takes the rest of the row rather than sizing to its words, so that
+   "no model loaded" becoming "distilgpt2 · webgpu" changes the glyphs inside
+   a box that was already the same size. */
 .mode-state{
-  margin-left:auto;font-family:var(--mono);font-size:10px;
+  flex:1 1 auto;text-align:right;
+  font-family:var(--mono);font-size:10px;
   color:var(--muted);letter-spacing:0.04em;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;
 }
@@ -387,11 +454,20 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
   background:var(--sunk);border:1px solid var(--rule);
 }
 .mode-fill{display:block;height:100%;background:var(--frozen);transition:width .25s linear;}
+/* Same reservation as the row above: the hint takes whatever the row has
+   left, so its box is identical whether it is explaining the download or
+   reporting that the model is here. */
 .mode-hint,.mode-progress{
+  flex:1 1 auto;
   font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.04em;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;
 }
 .mode-hint.is-error{color:var(--alert-ink);}
+/* Once the model is here the command is spent, but its box stays: a ghost of
+   the button holds the place so the hint beside it — and the line under it at
+   phone width — does not move when the button goes. Laid out, not painted,
+   the same trick .teach-pair uses for its unused wording. */
+.mode-load .btn.is-ghost{visibility:hidden;}
 /* What is real and what is not, in one line that changes with the mode. */
 .mode-manifest{
   font-family:var(--mono);font-size:10px;color:var(--muted);
@@ -1245,10 +1321,27 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
    so is its label. From here down the note takes a line of its own, where its
    width is the head's own and therefore identical in every state. */
 @media(max-width:780px){
-  .inst-head{flex-wrap:wrap;}
+  .inst-head{
+    grid-template-columns:minmax(0,1fr);
+    grid-template-areas:
+      "eyebrow"
+      "title"
+      "purpose"
+      "note";
+  }
   /* The negative margin pulls the note's padding back so its text still
      starts on the title's margin. */
-  .inst-note{flex:1 1 100%;text-align:left;margin-left:-8px;}
+  .inst-note{
+    justify-self:stretch;text-align:left;margin:8px 0 0 -8px;
+    white-space:normal;max-width:none;height:26px;
+    display:flex;align-items:center;
+  }
+}
+
+/* Below here every head is stacked, so the two-line reservation instrument E
+   has always carried belongs to all of them. */
+@media(max-width:760px){
+  .inst-note{height:44px;}
 }
 
 @media(max-width:700px){
@@ -1389,7 +1482,13 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
      in size, one line still, in every mode. */
   .inst-note{font-size:10px;}
   /* The longest of the three load commands still has to fit one line here. */
-  button.inst-note{font-size:9.5px;letter-spacing:0;padding:3px 6px;}
+  button.inst-note{font-size:10px;letter-spacing:0;padding:3px 6px;}
+  /* "distilgpt2 · webgpu" no longer fits beside the mode switch here — it was
+     losing the backend, which is the half of it that carries information — so
+     it takes a line of its own. Two reserved lines, and the state's box is the
+     row's own width in both wordings. */
+  .mode-row{flex-wrap:wrap;height:54px;align-content:center;}
+  .mode-state{flex:1 1 100%;text-align:left;}
   /* Two reserved lines: the button or the track on one, the status on the
      other. The ready state uses only one and centres inside the same box. */
   .mode-load{height:60px;flex-wrap:wrap;align-content:center;}

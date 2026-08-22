@@ -80,11 +80,15 @@ export default function ModeControl({
           </>
         ) : (
           <>
-            {!loaded && (
-              <button type="button" className="btn btn-primary" onClick={onLoad}>
-                LOAD THE REAL MODEL (83.5 MB)
-              </button>
-            )}
+            <button
+              type="button"
+              className={`btn btn-primary${loaded ? ' is-ghost' : ''}`}
+              onClick={loaded ? undefined : onLoad}
+              aria-hidden={loaded}
+              tabIndex={loaded ? -1 : undefined}
+            >
+              LOAD THE REAL MODEL (83.5 MB)
+            </button>
             <span className={`mode-hint${error ? ' is-error' : ''}`}>
               {error
                 ? 'real model unavailable — showing illustrative weights'

@@ -6,17 +6,27 @@
  * width and whatever the font does, so switching mode swaps the words without
  * moving anything on the page — and no magic pixel height has to be kept in
  * step with the copy.
+ *
+ * It reserves width the same way, which is why instrument A's head note uses
+ * it: `wrapAs="span"` keeps the pair legal inside the note's own span.
  */
-export default function TeachPair({ as: Tag = 'p', className = '', a, b, show }) {
+export default function TeachPair({
+  as: Tag = 'p',
+  wrapAs: Wrap = 'div',
+  className = '',
+  a,
+  b,
+  show,
+}) {
   const first = show !== 'b'
   return (
-    <div className="teach-pair">
+    <Wrap className="teach-pair">
       <Tag className={`${className}${first ? '' : ' is-ghost'}`} aria-hidden={!first}>
         {a}
       </Tag>
       <Tag className={`${className}${first ? ' is-ghost' : ''}`} aria-hidden={first}>
         {b}
       </Tag>
-    </div>
+    </Wrap>
   )
 }
