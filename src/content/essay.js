@@ -67,6 +67,12 @@ export const sections = [
         html: 'The inheritance mechanism is the <strong>KV cache</strong>. When a token passes through an attention layer it produces key and value vectors — its machined representation at that layer — and the cache stores every one of them, verbatim, so new tokens compute only themselves against the stored rack. It is not a summary; it is the racked finished parts, kept staged. And it is append-only by construction: a token attends only backward, so token 500&rsquo;s cached vectors are byte-identical before and after token 5,000 exists. A ledger, not a document. The freeze cuts both ways — early tokens can never be reinterpreted in light of later context. Any reconsidering happens in new tokens reading old ones; the old ones never change.',
       },
       { type: 'instrument', name: 'stepper' },
+      {
+        type: 'callout',
+        variant: 'cool',
+        label: 'ANALOGY — THE GHOST',
+        html: 'Andrej Karpathy&rsquo;s framing is worth borrowing here, as an analogy and no more: &ldquo;we&rsquo;re not building animals, we&rsquo;re building ghosts.&rdquo; An animal is shaped by evolution and carries its own body. A model is shaped by imitating the text people left behind, and has no body to carry — it is a file, and the file is inert. What the passes above summon is the ghost: it appears when the fixture runs, exists for the length of one pass, leaves nothing in the weights, and is summoned again from scratch by the next token. The analogy earns its keep because it gets the physics right — a ghost has no continuous existence between apparitions — and it fails in the usual place: the model haunts nothing and no one is trapped inside. It is what falls out when a very large list of small numbers is multiplied against a sentence.',
+      },
     ],
   },
   {
