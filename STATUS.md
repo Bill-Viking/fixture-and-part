@@ -9,7 +9,7 @@
 - [x] Phase 2 merged into main 2026-08-20
 - [x] Phase 3A "glass pass" (Instrument D: residual stream + logit lens, polish pass, ghost callout) merged to main and deployed 2026-08-21
 - [x] Instrument E "the file" (section 01: the real decoder_model_quantized.onnx — tensor manifest, byte bar, raw-byte blob, byte-exact bell curve, sha-checked re-read) built, independently verified, merged to main and deployed 2026-08-22
-- [ ] light-theme pass on branch `paper`: "Gallery white" tokens, ink screens, role-named tokens, a readable byte window in instrument E, and the plain-words rewrite — built 2026-08-22, awaiting review
+- [x] light-theme pass on branch `paper`: "Gallery white" tokens, ink screens, role-named tokens, a readable byte window in instrument E, and the plain-words rewrite — built 2026-08-22, awaiting review — merged to main and deployed 2026-08-22
 - [x] deployed to GitHub Pages 2026-08-20: https://bill-viking.github.io/fixture-and-part/ — link this from Confluence (README documents the `VITE_BASE` env var needed); link from Confluence for Blue Origin teammates — their network must allow huggingface.co for real mode, otherwise the page stays illustrative with a muted notice
 
 ## Important
