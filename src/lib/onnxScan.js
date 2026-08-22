@@ -456,8 +456,13 @@ export function histogramOf(bytes, manifest, name) {
 // ---------------------------------------------------------------------------
 
 /** How much of a tensor the blob panel shows at once. */
-export const WINDOW_ROWS = 32
-export const WINDOW_COLS = 96
+// The blob panel's window. 64 by 24 rather than the 96 by 32 it was: at the
+// page's 760px measure that is a cell of about 10.6 x 10.5 px on screen with
+// a hairline of ground between cells, which is the difference between a grid
+// of numbers and a smear. The honest raw bytes either way — this only changes
+// how many of them one window holds.
+export const WINDOW_ROWS = 24
+export const WINDOW_COLS = 64
 
 /**
  * A rectangle of raw bytes out of a quantized matrix, or a run of values out
