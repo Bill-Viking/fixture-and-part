@@ -14,7 +14,7 @@ export const explainers = {
   },
   fileBlob: {
     title: 'what a byte becomes',
-    body: 'each square is one byte of the file, shaded by how large the weight it stands for is. the readout underneath does the arithmetic: byte, minus the tensor’s zero point, times the tensor’s scale, and that float is what the model multiplies with. the embedding table is also the unembedding — the last step of a pass transposes this same tensor rather than storing a second one.',
+    body: 'each square is one byte of the file, shaded by how large the weight it stands for is. the readout underneath does the arithmetic: byte, minus the tensor’s zero point, times the tensor’s scale, and that float is what the model multiplies with. a row of the embedding table is one token id, so the row number is the piece of vocabulary it holds — the low ids are single raw bytes and print as one replacement character. that table is also the unembedding: the last step of a pass transposes this same tensor rather than storing a second one.',
   },
   fileCurve: {
     title: 'why it is bell-shaped',
