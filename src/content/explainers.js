@@ -14,11 +14,11 @@ export const explainers = {
   },
   fileBlob: {
     title: 'what a byte becomes',
-    body: 'each square is one byte of the file, shaded by how large the weight it stands for is. the readout underneath does the arithmetic: byte, minus the tensor’s zero point, times the tensor’s scale, and that float is what the model multiplies with. a row of the embedding table is one token id, so the row number is the piece of vocabulary it holds — the low ids are single raw bytes and print as one replacement character. that table is also the unembedding: the last step of a pass transposes this same tensor rather than storing a second one.',
+    body: 'for the quantized weights, each square is one byte of the file, and the readout underneath does the arithmetic: byte, minus the tensor’s zero point, times the tensor’s scale, and that float is what the model multiplies with. the f32 norms and biases are stored as written, so there each square is one 32-bit float and the readout is simply the number. squares are shaded by magnitude either way. a row of the embedding table is one token id, so the row number is the piece of vocabulary it holds — the low ids are single raw bytes and print as one replacement character. that table is also the unembedding: the last step of a pass transposes this same tensor rather than storing a second one.',
   },
   fileCurve: {
     title: 'why it is bell-shaped',
-    body: 'training nudges every weight a little at a time from a small random start, and the result is a pile around zero with thin tails — the shape gradient descent leaves behind. one bar per possible byte value, so this is also the whole story of the quantization: every weight in this export is one of 256 values, and the bars are how often each of them was used.',
+    body: 'training nudges every weight a little at a time from a small random start, and the result is a pile around zero with thin tails — the shape gradient descent leaves behind. for the quantized weights there is one bar per possible byte value, so the curve is also the whole story of the quantization: each of those weights is one of 256 values, and the bars are how often each value was used. the f32 norms and biases are stored as written and get a plain 64-bin curve instead — ln_f’s gain is the odd one, piled around 1.45 rather than around zero, because it scales the stream rather than mixing it.',
   },
   token: {
     title: 'a token',

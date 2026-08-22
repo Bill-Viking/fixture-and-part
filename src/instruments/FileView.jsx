@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import InfoTag from '../components/InfoTag.jsx'
 import LoadNote from '../components/LoadNote.jsx'
 import {
@@ -219,6 +219,41 @@ function readHeader(manifest) {
   return { rows, segments, brackets, key, stat, byName }
 }
 
+/**
+ * Whether a live manifest is the shipped one, field by field.
+ *
+ * It exists for the case where there is no hash to lean on: on a non-secure
+ * origin SubtleCrypto is absent, and without it the panel can only claim what
+ * it has actually compared. 128 entries, compared once.
+ */
+function manifestDiffers(a, b) {
+  if (!a || !b) return true
+  for (const key of ['bytes', 'nodeCount', 'tensorCount', 'weightBytes', 'parameters']) {
+    if (a[key] !== b[key]) return true
+  }
+  for (const key of ['graph', 'trailer']) {
+    if (a[key].offset !== b[key].offset || a[key].byteLength !== b[key].byteLength) return true
+  }
+  if (a.tensors.length !== b.tensors.length) return true
+  for (let i = 0; i < a.tensors.length; i++) {
+    const x = a.tensors[i]
+    const y = b.tensors[i]
+    if (
+      x.name !== y.name ||
+      x.dtype !== y.dtype ||
+      x.elements !== y.elements ||
+      x.byteLength !== y.byteLength ||
+      x.offset !== y.offset ||
+      x.value !== y.value ||
+      x.dims.length !== y.dims.length ||
+      x.dims.some((d, j) => d !== y.dims[j])
+    ) {
+      return true
+    }
+  }
+  return false
+}
+
 // --- the panels -------------------------------------------------------------
 
 /** The bell curve, as one filled step path. */
@@ -296,21 +331,28 @@ export default function FileView({ modelStatus, progress, onLoad }) {
   const [histograms, setHistograms] = useState(() => new Map())
   const [windows, setWindows] = useState(() => new Map())
   const [mismatches, setMismatches] = useState([])
+  const [manifestMatch, setManifestMatch] = useState(null)
   const [selected, setSelected] = useState(WTE)
   const [page, setPage] = useState(0)
   const [cell, setCell] = useState(null)
   const [hovered, setHovered] = useState(null)
-  const [reading, setReading] = useState(false)
 
   const listRef = useRef(null)
   const canvasRef = useRef(null)
+  const readoutId = useId()
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 })
   const ramp = useMemo(readRamp, [])
 
   const ready = modelStatus === 'ready'
 
-  // The shipped reading is its own chunk: a reader who never reaches section
-  // 01 never downloads 200 KB of tensor manifest.
+  const noteMismatch = useCallback((text) => {
+    setMismatches((prev) => (prev.includes(text) ? prev : [...prev, text]))
+  }, [])
+
+  // The shipped reading is its own chunk. Section 01 is the top of the page,
+  // so it is fetched immediately — the win is not that it might be skipped,
+  // it is that 200 KB of tensor manifest is off the initial bundle's download
+  // and parse path and arrives in parallel with it.
   useEffect(() => {
     let cancelled = false
     import('../content/fileFacts.json')
@@ -341,13 +383,19 @@ export default function FileView({ modelStatus, progress, onLoad }) {
     }
   }, [ready])
 
+  // The whole manifest, compared once when the live one lands. The hash makes
+  // this redundant when there is a hash; when there is not, it is the only
+  // thing the panel can honestly say it checked beyond one tensor.
+  useEffect(() => {
+    if (!live || !facts) return
+    const differs = manifestDiffers(live.manifest, facts.manifest)
+    setManifestMatch(!differs)
+    if (differs) noteMismatch('the manifest')
+  }, [live, facts, noteMismatch])
+
   const manifest = live?.manifest ?? facts?.manifest ?? null
   const header = useMemo(() => readHeader(manifest), [manifest])
   const entry = header?.rows.find((t) => t.name === selected) ?? null
-
-  const noteMismatch = useCallback((text) => {
-    setMismatches((prev) => (prev.includes(text) ? prev : [...prev, text]))
-  }, [])
 
   // One histogram per tensor, taken over every value in it. The worker yields
   // between requests, so instrument D is never waiting on more than one of
@@ -356,7 +404,6 @@ export default function FileView({ modelStatus, progress, onLoad }) {
     if (!live || !facts) return undefined
     if (histograms.has(selected)) return undefined
     let cancelled = false
-    setReading(true)
     readHistogram(selected)
       .then((result) => {
         if (cancelled) return
@@ -365,15 +412,13 @@ export default function FileView({ modelStatus, progress, onLoad }) {
           const same =
             shipped.counts.length === result.counts.length &&
             shipped.counts.every((c, i) => c === result.counts[i])
-          if (!same) noteMismatch(`${selected}: distribution`)
+          if (!same) noteMismatch(`${short(selected)} distribution`)
         }
         setHistograms((prev) => new Map(prev).set(selected, result))
-        setReading(false)
       })
       .catch((error) => {
         if (cancelled) return
         setLiveError(error.message)
-        setReading(false)
       })
     return () => {
       cancelled = true
@@ -392,7 +437,7 @@ export default function FileView({ modelStatus, progress, onLoad }) {
         if (shipped) {
           const expected = decodeWindow(shipped)
           const same = expected.data.every((v, i) => v === result.data[i])
-          if (!same) noteMismatch(`${selected}: bytes`)
+          if (!same) noteMismatch(`${short(selected)} bytes`)
         }
         setWindows((prev) => new Map(prev).set(windowKey, result))
       })
@@ -411,6 +456,34 @@ export default function FileView({ modelStatus, progress, onLoad }) {
     if (page === 0 && facts?.windows[selected]) return decodeWindow(facts.windows[selected])
     return null
   }, [windows, windowKey, page, facts, selected])
+
+  /**
+   * How the values in view are laid out on the canvas.
+   *
+   * A quantized weight has rows of its own and keeps them: the window is 32
+   * of the tensor's rows by 96 of its columns, and the grid is that, so a
+   * cell is in the same place the number is in the file.
+   *
+   * An f32 vector has no rows at all — it is a run of 768 or 3072 numbers —
+   * so the panel picks a wrap that fills the same fixed canvas with roughly
+   * square cells rather than leaving three quarters of it empty. The eyebrow
+   * prints the wrap it chose, because it is the panel's choice and not the
+   * file's.
+   */
+  const grid = useMemo(() => {
+    if (!view) return null
+    if (view.kind === 'bytes') {
+      return { cols: WINDOW_COLS, rows: WINDOW_ROWS, drawCols: view.cols, drawRows: view.rows }
+    }
+    const total = view.data.length
+    const aspect =
+      canvasSize.width > 0 && canvasSize.height > 0
+        ? canvasSize.width / canvasSize.height
+        : WINDOW_COLS / WINDOW_ROWS
+    const cols = Math.max(1, Math.min(total, Math.round(Math.sqrt(total * aspect))))
+    const rows = Math.ceil(total / cols)
+    return { cols, rows, drawCols: cols, drawRows: rows }
+  }, [view, canvasSize])
 
   const pages = entry ? Math.ceil(entry.rows / WINDOW_ROWS) : 1
   const maxAbs = histogram
@@ -447,6 +520,11 @@ export default function FileView({ modelStatus, progress, onLoad }) {
     if (!canvas || typeof ResizeObserver === 'undefined') return undefined
     const observer = new ResizeObserver(([box]) => {
       const rect = box.contentRect
+      // A zero measurement is never a size the canvas is actually being drawn
+      // at — it is the element mid-layout — and letting one through would
+      // collapse the wrap the f32 grid is computed from and leave the eyebrow
+      // saying "wrapped at 1" over a picture that is nothing of the sort.
+      if (rect.width <= 0 || rect.height <= 0) return
       setCanvasSize({ width: rect.width, height: rect.height })
     })
     observer.observe(canvas)
@@ -466,14 +544,14 @@ export default function FileView({ modelStatus, progress, onLoad }) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, width, height)
 
-    const cellW = width / WINDOW_COLS
-    const cellH = height / WINDOW_ROWS
-    if (!view) return
+    if (!view || !grid) return
+    const cellW = width / grid.cols
+    const cellH = height / grid.rows
 
     const quant = entry?.quant
-    for (let r = 0; r < view.rows; r++) {
-      for (let c = 0; c < view.cols; c++) {
-        const i = r * view.cols + c
+    for (let r = 0; r < grid.drawRows; r++) {
+      for (let c = 0; c < grid.drawCols; c++) {
+        const i = r * grid.drawCols + c
         if (i >= view.data.length) break
         const value = quant
           ? quant.scale * (rawValue(view.dtype, view.data[i]) - quant.zeroPoint)
@@ -487,7 +565,7 @@ export default function FileView({ modelStatus, progress, onLoad }) {
       }
     }
 
-    if (cell && cell.row < view.rows && cell.col < view.cols) {
+    if (cell && cell.row < grid.drawRows && cell.col < grid.drawCols) {
       ctx.strokeStyle = rampColour(ramp, 1)
       ctx.lineWidth = 1
       ctx.strokeRect(
@@ -497,23 +575,24 @@ export default function FileView({ modelStatus, progress, onLoad }) {
         cellH + 1,
       )
     }
-  }, [canvasSize, view, entry, maxAbs, ramp, cell])
+  }, [canvasSize, view, grid, entry, maxAbs, ramp, cell])
 
   const pickCell = useCallback(
     (event) => {
-      if (!view) return
+      if (!view || !grid) return
       const rect = event.currentTarget.getBoundingClientRect()
-      const col = Math.floor(((event.clientX - rect.left) / rect.width) * WINDOW_COLS)
-      const row = Math.floor(((event.clientY - rect.top) / rect.height) * WINDOW_ROWS)
-      if (row < 0 || col < 0 || row >= view.rows || col >= view.cols) return
+      const col = Math.floor(((event.clientX - rect.left) / rect.width) * grid.cols)
+      const row = Math.floor(((event.clientY - rect.top) / rect.height) * grid.rows)
+      if (row < 0 || col < 0 || row >= grid.drawRows || col >= grid.drawCols) return
+      if (row * grid.drawCols + col >= view.data.length) return
       setCell({ row, col })
     },
-    [view],
+    [view, grid],
   )
 
   const onCanvasKey = useCallback(
     (event) => {
-      if (!view) return
+      if (!view || !grid) return
       const deltas = {
         ArrowLeft: [0, -1],
         ArrowRight: [0, 1],
@@ -525,13 +604,14 @@ export default function FileView({ modelStatus, progress, onLoad }) {
       event.preventDefault()
       setCell((prev) => {
         const from = prev ?? { row: 0, col: 0 }
-        return {
-          row: Math.max(0, Math.min(view.rows - 1, from.row + delta[0])),
-          col: Math.max(0, Math.min(view.cols - 1, from.col + delta[1])),
-        }
+        const row = Math.max(0, Math.min(grid.drawRows - 1, from.row + delta[0]))
+        const col = Math.max(0, Math.min(grid.drawCols - 1, from.col + delta[1]))
+        // The last row of a wrapped vector is usually short; a move past its
+        // end stays where it was rather than landing on nothing.
+        return row * grid.drawCols + col >= view.data.length ? prev : { row, col }
       })
     },
-    [view],
+    [view, grid],
   )
 
   // --- the lines that say what is on screen ---------------------------------
@@ -548,30 +628,34 @@ export default function FileView({ modelStatus, progress, onLoad }) {
     }
     return (
       `${entry.name} · values ${count(first)}–${count(first + view.data.length - 1)} ` +
-      `of ${count(entry.elements)} · wrapped at ${WINDOW_COLS} · ${entry.dtype}`
+      `of ${count(entry.elements)} · wrapped at ${grid?.cols ?? WINDOW_COLS} · ${entry.dtype}`
     )
   }
 
+  const NOTHING_PICKED =
+    'click a byte, or press the arrow keys inside the blob, for one value'
+
   const readout = () => {
-    if (!entry || !view) return 'no tensor selected'
-    if (!cell || cell.row >= view.rows || cell.col >= view.cols) {
-      return 'click a byte, or press the arrow keys inside the blob, for one value'
+    if (!entry || !view || !grid) return 'no tensor selected'
+    if (!cell || cell.row >= grid.drawRows || cell.col >= grid.drawCols) {
+      return NOTHING_PICKED
     }
-    const i = cell.row * view.cols + cell.col
-    if (i >= view.data.length) {
-      return 'click a byte, or press the arrow keys inside the blob, for one value'
-    }
+    const i = cell.row * grid.drawCols + cell.col
+    if (i >= view.data.length) return NOTHING_PICKED
     if (!entry.quant) {
-      const index = (view.row0 + cell.row) * WINDOW_COLS + cell.col
+      const index = view.row0 * WINDOW_COLS + i
       return `index ${count(index)} · ${sig(view.data[i], 6)}`
     }
+    // The stored byte and its reading are not the same number for i8 — 241 in
+    // the file is −15 as an i8 — and it is the reading that goes into the
+    // arithmetic, so the line names the dtype rather than calling it a byte.
     const q = rawValue(view.dtype, view.data[i])
     const zp = entry.quant.zeroPoint
     const value = entry.quant.scale * (q - zp)
     const row = view.row0 + cell.row
     const piece = entry.name === WTE ? tokenOf(row) : null
     return (
-      `row ${count(row)} · col ${count(view.col0 + cell.col)} · byte ${plain(q)} · ` +
+      `row ${count(row)} · col ${count(view.col0 + cell.col)} · ${entry.dtype} ${plain(q)} · ` +
       `(${plain(q)} ${NBSP_MINUS} ${plain(zp)}) × ${sig(entry.quant.scale, 5)} = ${signed(value, 4)}` +
       // A wte row is a token id, so the row number names a piece of the
       // vocabulary. The low ids are single raw bytes and print as one
@@ -606,10 +690,14 @@ export default function FileView({ modelStatus, progress, onLoad }) {
     return parts.join(' · ')
   }
 
+  // Derived, never stored: a separate `reading` flag went stale whenever a
+  // second selection arrived before the first read had landed, because the
+  // effect for an already-cached tensor returns early and had nothing to
+  // clear. What has landed is the only thing worth asking.
   const source = () => {
     if (!ready) return 'ahead of time'
     if (liveError) return 'shipped copy'
-    if (reading || !histograms.has(selected)) return 're-reading…'
+    if (!histograms.has(selected)) return 're-reading…'
     return 're-read here'
   }
 
@@ -629,23 +717,48 @@ export default function FileView({ modelStatus, progress, onLoad }) {
       )
     }
     if (!live) return `re-reading this browser's cached copy…`
+
+    // Whether what is on screen for the selected tensor is the live reading
+    // or still the shipped one. Until both have landed the panel is showing
+    // the shipped numbers, and must not say otherwise.
+    const liveHere = histograms.has(selected) && windows.has(windowKey)
+
     if (live.sha && live.sha !== p.sha256) {
+      // What the difference means is not knowable from here — a new upload, a
+      // re-quantized variant and a damaged cache entry all read the same — so
+      // this says what was observed and stops.
       return (
         `this browser's copy differs from the one read on ${p.readAt} ` +
-        `(sha256 ${shortSha(live.sha)}) — the file on huggingface has changed; ` +
-        `numbers shown are the live ones`
+        `(sha256 ${shortSha(live.sha)}) — ` +
+        (liveHere
+          ? 'the numbers shown are read from it'
+          : 'still re-reading this tensor from it')
       )
     }
     if (mismatches.length > 0) {
+      const more = mismatches.length > 1 ? ` and ${mismatches.length - 1} more` : ''
       return (
-        `this browser's copy hashes the same but reads differently ` +
-        `(${mismatches.join(', ')}) — numbers shown are the live ones`
+        `this browser's copy hashes the same but reads differently — ` +
+        `${mismatches[0]}${more} — the numbers shown are read from it`
       )
     }
-    const hash = live.sha ? `sha256 ${shortSha(live.sha)}` : 'byte for byte'
+    if (live.sha) {
+      return (
+        `re-read from this browser's cached copy just now · ` +
+        `sha256 ${shortSha(live.sha)} — identical to the copy read on ${p.readAt}`
+      )
+    }
+    // No SubtleCrypto: a non-secure origin. Without a hash of the whole file
+    // the only honest claim is the one covering what was actually compared.
+    if (manifestMatch === null || !liveHere) {
+      return (
+        `re-read from this browser's cached copy · no hash available here · ` +
+        `still comparing it with the copy read on ${p.readAt}`
+      )
+    }
     return (
-      `re-read from this browser's cached copy just now · ${hash} — ` +
-      `identical to the copy read on ${p.readAt}`
+      `re-read from this browser's cached copy just now · no hash available ` +
+      `here · the manifest and this tensor's bytes match the copy read on ${p.readAt}`
     )
   }
 
@@ -771,12 +884,18 @@ export default function FileView({ modelStatus, progress, onLoad }) {
         </div>
         <p className="file-eyebrow">{blobEyebrow()}</p>
         <div className="file-canvas-box">
+          {/* Not an image: it takes focus and the arrow keys move a reading
+              around inside it, and an image role would have it announced as
+              something to look at rather than something to operate. The
+              readout below is its description, and it is polite-live, so a
+              move is spoken. */}
           <canvas
             ref={canvasRef}
             className="file-canvas"
             tabIndex={0}
-            role="img"
-            aria-label={blobEyebrow()}
+            role="application"
+            aria-label={`the blob — ${blobEyebrow()} — arrow keys move the reading`}
+            aria-describedby={readoutId}
             onClick={pickCell}
             onKeyDown={onCanvasKey}
           />
@@ -810,7 +929,7 @@ export default function FileView({ modelStatus, progress, onLoad }) {
               : `window ${page + 1} of ${count(pages)}`}
           </span>
         </div>
-        <p className="file-readout" aria-live="polite">
+        <p className="file-readout" id={readoutId} aria-live="polite">
           {readout()}
         </p>
 
