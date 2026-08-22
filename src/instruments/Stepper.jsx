@@ -1,5 +1,6 @@
 import { memo, useEffect, useRef, useState } from 'react'
 import { LAYERS } from '../lib/toyModel.js'
+import { DECODING } from '../lib/realModel.js'
 import InfoTag from '../components/InfoTag.jsx'
 import KVInspector from '../components/KVInspector.jsx'
 import LoadNote from '../components/LoadNote.jsx'
@@ -45,10 +46,104 @@ const RackRow = memo(function RackRow({ index, token, selectedRole, onSelect }) 
 })
 
 /**
+ * The two decoding rules, as a segmented control the size of the mode switch
+ * three sections up.
+ *
+ * Illustrative mode shows it locked. Sampling means drawing from a
+ * distribution, and the illustrative distribution is four hand-tuned numbers
+ * written to make a teaching point — drawing from those would be theatre
+ * dressed as a mechanism, so that mode takes the top token and says so.
+ */
+function DecodeControl({ real, decode, onDecodeChange }) {
+  const locked = !real
+  const reason = 'the illustrative numbers are hand-tuned, so this mode takes the top token'
+  const seg = (value, label) => (
+    <button
+      type="button"
+      className={
+        `mode-btn${decode === value ? ' is-on' : ''}` +
+        (locked && decode !== value ? ' is-locked' : '')
+      }
+      aria-pressed={decode === value}
+      aria-disabled={locked}
+      title={locked ? reason : undefined}
+      onClick={() => {
+        if (!locked) onDecodeChange(value)
+      }}
+    >
+      {label}
+    </button>
+  )
+  return (
+    <div className="mode-row decode-row">
+      <span className="field-label">decoding</span>
+      <div
+        className={`mode-seg${locked ? ' is-fixed' : ''}`}
+        role="group"
+        aria-label="decoding rule"
+      >
+        {seg('sampled', 'sampled')}
+        {seg('greedy', 'greedy')}
+      </div>
+      <InfoTag topic={real ? 'decodingReal' : 'decoding'} />
+      <span className="mode-state">
+        {real
+          ? decode === 'sampled'
+            ? `real distilgpt2 · sampled · temp ${DECODING.temperature} · ` +
+              `top-k ${DECODING.topK} · seed ${DECODING.seed}`
+            : 'real distilgpt2 · greedy'
+          : 'illustrative · greedy on the toy numbers'}
+      </span>
+    </div>
+  )
+}
+
+/**
+ * What the coming STEP is about to do, in one reserved line: whether it took
+ * the top token or drew a different one, and at what cost in probability.
+ */
+function choiceLine({ real, decode, pick, pending, hasRows }) {
+  if (pending) return null
+  if (!real) {
+    return hasRows ? { text: 'takes the top token — illustrative', token: null } : null
+  }
+  if (!pick) return null
+  if (decode !== 'sampled' || !pick.sampled) {
+    return { text: `takes the top token — ${decode}`, token: null }
+  }
+  if (pick.top && pick.id !== pick.top.id) {
+    return {
+      text: null,
+      token: pick.token,
+      chose: pick.weight,
+      over: pick.top.token,
+      overWeight: pick.top.weight,
+    }
+  }
+  return { text: 'takes the top token — sampled', token: null }
+}
+
+/**
  * The shortlist for the coming STEP. Fixed height whether it is full or empty,
  * so pressing STEP never moves anything below it.
  */
-function Candidates({ candidates, scripted, stepTick, hasInput, real, pending }) {
+function Candidates({
+  candidates,
+  scripted,
+  stepTick,
+  hasInput,
+  real,
+  pending,
+  decode,
+  pick,
+}) {
+  const choice = choiceLine({
+    real,
+    decode,
+    pick,
+    pending,
+    hasRows: candidates.length > 0,
+  })
   return (
     <div className="candidates" role="group" aria-label="candidate next tokens">
       <div className="cand-head">
@@ -56,7 +151,7 @@ function Candidates({ candidates, scripted, stepTick, hasInput, real, pending })
         <InfoTag topic={real ? 'candidatesReal' : 'candidates'} />
         <span className="cand-note">
           {real
-            ? 'distilgpt2 · greedy · whitespace skipped'
+            ? `distilgpt2 · ${decode} · whitespace skipped`
             : scripted
               ? 'scripted · illustrative'
               : 'illustrative'}
@@ -93,6 +188,18 @@ function Candidates({ candidates, scripted, stepTick, hasInput, real, pending })
             </div>
           ))}
       </div>
+      <p className="cand-choice">
+        {choice == null ? (
+          ''
+        ) : choice.text ? (
+          choice.text
+        ) : (
+          <>
+            chose <b>{choice.token}</b> ({choice.chose.toFixed(2)}) over{' '}
+            <b>{choice.over}</b> ({choice.overWeight.toFixed(2)}) &mdash; sampled
+          </>
+        )}
+      </p>
     </div>
   )
 }
@@ -108,6 +215,9 @@ export default function Stepper({
   canStep,
   candidates,
   scriptedNext,
+  decode,
+  onDecodeChange,
+  pick,
   kvSelection,
   real,
   vectors,
@@ -201,7 +311,7 @@ export default function Stepper({
           <LoadNote
             label={
               real
-                ? 'real distilgpt2 continuation · greedy, whitespace skipped'
+                ? `real distilgpt2 continuation · ${decode}, whitespace skipped`
                 : 'illustrative continuation'
             }
             status={modelStatus}
@@ -242,6 +352,12 @@ export default function Stepper({
           </span>
         </div>
 
+        <DecodeControl
+          real={real}
+          decode={decode}
+          onDecodeChange={onDecodeChange}
+        />
+
         <Candidates
           candidates={candidates}
           scripted={scriptedNext}
@@ -249,6 +365,8 @@ export default function Stepper({
           hasInput={baseTokens.length > 0}
           real={real}
           pending={pending}
+          decode={decode}
+          pick={pick}
         />
 
         <div className="stepper-panes">
@@ -311,7 +429,7 @@ export default function Stepper({
           className="teach dim"
           show={real ? 'b' : 'a'}
           a="every new token scans the whole rack. racked rows are byte-identical before and after — nothing above the newest row ever changes."
-          b="every new token scans the whole rack, and racked rows never change. STEP takes the highest-probability token every time, which is why a real greedy run can settle into repeating itself."
+          b="every new token scans the whole rack, and racked rows never change. greedy STEP takes the top token every time, which is how a six-block model talks itself into a loop; sampled STEP draws instead, and charges the tokens it has already used."
         />
       </div>
 

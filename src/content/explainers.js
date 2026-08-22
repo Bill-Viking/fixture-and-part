@@ -60,7 +60,15 @@ export const explainers = {
   },
   candidatesReal: {
     title: 'considering next',
-    body: 'distilgpt2 scores all 50,257 tokens in its vocabulary and softmax turns those scores into shares of one budget. these are the top four real probabilities, so they do not add up to 1 — the rest of the budget is spread across every other token. STEP appends the top one, which is greedy sampling.',
+    body: 'distilgpt2 scores all 50,257 tokens in its vocabulary and softmax turns those scores into shares of one budget. these are the top four real probabilities, so they do not add up to 1 — the rest of the budget is spread across every other token. which of them STEP appends depends on the decoding rule above: greedy always takes the top row, sampled draws from a wider shortlist and may take another.',
+  },
+  decoding: {
+    title: 'decoding',
+    body: 'picking a word out of the scores is a separate decision from producing the scores, and there is more than one rule for it. this mode is pinned to the simplest — take the top one — because the four numbers above it are hand-tuned to make a teaching point, and drawing at random from numbers written by hand would look like a mechanism without being one. load the real model and the choice opens up.',
+  },
+  decodingReal: {
+    title: 'decoding',
+    body: 'greedy takes the highest-scoring token every time. it is the honest default and on a six-block model it loops: once "of the" makes "tree" the top token, nothing in the rule can pick anything else, and you get the tree of the tree of the tree. sampled draws instead — the scores are flattened a little (temperature 0.8), everything outside the best 40 is thrown away, the tokens already in the sequence have their scores pushed down (a penalty of 1.3), and one draw is taken from what is left. the draw is seeded, so the same sentence gives the same continuation every time.',
   },
   lens: {
     title: 'the glass pass',

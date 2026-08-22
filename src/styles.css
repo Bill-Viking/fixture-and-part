@@ -556,9 +556,31 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 
+/* Which of the two rules picks the next token. The same segmented control as
+   the mode switch in instrument A, in the same box: one fixed row, and the
+   state line beside it carries the sampler's numbers so they are never a
+   thing the reader has to be told twice. */
+.decode-row{margin-bottom:16px;}
+/* Locked, not disabled — both segments keep their place in the tab order and
+   carry the reason as a title, the way instrument A's "real" segment does
+   while the model is still absent. */
+.mode-seg.is-fixed .mode-btn{cursor:not-allowed;}
+
 /* The shortlist for the next STEP. Height is fixed whatever it holds — full,
-   empty, or mid-animation — so pressing STEP shifts nothing below it. */
-.candidates{height:112px;margin-bottom:16px;}
+   empty, or mid-animation — so pressing STEP shifts nothing below it. The box
+   carries one line more than the rows themselves need: the line under them
+   says what the coming STEP is about to do, and it is drawn whether or not
+   there is anything to say. */
+.candidates{height:132px;margin-bottom:16px;}
+/* One reserved line. The two tokens named in it are the moving part, so they
+   take the dark amber the law reserves for that role on paper; the rest of
+   the sentence is a label and stays muted. */
+.cand-choice{
+  font-family:var(--mono);font-size:10px;line-height:16px;height:16px;
+  color:var(--muted);letter-spacing:0.03em;margin:4px 0 0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.cand-choice b{color:var(--moving-ink);font-weight:500;}
 .cand-head{display:flex;align-items:center;gap:8px;height:18px;}
 /* Both halves truncate rather than wrap: the head must stay one line tall
    at every width, since the panel's height is fixed. */
@@ -577,7 +599,7 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
    instead — still a fixed height for this breakpoint, so STEP still never
    shifts anything below the panel, just a taller reserved box here. */
 @media(max-width:480px){
-  .candidates{height:132px;}
+  .candidates{height:152px;}
   .cand-head{height:auto;flex-wrap:wrap;row-gap:4px;}
   .cand-head .field-label{overflow:visible;text-overflow:clip;}
   .cand-note{margin-left:0;overflow:visible;text-overflow:clip;}
@@ -1507,6 +1529,15 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
     white-space:normal;overflow:visible;text-overflow:clip;
     line-height:14px;
   }
+  /* The sampler's four numbers do not fit one line of this width, and the
+     half that gets cut is the seed — the half that says the continuation is
+     reproducible. The state wraps to two lines instead, and the row reserves
+     both of them in either decoding rule, so the swap still moves nothing. */
+  .decode-row{height:68px;}
+  .decode-row .mode-state{
+    white-space:normal;overflow:visible;text-overflow:clip;line-height:14px;
+  }
+
   /* The K/V note is too long to share a line with its label here. */
   .kv-head{height:38px;flex-wrap:wrap;align-content:center;}
   .kv-note{flex:1 1 100%;margin-left:0;}
