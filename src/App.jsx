@@ -210,7 +210,12 @@ export default function App() {
     const timer = setTimeout(() => {
       realTokenize(text)
         .then((result) => {
-          if (!cancelled) setRealBase(result)
+          // Tagged with the text it came from. Instrument E asks whether the
+          // model has run on what is in the box now, and without this it
+          // could be told yes while the answer on screen still belonged to
+          // the previous sentence — the tokenizer is debounced, so for a
+          // moment after a keystroke the finished run is the old one.
+          if (!cancelled) setRealBase({ ...result, text })
         })
         .catch((err) => console.error('[fixture-and-part] tokenize failed:', err))
     }, 120)
@@ -448,7 +453,9 @@ export default function App() {
     file: (
       <FileView
         text={text}
-        ranKey={isReal && runReady ? runKey : null}
+        ranKey={
+          isReal && runReady && realBase?.text === text ? runKey : null
+        }
         modelStatus={modelStatus}
         progress={progress}
         onLoad={handleLoad}
