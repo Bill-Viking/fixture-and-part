@@ -788,9 +788,12 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
   border-bottom:1px solid var(--screen-hair);
 }
 .attn-row:last-child{border-bottom:0;}
+/* Tracking one step tighter than the page's other column heads: "Q·K rel" is
+   46px of column and at 0.14em it wrapped onto a second line the 26px head
+   has no room for. */
 .attn-head{
   height:26px;font-family:var(--mono);font-size:9.5px;
-  letter-spacing:0.14em;color:var(--screen-muted);
+  letter-spacing:0.08em;color:var(--screen-muted);
   position:sticky;top:0;z-index:1;background:var(--screen);
 }
 .c-tok{
@@ -1350,4 +1353,9 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
      under the instrument reports an animationName. Its only motion is the
      hover tint on a tensor row and on a segment of the byte bar, and the
      blanket rule above already stops those. */
+  /* The paper pass added no animation. It did add background-color to the
+     transition list of .btn and of a few hover states that used to change
+     only their border, and the blanket rule above covers those — verified by
+     walking every element under prefers-reduced-motion: reduce and finding
+     none that reports a running animation or a transition. */
 }
