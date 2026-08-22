@@ -4,6 +4,22 @@
 // and any illustrative number said to be illustrative.
 
 export const explainers = {
+  file: {
+    title: 'this file',
+    body: 'the file is an ONNX export rather than a safetensors one, but the idea is the same: a header naming every tensor and its shape, then one long blob of numbers. this export stores its big weights as 8-bit integers with a single scale per tensor, so a weight is recovered as scale × (byte − zero point) and 82 of the file’s 83.5 megabytes are that blob.',
+  },
+  fileHeader: {
+    title: 'the file, drawn to scale',
+    body: 'the bar is the whole file left to right, byte for byte, in the order the file stores things. the graph comes first — 1703 nodes describing what multiplies what — and everything after it is weights, with the 50,257-row embedding table taking nearly half of it on its own. segments narrower than a pixel are not widened; they get a tick above the bar instead.',
+  },
+  fileBlob: {
+    title: 'what a byte becomes',
+    body: 'each square is one byte of the file, shaded by how large the weight it stands for is. the readout underneath does the arithmetic: byte, minus the tensor’s zero point, times the tensor’s scale, and that float is what the model multiplies with. the embedding table is also the unembedding — the last step of a pass transposes this same tensor rather than storing a second one.',
+  },
+  fileCurve: {
+    title: 'why it is bell-shaped',
+    body: 'training nudges every weight a little at a time from a small random start, and the result is a pile around zero with thin tails — the shape gradient descent leaves behind. one bar per possible byte value, so this is also the whole story of the quantization: every weight in this export is one of 256 values, and the bars are how often each of them was used.',
+  },
   token: {
     title: 'a token',
     body: 'a token is the unit the model actually reads — usually a word, a word fragment, or a single punctuation mark. the split is decided by the tokenizer before any weight matrix is touched.',

@@ -810,6 +810,173 @@ button.inst-note:hover{background:color-mix(in srgb,var(--amber) 16%,var(--amber
   color:var(--text);letter-spacing:0.02em;margin:0;
 }
 
+/* --- instrument E: the file ----------------------------------------------- */
+
+/* Everything here is steel. This panel is the file at rest — weights before
+   anything moves — so there is no amber in it at all, and the one ramp it
+   uses runs from the panel's own background through steel to the text
+   colour. The only amber on screen is the global focus ring, which is
+   chrome rather than data. */
+
+.file-stat{
+  font-family:var(--mono);font-size:10.5px;line-height:15px;height:30px;
+  color:var(--muted);letter-spacing:0.02em;margin:0 0 10px;overflow:hidden;
+}
+
+/* Eight rows visible, and the box never changes size: selecting a tensor
+   scrolls this box's own scrollTop and nothing else on the page. */
+.file-list{
+  position:relative;height:258px;overflow-y:auto;
+  background:var(--panel);border:1px solid var(--hair);border-radius:4px;
+}
+.file-row{
+  display:grid;width:100%;height:32px;
+  grid-template-columns:minmax(0,1fr) 96px 24px 84px;
+  grid-template-areas:"name shape type bytes" "note note note note";
+  align-items:center;column-gap:8px;
+  padding:1px 9px;text-align:left;cursor:pointer;
+  background:none;border:0;border-bottom:1px solid var(--hair);
+  transition:background-color .15s ease;
+}
+.file-row:last-child{border-bottom:0;}
+.file-row:hover{background:#131A23;}
+/* An inset rule rather than a border: a selected row must not be one pixel
+   narrower than an unselected one. */
+.file-row.is-on{background:#141C25;box-shadow:inset 2px 0 0 var(--steel);}
+.file-row-name{
+  grid-area:name;font-family:var(--mono);font-size:11px;line-height:17px;
+  color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.file-row.is-on .file-row-name{color:var(--steel);}
+.file-row-shape,.file-row-type,.file-row-bytes{
+  font-family:var(--mono);font-size:9.5px;line-height:17px;
+  font-variant-numeric:tabular-nums;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.file-row-shape{grid-area:shape;color:var(--muted);text-align:right;}
+.file-row-type{grid-area:type;color:var(--steel);text-align:right;}
+.file-row-bytes{grid-area:bytes;color:var(--muted);text-align:right;}
+.file-row-note{
+  grid-area:note;font-family:var(--mono);font-size:9px;line-height:13px;
+  color:var(--steel-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+
+/* The whole file, byte-proportional, in file order. Segment widths are the
+   truth and nothing is given a minimum: a 3 KB bias in an 83 MB file is a
+   fraction of a pixel wide, and saying otherwise would be the one lie this
+   instrument cannot afford. What those tensors get instead is a hairline
+   tick above the bar. */
+.file-bar-wrap{position:relative;}
+.file-ticks{position:relative;height:6px;}
+.file-tick{
+  position:absolute;top:1px;width:1px;height:5px;background:var(--steel-dim);
+}
+.file-tick.is-on{background:var(--text);height:6px;top:0;}
+.file-bar{
+  position:relative;height:22px;
+  background:var(--panel);border:1px solid var(--hair);border-radius:2px;
+  overflow:hidden;
+}
+.file-seg{
+  position:absolute;top:0;bottom:0;min-width:0;padding:0;
+  background:var(--steel-dim);border:0;border-radius:0;
+  transition:background-color .15s ease;
+}
+button.file-seg{cursor:pointer;}
+button.file-seg:hover{background:var(--steel);}
+.file-seg.is-on{background:var(--text);}
+/* Not weights: the graph itself at the front, and the declaration of outputs
+   and value shapes at the back. Hatched the way a section cut is hatched, so
+   the eye reads it as a different material. */
+.file-seg.is-meta{
+  background:repeating-linear-gradient(
+    45deg,var(--hair) 0 3px,var(--steel-dim) 3px 6px);
+}
+.file-brackets{position:relative;height:15px;}
+.file-bracket{
+  position:absolute;top:0;height:15px;min-width:0;
+  border-left:1px solid var(--steel-dim);border-top:1px solid var(--steel-dim);
+  font-family:var(--mono);font-size:9px;line-height:14px;color:var(--muted);
+  text-align:center;overflow:hidden;white-space:nowrap;
+}
+.file-bar-readout{
+  font-family:var(--mono);font-size:10px;line-height:15px;height:15px;
+  color:var(--text);letter-spacing:0.02em;margin:7px 0 0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.file-bar-key{
+  font-family:var(--mono);font-size:9.5px;line-height:15px;height:15px;
+  color:var(--steel-dim);letter-spacing:0.02em;margin:3px 0 0;overflow:hidden;
+}
+
+/* Which copy the panel is reading from. Fixed width, right-aligned: the word
+   changes three times over a load and the label beside it must not move. */
+.file-source{
+  flex:none;width:92px;margin-left:auto;text-align:right;
+  font-family:var(--mono);font-size:9.5px;line-height:15px;color:var(--steel-dim);
+  letter-spacing:0.02em;white-space:nowrap;overflow:hidden;
+}
+.label-row.file-label{flex-wrap:nowrap;}
+.label-row.file-label .field-label{
+  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+
+.file-eyebrow{
+  font-family:var(--mono);font-size:10px;line-height:15px;height:15px;
+  color:var(--steel);letter-spacing:0.02em;margin:0 0 6px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.file-canvas-box{
+  height:210px;overflow:hidden;
+  background:var(--panel);border:1px solid var(--hair);border-radius:4px;
+}
+/* The drawing surface is sized from the box, not the other way round, so a
+   resize repaints at the new device pixel ratio without the box moving. */
+.file-canvas{display:block;width:100%;height:100%;cursor:crosshair;}
+.file-blob-controls{display:flex;align-items:center;gap:8px;height:28px;margin-top:8px;}
+.file-blob-controls .btn{padding:4px 10px;font-size:10.5px;letter-spacing:0.1em;}
+.file-page{
+  margin-left:auto;min-width:0;
+  font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.03em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+/* Two reserved lines: the arithmetic that turns one byte into one weight. */
+.file-readout{
+  font-family:var(--mono);font-size:10.5px;line-height:15px;height:30px;
+  color:var(--text);letter-spacing:0.02em;margin:8px 0 0;overflow:hidden;
+}
+
+.file-curve{
+  position:relative;
+  background:var(--panel);border:1px solid var(--hair);border-radius:4px;
+  padding:6px 8px 0;
+}
+/* Stretched on x only, so a vertical mark is drawn as a rectangle one bin
+   wide rather than as a hairline that would stretch with it. */
+.file-curve svg{display:block;width:100%;height:108px;}
+.file-curve-fill{fill:var(--steel-dim);}
+.file-curve-zero{fill:var(--steel);}
+.file-curve-axis{fill:var(--hair);}
+.file-curve-ticks{position:relative;height:15px;}
+.file-curve-ticks span{
+  position:absolute;top:0;transform:translateX(-50%);
+  font-family:var(--mono);font-size:9px;line-height:15px;color:var(--muted);
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+.file-curve-stat{
+  font-family:var(--mono);font-size:10px;line-height:15px;height:30px;
+  color:var(--text);letter-spacing:0.02em;margin:6px 0 0;overflow:hidden;
+}
+
+/* Where the numbers came from, and whether the copy in this browser is still
+   the copy they were read from. */
+.file-proof{
+  font-family:var(--mono);font-size:10px;line-height:15px;height:30px;
+  color:var(--muted);letter-spacing:0.02em;
+  margin:14px 0 0;padding-top:10px;border-top:1px solid var(--hair);
+  overflow:hidden;
+}
+
 /* --- responsive ---------------------------------------------------------- */
 
 @media(max-width:620px){
@@ -909,6 +1076,31 @@ button.inst-note:hover{background:color-mix(in srgb,var(--amber) 16%,var(--amber
   .lens-trace-track{width:24px;flex:none;}
   .mini-legend{right:10px;bottom:10px;padding:7px 9px;font-size:9.5px;}
   .mini-legend .ml-note{display:none;}
+
+  /* Instrument E: the four columns of a tensor row no longer fit on one
+     line, so the row folds into three — still one fixed height, and six
+     rows in the same box. Everything that reserves lines for text reserves
+     one more of them here. */
+  .file-stat{height:60px;}
+  .file-list{height:277px;}
+  .file-row{
+    height:46px;
+    grid-template-columns:minmax(0,1fr) 24px 84px;
+    grid-template-areas:"name type bytes" "shape shape shape" "note note note";
+    align-content:center;row-gap:0;
+  }
+  .file-row-name{line-height:16px;}
+  .file-row-shape,.file-row-type,.file-row-bytes{line-height:14px;}
+  .file-row-shape{text-align:left;}
+  .file-eyebrow{height:30px;white-space:normal;text-overflow:clip;}
+  .file-canvas-box{height:132px;}
+  .file-readout{height:45px;}
+  .file-curve svg{height:88px;}
+  .file-curve-stat{height:45px;}
+  .file-bar-readout{height:30px;white-space:normal;text-overflow:clip;}
+  .file-bar-key{height:30px;}
+  .file-proof{height:60px;}
+  .file-source{width:78px;font-size:9px;}
 
   /* The note has had a line to itself since 780px; here it also drops a step
      in size, one line still, in every mode. */

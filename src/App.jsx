@@ -4,6 +4,7 @@ import Tokenizer from './instruments/Tokenizer.jsx'
 import Stepper from './instruments/Stepper.jsx'
 import AttentionInspector from './instruments/AttentionInspector.jsx'
 import GlassPass from './instruments/GlassPass.jsx'
+import FileView from './instruments/FileView.jsx'
 import ModeControl from './components/ModeControl.jsx'
 import {
   DEFAULT_SENTENCE,
@@ -439,6 +440,16 @@ export default function App() {
   )
 
   const instruments = {
+    // Instrument E has no illustrative mode to switch away from, so it takes
+    // no part of the shared sequence state — only whether the model bytes are
+    // in the browser yet.
+    file: (
+      <FileView
+        modelStatus={modelStatus}
+        progress={progress}
+        onLoad={handleLoad}
+      />
+    ),
     tokenizer: (
       <Tokenizer
         text={text}

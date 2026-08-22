@@ -108,7 +108,7 @@ export default function Tokenizer({
       </div>
 
       <figcaption id={`${inputId}-cap`}>
-        FIG.1 — One forward pass begins here: text becomes vectors before any
+        FIG.2 — One forward pass begins here: text becomes vectors before any
         weight matrix touches it.
       </figcaption>
     </figure>
