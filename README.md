@@ -8,9 +8,10 @@ Spec: `interactive-guide-spec.md`.
 
 ## Status
 
-Phases 1, 2 and 3A are merged and deployed: the illustrative build, real
-`distilgpt2` running in the browser behind a load button, and the glass pass
-(instrument D). Instrument E — the file itself — is on the `the-file` branch.
+Phases 1, 2, 3A and instrument E are merged and deployed: the illustrative
+build, real `distilgpt2` running in the browser behind a load button, the glass
+pass (instrument D), and the file itself (instrument E). The paper pass — the
+light theme and the plain-words rewrite — is on the `paper` branch.
 
 The page works with no model loaded; in that state every number outside
 instrument E is an illustrative heuristic from `src/lib/toyModel.js` and is
@@ -53,7 +54,7 @@ src/instruments/AttentionInspector.jsx
                                    C — attention inspector          (section 04)
 src/instruments/GlassPass.jsx      D — residual stream + logit lens (section 04)
 src/components/                    LoadNote, ModeControl, InfoTag, TeachPair,
-                                   KVInspector
+                                   KVInspector, ReadingLine
 src/lib/toyModel.js                Phase 1 heuristics
 src/lib/realModel.js               transformers.js and distilgpt2, imported
                                    only when the reader asks for the real model
@@ -73,9 +74,15 @@ src/styles.css                     design tokens + all styling
 Instruments A, B, C and D share one sequence, lifted into `App.jsx`: text
 typed into A is tokenized, B appends generated tokens to it, C queries
 whatever that sequence currently is, and D reads the stack at one position of
-it. E shares none of that. It reads the file the other four run on, and the
-only thing it takes from the page is whether the model bytes have arrived in
-the browser yet.
+it. B, C and D each say which sentence they are reading, in one reserved line
+at the top of the instrument, because A's input box is two or three sections
+above them by the time they are on screen.
+
+E shares none of that sequence. It reads the file the other four run on. What
+it takes from the page is whether the model has arrived in the browser yet, and
+— so that it can answer the reader who changed the text and expected the file
+to change with it — the text itself and the key of the run the model has
+completed over it.
 
 There is one worker, not two. D's lens and E's reads both want the same 83 MB
 of model file, and a second worker would mean a second copy of it.
@@ -88,8 +95,8 @@ can show it to a reader who has not downloaded anything,
 `scripts/read-model-file.mjs` reads the file ahead of time and writes
 `src/content/fileFacts.json`: every initializer with its dtype, shape, byte
 length and absolute offset; a byte-exact distribution of each of them; and a
-window of raw values out of every one — 32 rows by 96 columns for each of the
-26 quantized weights, and the first 96 values of each of the 50 f32 norms and
+window of raw values out of every one — 24 rows by 64 columns for each of the
+26 quantized weights, and the first 64 values of each of the 50 f32 norms and
 biases. Provenance is recorded with it
 — the URL, the sha256 and the date — and the script refuses to write facts
 about a file that hashes to something else.
@@ -102,11 +109,42 @@ node scripts/read-model-file.mjs --allow-new-sha     # the upload has changed
 
 The JSON is committed, and imported dynamically so that it is its own chunk
 rather than part of the initial bundle. Once the reader loads the real model
-the worker re-reads all of it out of the browser's cached copy, and the panel
-says whether the two agree — hash included.
+the worker re-reads all of it out of the copy in the browser, and the panel
+says whether the two agree — fingerprint included.
+
+It goes back a second time. When the reader changes the sentence in instrument
+A and the model runs on the new one, instrument E hashes the whole file again
+and says what it found: the reader has just watched every other instrument
+change and is entitled to know, at that moment, that this one did not. The
+claim is a reading rather than a memory, which is why `readSha` in
+`src/lib/fileBytes.js` is the one call in that module that is not cached.
+
+## Design
+
+The page is paper: an operators'-manual ground with ink drawn on it. Dense
+fields of data — instrument B's two panes, instrument C's lookup table,
+instrument D's lens rows, instrument E's byte window — are set into it on dark
+panels, the way a manual sets a code block into a page. Everything else is ink
+and role colour on card. Full token table and the rules that go with it:
+`interactive-guide-spec.md` §3.
 
 ## Colour law
 
-Steel is frozen machinery (weights, dies). Amber is the moving part
-(activations, tokens in flight, values). Green is keys and searchable
-metadata. This mapping is the visual thesis — do not swap it.
+Three roles, and the tokens are named for the roles rather than for the colours
+filling them, because the colours have been repainted once and the roles have
+not:
+
+- `--frozen` (blue) is frozen machinery — weights, dies, anything that never
+  changes.
+- `--moving` (yellow) is the moving part — activations, tokens in flight,
+  values.
+- `--keys` (green) is keys and searchable metadata.
+
+This mapping is the visual thesis — do not swap it. `--alert` (red) is not one
+of the roles; it is errors and warnings, used sparingly.
+
+Two rules follow from the ground being light. Yellow is a fill and never
+body-size text on paper, so anything that has to be read in the moving-part
+role takes `--moving-ink`. And a role colour on a dark panel is not the same
+swatch as on paper: `--frozen-on-screen` and `--keys-on-screen` are the only
+forms of those two allowed there.
