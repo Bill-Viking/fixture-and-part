@@ -238,7 +238,7 @@ export default function GlassPass({
       </div>
 
       <figcaption>
-        FIG.5 — One position, read at seven depths. The winner column prices
+        FIG.6 — One position, read at seven depths. The winner column prices
         the token the last row settles on, all the way back up the stack.
       </figcaption>
     </figure>

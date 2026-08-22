@@ -356,7 +356,15 @@ function Curve({ histogram }) {
   )
 }
 
-export default function FileView({ text, ranKey, modelStatus, progress, onLoad }) {
+export default function FileView({
+  text,
+  ranKey,
+  selected,
+  onSelectTensor,
+  modelStatus,
+  progress,
+  onLoad,
+}) {
   const [facts, setFacts] = useState(null)
   const [live, setLive] = useState(null)
   const [liveError, setLiveError] = useState(null)
@@ -364,7 +372,10 @@ export default function FileView({ text, ranKey, modelStatus, progress, onLoad }
   const [windows, setWindows] = useState(() => new Map())
   const [mismatches, setMismatches] = useState([])
   const [manifestMatch, setManifestMatch] = useState(null)
-  const [selected, setSelected] = useState(WTE)
+  // The selected tensor is owned by App: instrument F's steel boxes select
+  // rows here, and one selection cannot have two owners. WTE is still what it
+  // opens on — that default now lives one level up.
+  const setSelected = onSelectTensor
   const [page, setPage] = useState(0)
   const [cell, setCell] = useState(null)
   const [hovered, setHovered] = useState(null)
@@ -571,11 +582,14 @@ export default function FileView({ text, ranKey, modelStatus, progress, onLoad }
 
   // --- selection ------------------------------------------------------------
 
-  const select = useCallback((name) => {
-    setSelected(name)
-    setPage(0)
-    setCell(null)
-  }, [])
+  const select = useCallback(
+    (name) => {
+      setSelected(name)
+      setPage(0)
+      setCell(null)
+    },
+    [setSelected],
+  )
 
   // Keeps the selected row visible without ever scrolling the page: only the
   // list's own scrollTop moves, and only when the row is outside it.

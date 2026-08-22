@@ -4,6 +4,7 @@ import Tokenizer from './instruments/Tokenizer.jsx'
 import Stepper from './instruments/Stepper.jsx'
 import AttentionInspector from './instruments/AttentionInspector.jsx'
 import GlassPass from './instruments/GlassPass.jsx'
+import ForwardMap from './instruments/ForwardMap.jsx'
 import FileView from './instruments/FileView.jsx'
 import ModeControl from './components/ModeControl.jsx'
 import {
@@ -74,6 +75,23 @@ function MiniLegend({ visible }) {
   )
 }
 
+/**
+ * The row instrument E opens on. It lives up here because instrument F's
+ * steel boxes select rows in E, so the selection has to be one thing owned by
+ * one component; E's own default is unchanged.
+ */
+const FILE_DEFAULT_TENSOR = 'transformer.wte.weight_quantized'
+
+/**
+ * Scrolls one instrument into view. The lettered markers on instrument F's
+ * drawing are windows onto the instrument each part belongs to, and this is
+ * what opening one does.
+ */
+function scrollToInstrument(name) {
+  const node = document.getElementById(`inst-${name}`)
+  if (node) node.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
 /** Where instrument C points when a real tokenization is first built. */
 function realQueryIndex(text, tokens) {
   if (tokens.length === 0) return 0
@@ -122,6 +140,11 @@ export default function App() {
   // mode is pinned to greedy — the toy numbers are hand-tuned, and drawing
   // from a hand-tuned distribution would be theatre.
   const [decode, setDecode] = useState('sampled')
+  // Which tensor instrument E is showing. It lives here rather than in E
+  // because instrument F's steel boxes open it: a click on the map's c_attn
+  // box has to select that row in the file, and two components cannot own one
+  // selection. E's default is unchanged.
+  const [fileTensor, setFileTensor] = useState(FILE_DEFAULT_TENSOR)
   const realBaseKey = useRef(null)
   // Read from the forward-pass effect, which must not re-subscribe on typing.
   const textRef = useRef(text)
@@ -148,6 +171,13 @@ export default function App() {
   const runKey = sequenceIds.join(',')
   const runReady = Boolean(realRun) && realRun.key === runKey
   const realPending = isReal && sequenceIds.length > 0 && !runReady
+  // The key of a finished pass over the text that is in the box NOW. The
+  // tokenizer is debounced, so for a moment after a keystroke there is a
+  // finished run belonging to the previous sentence; instruments that claim
+  // to be reading the reader's own sentence — E and F — gate on this rather
+  // than on runReady alone.
+  const ranKey =
+    isReal && runReady && realBase?.text === text ? runKey : null
 
   const clearLens = useCallback(() => {
     lensCancel.current?.()
@@ -337,6 +367,16 @@ export default function App() {
     [isReal, runReady, realRun],
   )
 
+  const openInstrument = useCallback((name) => scrollToInstrument(name), [])
+
+  // A steel box on instrument F's map, opened in instrument E: select the row
+  // and scroll to it. E scrolls its own list to the selected row without
+  // moving the page, so this is the only scroll that happens.
+  const openTensor = useCallback((name) => {
+    setFileTensor(name)
+    scrollToInstrument('file')
+  }, [])
+
   // Clicking the selected chip again clears the panel; any other chip
   // switches it.
   const handleKvSelect = useCallback((index, role) => {
@@ -472,9 +512,9 @@ export default function App() {
     file: (
       <FileView
         text={text}
-        ranKey={
-          isReal && runReady && realBase?.text === text ? runKey : null
-        }
+        ranKey={ranKey}
+        selected={fileTensor}
+        onSelectTensor={setFileTensor}
         modelStatus={modelStatus}
         progress={progress}
         onLoad={handleLoad}
@@ -544,6 +584,32 @@ export default function App() {
         onHeadChange={setHead}
       />
     ),
+    forward: (
+      <ForwardMap
+        text={text}
+        sequence={sequence}
+        lensIndex={safeLens}
+        onSelect={handleLensSelect}
+        layer={layer}
+        onLayerChange={setLayer}
+        real={isReal && Boolean(ranKey)}
+        run={isReal && runReady ? realRun : null}
+        reading={lensStale ? null : lensReading}
+        nextToken={
+          // The token B will append. In real mode that is the sampler's own
+          // pick, which is not always in the printed shortlist — the draw
+          // reaches forty deep and the list shows four.
+          pick?.token ?? candidates.find((c) => c.wins)?.token ?? null
+        }
+        pending={realPending}
+        stepTick={stepTick}
+        modelStatus={modelStatus}
+        progress={progress}
+        onLoad={handleLoad}
+        onOpenInstrument={openInstrument}
+        onOpenTensor={openTensor}
+      />
+    ),
     glass: (
       <GlassPass
         text={text}
@@ -596,7 +662,11 @@ export default function App() {
               if (block.type === 'duo') return <Duo key={key} cards={block.cards} />
               if (block.type === 'instrument') {
                 return (
-                  <div key={key} className="instrument-slot">
+                  <div
+                    key={key}
+                    className="instrument-slot"
+                    id={`inst-${block.name}`}
+                  >
                     {instruments[block.name]}
                   </div>
                 )

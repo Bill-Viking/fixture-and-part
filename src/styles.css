@@ -525,6 +525,180 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 .tok-space{color:var(--muted);}
 
 
+/* --- instrument F: the forward pass, live --------------------------------- */
+
+/* The one drawing on the page that is a drawing rather than a table, so it
+   takes the whole width of the instrument body and is the biggest screen
+   here. Every colour in it is one of three: the machinery is the on-screen
+   blue, everything that moves is the yellow, and the words are the screen's
+   own two greys. Nothing else is allowed in.
+
+   The height is an aspect ratio rather than a number. The viewBox and the
+   ratio come from the same constants in ForwardMap.jsx, so the drawing scales
+   uniformly to whatever width it is given and its height follows from that
+   width and from nothing else — not from how many tokens are in the sequence,
+   not from which layer is selected, not from whether the model has loaded. */
+.map-controls{
+  display:flex;align-items:center;flex-wrap:wrap;gap:10px;
+  height:30px;overflow:hidden;margin-bottom:12px;
+}
+.map-controls .attn-sel{flex:none;}
+/* Holds the selector's place before the model arrives, so the row is the same
+   row in both modes. */
+.map-sel-ghost{
+  flex:none;font-family:var(--mono);font-size:10.5px;letter-spacing:0.1em;
+  color:var(--muted);white-space:nowrap;
+}
+.map-run-btn{flex:none;padding:5px 12px;font-size:10.5px;letter-spacing:0.12em;}
+.map-ctl-note{
+  /* Basis zero, not auto: with an auto basis the note's own content width is
+     what the row wraps against, and at 1280 the illustrative wording came to
+     within six pixels of the row and wrapped onto a second line the row's
+     fixed height then hid. It takes whatever is left and ellipsizes. */
+  flex:1 1 0;min-width:0;text-align:right;
+  font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.04em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+
+.map-screen{
+  width:100%;overflow:hidden;
+  /* aspect-ratio is set inline from the same constants the viewBox uses. */
+}
+.map-svg{display:block;width:100%;height:100%;}
+
+/* Words on the screen. */
+.map-label{
+  font-family:var(--mono);font-size:9.5px;letter-spacing:0.06em;
+  fill:var(--screen-muted);
+}
+.map-header{
+  font-family:var(--mono);font-size:8.5px;letter-spacing:0.14em;
+  fill:var(--frozen-on-screen);text-transform:uppercase;
+}
+.map-legend{
+  font-family:var(--mono);font-size:9px;letter-spacing:0.02em;
+  fill:var(--screen-muted);
+}
+.map-out{
+  font-family:var(--mono);font-size:10px;letter-spacing:0.02em;
+  fill:var(--screen-text);
+}
+.map-out.is-next{fill:var(--moving);}
+
+/* The machinery. A band is a recess in the screen; the selected layer's band
+   is lifted out of it, because that is the one whose threads and head squares
+   are live. */
+.map-band-bg{
+  fill:var(--screen-sunk);stroke:none;
+}
+.map-band.is-on .map-band-bg{
+  fill:color-mix(in srgb,var(--frozen-on-screen) 9%,var(--screen-sunk));
+  stroke:var(--frozen-on-screen);stroke-width:1;stroke-opacity:.5;
+}
+
+/* Every steel box is a button: it opens its own row of the file. */
+.map-part{cursor:pointer;}
+.map-part rect{
+  fill:var(--screen);stroke:var(--frozen-on-screen);stroke-width:1;
+  stroke-opacity:.6;
+  transition:fill .15s ease,stroke-opacity .15s ease;
+}
+.map-part:hover rect{
+  fill:color-mix(in srgb,var(--frozen-on-screen) 14%,var(--screen));
+  stroke-opacity:1;
+}
+.map-part.is-on rect{
+  fill:color-mix(in srgb,var(--frozen-on-screen) 20%,var(--screen));
+  stroke-opacity:1;stroke-width:1.4;
+}
+.map-part-name{
+  font-family:var(--mono);letter-spacing:0.02em;fill:var(--frozen-on-screen);
+}
+.map-part-spec{
+  font-family:var(--mono);letter-spacing:0;fill:var(--screen-muted);
+}
+
+/* Twelve heads. Outlined in every block, filled only in the selected one —
+   the same machinery six times, one of them instrumented. What they are
+   filled by is named in the legend under the drawing. */
+.map-head{
+  fill:var(--moving);fill-opacity:0;
+  stroke:var(--frozen-on-screen);stroke-width:.8;stroke-opacity:.4;
+}
+.map-head.is-lit{stroke:var(--moving);stroke-opacity:.7;}
+
+/* The embedding table, used backwards at the end: one drawn tie from the
+   unembedding back up to wte, because there is no second copy of it in the
+   file and the drawing should not imply there is. */
+.map-tie{
+  fill:none;stroke:var(--frozen-on-screen);stroke-width:1;
+  stroke-dasharray:3 3;stroke-opacity:.55;
+}
+
+/* The sequence. These chips are tokens in flight, so they are the yellow —
+   on ink, where the yellow carries at 10:1 and needs no dark variant. */
+.map-chip{cursor:pointer;}
+.map-chip rect{
+  fill:color-mix(in srgb,var(--moving) 14%,var(--screen));
+  stroke:var(--moving);stroke-width:1;stroke-opacity:.65;
+  transition:fill .15s ease;
+}
+.map-chip text{font-family:var(--mono);fill:var(--moving);letter-spacing:0;}
+.map-chip:hover rect{fill:color-mix(in srgb,var(--moving) 28%,var(--screen));}
+.map-chip.is-on rect{fill:var(--moving);stroke-opacity:1;}
+.map-chip.is-on text{fill:var(--moving-on);font-weight:600;}
+
+/* The moving part itself. The line is the stream, drawn faintly all the way
+   down so a column reads as continuous; the nodes are the seven readings, and
+   their brightness and radius are the norm of the vector at that depth. */
+.map-col-line{stroke:var(--moving);stroke-width:1;stroke-opacity:.1;}
+.map-col.is-on .map-col-line{stroke-width:1.6;stroke-opacity:.28;}
+.map-seg{stroke:var(--moving);stroke-width:2;}
+.map-col.is-on .map-seg{stroke-width:3.4;}
+.map-node{fill:var(--moving);}
+.map-col.is-on .map-node{stroke:var(--moving);stroke-width:.8;}
+
+/* Attention, in the selected layer, for the selected token: one thread per
+   token it reads, drawn over the machinery it is reading through. */
+.map-arc{fill:none;stroke:var(--moving);stroke-width:1.4;}
+
+/* The lettered markers. Chrome, not data: the on-screen blue, and they open
+   the instrument the part belongs to. */
+.map-window{cursor:pointer;}
+.map-window rect{
+  fill:var(--screen);stroke:var(--frozen-on-screen);stroke-width:1;
+  transition:fill .15s ease;
+}
+.map-window:hover rect{fill:var(--frozen-on-screen);}
+.map-window text{
+  font-family:var(--mono);font-size:8.5px;letter-spacing:0;
+  fill:var(--frozen-on-screen);font-weight:600;
+}
+.map-window:hover text{fill:var(--screen);}
+
+/* The replay. Opacity only — nothing here is laid out by the animation, so a
+   pass can run without moving a pixel of the page. The delay is written per
+   element so the light travels token by token and stop by stop; the group is
+   keyed on a counter, so re-running it is a remount rather than a timer. */
+.map-lit{animation:map-arrive .42s ease-out both;animation-delay:var(--d,0ms);}
+@keyframes map-arrive{
+  from{opacity:0;}
+  to{opacity:1;}
+}
+
+/* What the selected steel box is, read out of the file's own manifest, and
+   the button that opens it there. One reserved line, one fixed button. */
+.map-readout-row{
+  display:flex;align-items:center;gap:10px;height:30px;margin-top:10px;
+}
+.map-readout{
+  flex:1 1 auto;min-width:0;
+  font-family:var(--mono);font-size:10.5px;line-height:15px;
+  color:var(--ink);letter-spacing:0.02em;margin:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.map-open-btn{flex:none;padding:5px 10px;font-size:10px;letter-spacing:0.1em;}
+
 /* --- instrument B: stepper + rack ---------------------------------------- */
 
 .controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:16px;}
@@ -594,6 +768,19 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
   color:var(--muted);letter-spacing:0.04em;white-space:nowrap;
   min-width:0;overflow:hidden;text-overflow:ellipsis;
 }
+/* Fixed width, and the words left-aligned inside it — the same fix
+   .controls-note needed and for the same reason. Pushed right by
+   `margin-left:auto` with a shrink-to-fit box, this note's right edge was
+   pinned and its left edge moved every time the wording changed length, which
+   walks every glyph in it sideways: measured at 6.4px on the decoding toggle.
+   260px holds the longest of the four wordings,
+   "distilgpt2 · sampled · whitespace skipped", at this size. Below 480px the
+   note already has a row of its own where it is left-aligned, so its left
+   edge cannot move and no width is needed. */
+@media(min-width:481px){
+  .cand-note{width:260px;flex:none;text-align:left;}
+}
+
 /* Below ~480px "considering next" + the badge + the note no longer share
    one line without clipping mid-word. Let the head wrap to two lines
    instead — still a fixed height for this breakpoint, so STEP still never
@@ -1393,6 +1580,27 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
 
 @media(max-width:640px){
   body{font-size:16px;}
+  /* Instrument F: the selector and the button on one line, the note on the
+     two it needs below them. Reserved in both modes, so the mode swap moves
+     nothing. The drawing itself needs no rule here — it is switched to its
+     own compact geometry by the same 640px query, read in JavaScript, and
+     its height has always been a function of its width. */
+  .map-controls{height:74px;align-content:center;}
+  .map-ctl-note{
+    flex:1 1 100%;text-align:left;
+    white-space:normal;overflow:visible;text-overflow:clip;line-height:14px;
+  }
+  /* The readout is a whole tensor name plus its numbers and cannot share a
+     line with the button here. Two reserved rows for the pair, and the
+     readout itself is pinned to the two lines its longest tensor takes — the
+     row centres its contents, so a readout that grew from one line to two
+     would move itself and the button under it even though the row's own
+     height never changed. */
+  .map-readout-row{height:66px;flex-wrap:wrap;align-content:center;}
+  .map-readout{
+    flex:1 1 100%;white-space:normal;overflow:hidden;text-overflow:clip;
+    height:30px;
+  }
   .wrap{padding:0 18px 90px;}
   header{padding:60px 0 36px;}
   .sub{font-size:17px;}
@@ -1535,7 +1743,11 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
      both of them in either decoding rule, so the swap still moves nothing. */
   .decode-row{height:68px;}
   .decode-row .mode-state{
-    white-space:normal;overflow:visible;text-overflow:clip;line-height:14px;
+    white-space:normal;overflow:hidden;text-overflow:clip;line-height:14px;
+    /* Both lines reserved in either rule: the row centres what is in it, so
+       the shorter wording would otherwise sit seven pixels higher than the
+       longer one. */
+    height:28px;
   }
 
   /* The K/V note is too long to share a line with its label here. */
@@ -1562,6 +1774,12 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
     scroll-behavior:auto !important;
   }
   .sweep{display:none;}
+  /* Instrument F's replay. The blanket rule above shortens the duration but
+     leaves the delay, and the delay is the whole animation here — so the
+     light travelling down the columns is turned off outright and every node,
+     segment, thread and head square is drawn at its final opacity the moment
+     RUN THE PASS is pressed. */
+  .map-lit{animation:none;}
   /* New in this pass: the candidate rows and the info popover appear at
      their final state instead of animating in. */
   .cand,.cand.is-winner,.info-pop,.kv-stack{animation:none;}

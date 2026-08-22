@@ -310,9 +310,22 @@ export default function Stepper({
         note={
           <LoadNote
             label={
-              real
-                ? `real distilgpt2 continuation · ${decode}, whitespace skipped`
-                : 'illustrative continuation'
+              real ? (
+                // The note's right edge is pinned by the head, so a wording
+                // that changes length here walks every glyph in the line
+                // sideways. Both wordings share one grid cell — the same
+                // trick instrument A's note uses — so the cell is always as
+                // wide as the wider of the two.
+                <TeachPair
+                  as="span"
+                  wrapAs="span"
+                  show={decode === 'sampled' ? 'a' : 'b'}
+                  a="real distilgpt2 continuation · sampled, whitespace skipped"
+                  b="real distilgpt2 continuation · greedy, whitespace skipped"
+                />
+              ) : (
+                'illustrative continuation'
+              )
             }
             status={modelStatus}
             progress={progress}
@@ -434,7 +447,7 @@ export default function Stepper({
       </div>
 
       <figcaption>
-        FIG.3 — Each STEP appends exactly one row. The sweep is the new
+        FIG.4 — Each STEP appends exactly one row. The sweep is the new
         token&rsquo;s query reading every entry already staged.
       </figcaption>
     </figure>
