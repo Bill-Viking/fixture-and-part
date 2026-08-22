@@ -441,10 +441,14 @@ export default function App() {
 
   const instruments = {
     // Instrument E has no illustrative mode to switch away from, so it takes
-    // no part of the shared sequence state — only whether the model bytes are
-    // in the browser yet.
+    // no part of the shared sequence state. What it does take is the two
+    // things it needs to answer the reader who changed the text and expected
+    // the file to change with it: the text itself, and the key of the run the
+    // model has completed over it. It reads the file again and says so.
     file: (
       <FileView
+        text={text}
+        ranKey={isReal && runReady ? runKey : null}
         modelStatus={modelStatus}
         progress={progress}
         onLoad={handleLoad}
@@ -473,6 +477,7 @@ export default function App() {
     ),
     stepper: (
       <Stepper
+        text={text}
         baseTokens={baseTokens}
         sequence={sequence}
         stepTick={stepTick}
@@ -493,6 +498,7 @@ export default function App() {
     ),
     attention: (
       <AttentionInspector
+        text={text}
         sequence={sequence}
         queryIndex={safeQuery}
         onQueryChange={setQueryIndex}
@@ -511,6 +517,7 @@ export default function App() {
     ),
     glass: (
       <GlassPass
+        text={text}
         sequence={sequence}
         baseTokens={baseTokens}
         lensIndex={safeLens}
