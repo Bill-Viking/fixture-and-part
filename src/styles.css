@@ -1,9 +1,9 @@
 /* ==========================================================================
    The Fixture and the Part — interactive guide
 
-   The page is paper: an operators'-manual ground with ink drawn on it, and
-   dense fields of data set into it on dark screens the way a manual sets a
-   code block into a page.
+   The page is a white page ground with ink drawn on it, and dense fields of
+   data set into it on dark screens the way a manual sets a code block into a
+   page.
 
    The colour law is the visual thesis and the tokens are named for the roles
    it assigns, not for the colours that fill them. Never swap the roles.
@@ -13,12 +13,13 @@
      --keys    keys and searchable metadata
      --alert   the one loud thing — errors and warnings, used sparingly
 
-   Two rules about the roles, because paper is not a dark screen:
+   Two rules about the roles, because the page ground is not a dark screen:
 
-   1. Yellow is a fill, never body-size text on paper. Bars, token grounds,
-      highlights and the one filled button take --moving with ink on top;
-      anything that has to be READ in the moving-part role takes --moving-ink,
-      a dark amber that passes AA on paper.
+   1. Yellow is a fill, never body-size text on the page ground. Bars, token
+      grounds, highlights and the one filled button take --moving with
+      --moving-on written on top; anything that has to be READ in the
+      moving-part role takes --moving-ink, a dark amber that passes AA on the
+      page ground.
    2. A role colour on a screen is not the same swatch as on paper. Yellow
       carries at 10:1 on ink and needs no variant; blue and green do, so
       --frozen-on-screen and --keys-on-screen exist and are the only forms of
@@ -29,34 +30,39 @@
 
 :root{
   /* grounds: the page, a sheet laid on it, a box recessed into the sheet */
-  --paper:#F5F0E4; --card:#FDFBF4; --sunk:#EFE9DA;
+  --paper:#F4F5F7; --card:#FFFFFF; --sunk:#EBEDF0;
   /* Ink, and the two weights of drawn line the page uses.
      --rule is a boundary: it draws the edge of a control, a panel or a
      section, and is dark enough to pass 3:1 on both grounds. --hair is a
      decorative separator between rows of a list or a table, where the rows
      themselves are the content and the line is only a comb; it is deliberately
      lighter than 3:1 and must never be the only thing identifying a control. */
-  --ink:#181512; --muted:#6B6355; --hair:#D8D2C4; --rule:#8C8472;
+  --ink:#14161A; --muted:#585F6A; --hair:#DCDFE4; --rule:#7E8792;
 
   /* A dark panel set into the page, and what may be written on one.
      --screen-hair is the decorative comb between rows, like --hair. */
-  --screen:#181512; --screen-sunk:#242019;
-  --screen-text:#F5F0E4; --screen-muted:#A79E8E; --screen-hair:#3B352C;
+  --screen:#14161A; --screen-sunk:#1E2127;
+  --screen-text:#F4F5F7; --screen-muted:#A3AAB5; --screen-hair:#333940;
 
   /* frozen machinery */
   /* --frozen-dim carries real information — the unselected segments of
      instrument E's byte bar and the fill under its bell curve — so it is dark
      enough to pass 3:1 on the ground it is drawn on rather than being a pale
      tint. */
-  --frozen:#1E5AA8; --frozen-dim:#5588C4; --frozen-tint:#E6EEF8;
+  --frozen:#1E5AA8; --frozen-dim:#5588C4; --frozen-tint:#E8EFF8;
   /* --frozen-on-screen is the readable blue on a dark panel; --frozen-lit is
      the top of instrument E's byte ramp, where the largest weight in a tensor
      lands. Nothing on the page is brighter than the latter. */
   --frozen-on-screen:#7FB0E8; --frozen-lit:#D6E9FF;
-  /* the moving part */
-  --moving:#F2B705; --moving-ink:#8A6400; --moving-tint:#FDF4D9;
+  /* The moving part. --moving is a fill; --moving-ink is the readable form of
+     the role on the page ground; --moving-on is what may be WRITTEN on a full
+     --moving fill, which on a light ground is the ink and on a dark one would
+     not be. It is a token rather than a hard-coded --ink so that repainting
+     the page stays a swap of this table and nothing else. */
+  --moving:#F2B705; --moving-ink:#7A5900; --moving-tint:#FCF3D8;
+  --moving-on:#14161A;
   /* keys */
-  --keys:#356B3D; --keys-tint:#E3EDE4;
+  --keys:#2C7539; --keys-tint:#E1ECE3;
   --keys-on-screen:#63B36F;
   /* the one loud thing */
   --alert:#E4432D; --alert-ink:#B32D19;
@@ -102,8 +108,10 @@ p{margin-bottom:18px;}
 p:last-child{margin-bottom:0;}
 strong{color:var(--ink);font-weight:600;}
 em{color:var(--ink);}
-/* The prose's two role words. .k is the moving part, and on paper that has to
-   be the dark amber: the pale yellow is a fill colour. */
+/* The prose's two role words — the essay calls them the steel and the amber,
+   and the legend at the top of the page uses the same two names. .k is the
+   moving part, and on a light ground that has to be the dark amber: the pale
+   gold is a fill colour, not a word. */
 .k{color:var(--moving-ink);}
 .s{color:var(--frozen);}
 .keys{color:var(--keys);}
@@ -112,7 +120,10 @@ code{font-family:var(--mono);font-size:0.86em;background:var(--sunk);border:1px 
 figure{margin:34px 0;}
 figcaption{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:10px;line-height:1.55;}
 
-.callout{background:var(--card);border:1px solid var(--hair);border-left:3px solid var(--moving);border-radius:4px;padding:20px 24px;margin:28px 0;font-size:16px;}
+/* A card ground is one twentieth of a stop off the page ground, so what makes
+   a callout a box is its edge, not its fill. A drawn rule rather than a comb,
+   matching the instrument frame it is a smaller cousin of. */
+.callout{background:var(--card);border:1px solid var(--rule);border-left:3px solid var(--moving);border-radius:4px;padding:20px 24px;margin:28px 0;font-size:16px;}
 .callout.cool{border-left-color:var(--frozen);}
 .callout .lbl{font-family:var(--mono);font-size:11.5px;letter-spacing:0.14em;color:var(--moving-ink);display:block;margin-bottom:8px;}
 .callout.cool .lbl{color:var(--frozen);}
@@ -144,7 +155,9 @@ figcaption{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:
 .mini-legend{
   position:fixed;right:14px;bottom:14px;z-index:20;
   display:flex;flex-direction:column;gap:6px;
-  background:var(--card);border:1px solid var(--hair);border-radius:4px;
+  /* It floats over the page rather than sitting in the flow, so its edge is
+     the only thing separating it from whatever scrolls under it. */
+  background:var(--card);border:1px solid var(--rule);border-radius:4px;
   padding:10px 12px;font-family:var(--mono);font-size:10.5px;color:var(--muted);
   letter-spacing:0.04em;line-height:1.2;
   opacity:0;visibility:hidden;transform:translateY(6px);pointer-events:none;
@@ -318,8 +331,11 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 /* Three rows, each a fixed height. Loading, finishing, failing and toggling
    all swap text inside boxes that were reserved up front, so none of it moves
    anything on the page. */
+/* A boundary between two blocks that do different jobs — the controls above,
+   the instrument below — rather than a comb between rows of one list, so it is
+   drawn in the rule weight. */
 .mode-bar{
-  border-bottom:1px solid var(--hair);
+  border-bottom:1px solid var(--rule);
   padding-bottom:12px;margin-bottom:16px;
 }
 .mode-row{display:flex;align-items:center;gap:10px;height:28px;}
@@ -358,11 +374,11 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 .mode-load .btn-primary{flex:none;padding:8px 14px;font-size:11.5px;letter-spacing:0.14em;}
 /* Doubled up so it outranks `.btn`, which is declared further down the file. */
 .btn.btn-primary{
-  color:var(--ink);background:var(--moving);border-color:var(--moving-ink);
+  color:var(--moving-on);background:var(--moving);border-color:var(--moving-ink);
   font-weight:600;
 }
 .btn.btn-primary:hover:not(:disabled){
-  color:var(--ink);
+  color:var(--moving-on);
   background:color-mix(in srgb,var(--moving) 78%,var(--ink));
   border-color:var(--moving-ink);
 }
@@ -407,9 +423,10 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
   display:flex;flex-wrap:wrap;align-content:flex-start;gap:8px;margin-top:16px;
   height:312px;overflow-y:auto;
 }
-/* A token in flight, on paper: the yellow is the ground and a 2px bar of it
-   down the left edge, because a 1px yellow outline on cream is a rumour of a
-   line. Everything written inside is ink or the dark amber. */
+/* A token in flight, on the page ground: the yellow is the ground and a 2px
+   bar of it down the left edge, because a 1px yellow outline on a near-white
+   page is a rumour of a line. Everything written inside is ink or the dark
+   amber. */
 .token-pill{
   display:flex;flex-direction:column;gap:2px;
   background:var(--moving-tint);border:1px solid var(--moving);
@@ -448,9 +465,19 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
    ground rather than a yellow word. */
 .btn-on{color:var(--moving-ink);border-color:var(--moving-ink);background:var(--moving-tint);}
 .btn-on:hover:not(:disabled){color:var(--moving-ink);border-color:var(--moving-ink);background:var(--moving-tint);}
+/* Fixed width, and the words left-aligned inside it — the same fix the file
+   source tag in instrument E needed, and for the same reason. Pushed right by
+   `margin-left:auto` with a shrink-to-fit box, this counter's right edge was
+   pinned and its left edge moved every time the wording changed length, which
+   walks every glyph in it sideways. That is a layout shift even though
+   nothing around it moved: three STEPs with the rack on screen reported two
+   of them. 160px holds the longest of the two wordings, "no tokens generated
+   yet", at this size. */
 .controls-note{
   font-family:var(--mono);font-size:10.5px;color:var(--muted);
   margin-left:auto;letter-spacing:0.04em;
+  width:160px;flex:none;text-align:left;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 
 /* The shortlist for the next STEP. Height is fixed whatever it holds — full,
@@ -533,20 +560,33 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 }
 .chip-legend{display:flex;align-items:center;gap:5px;letter-spacing:0;}
 .chip-legend .chip{width:22px;}
-/* Both panes are screens: a run of tokens and a rack of chips are dense
-   fields of values, not labelled charts, and on ink the K green and the V
-   yellow finally read as the two different things they are. */
+/* The rack is a screen — a dense field of chips, where the K green and the V
+   amber finally read as the two different things they are. Its neighbour is
+   not. A sentence is a handful of words, so the same box drawn in ink held two
+   lines of text and three hundred pixels of black underneath them, which reads
+   as something broken rather than as something reserved. It is a card with a
+   drawn edge instead, at exactly the height it always had: the box still holds
+   the longest run this instrument can generate, so nothing below it moves. */
 .pane-box{
   height:224px;
+  --sweep-travel:224px;
   position:relative;overflow:hidden;
 }
-.seq-box{display:flex;flex-wrap:wrap;align-content:flex-start;gap:6px;padding:10px;overflow-y:auto;}
+.seq-box{
+  display:flex;flex-wrap:wrap;align-content:flex-start;gap:6px;padding:10px;
+  overflow-y:auto;
+  background:var(--card);border:1px solid var(--rule);border-radius:4px;
+}
+/* On card, so the paper forms of both roles: the run of tokens already
+   committed is frozen machinery, and the newest one is the part that moved. */
 .seq-token{
   font-family:var(--mono);font-size:12.5px;
-  color:var(--frozen-on-screen);
-  border-bottom:1px solid var(--screen-hair);padding:1px 2px;
+  color:var(--frozen);
+  border-bottom:1px solid var(--hair);padding:1px 2px;
 }
-.seq-token.newest{color:var(--moving);font-weight:500;border-bottom-color:var(--moving);}
+.seq-token.newest{
+  color:var(--moving-ink);font-weight:500;border-bottom-color:var(--moving-ink);
+}
 
 .rack-list{list-style:none;height:100%;overflow-y:auto;padding:6px;margin:0;}
 .rack-row{
@@ -612,12 +652,17 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
   position:absolute;left:0;right:0;top:0;height:3px;
   background:var(--keys-on-screen);opacity:.85;z-index:2;pointer-events:none;
   animation:sweep .45s linear 1;
+  will-change:transform;
 }
-/* Animates `top` as a percentage of the rack box, so the sweep always
-   crosses the full rack whatever height the box has at this breakpoint. */
+/* Moved by transform rather than by `top`. Animating `top` relaid the sweep
+   out on every frame of every STEP — around thirty layout-shift entries a
+   press — and a shift is a shift even when it is three pixels of decoration.
+   A transform is composited and reports none. The distance is the rack box's
+   own height, carried in --sweep-travel so each breakpoint's box sweeps its
+   full length. */
 @keyframes sweep{
-  from{top:0;opacity:.85;}
-  to{top:100%;opacity:0;}
+  from{transform:translateY(0);opacity:.85;}
+  to{transform:translateY(var(--sweep-travel));opacity:0;}
 }
 @keyframes settle{
   from{opacity:0;transform:translateX(-8px);}
@@ -628,6 +673,12 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
   font-family:var(--mono);font-size:12px;color:var(--frozen);
   margin:14px 0 0;letter-spacing:0.06em;font-variant-numeric:tabular-nums;
 }
+/* Tabular figures keep one digit the same width as another, but they cannot
+   help when the count crosses from one digit to two: "× 6 layers" and the
+   badge after it slid right by eight pixels on the STEP that took the cache
+   from nine entries to ten. The number gets a box wide enough for three
+   digits and everything after it stops moving. */
+.counter-n{display:inline-block;min-width:3ch;text-align:right;}
 
 /* --- instrument B: K/V inspector ----------------------------------------- */
 
@@ -769,7 +820,7 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 }
 .query-token:hover{border-color:var(--moving-ink);}
 .query-token.is-query{
-  color:var(--ink);border-color:var(--moving-ink);border-width:2px;
+  color:var(--moving-on);border-color:var(--moving-ink);border-width:2px;
   background:var(--moving);
   font-weight:500;padding:3px 7px;
 }
@@ -796,6 +847,15 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
   letter-spacing:0.08em;color:var(--screen-muted);
   position:sticky;top:0;z-index:1;background:var(--screen);
 }
+/* The one head that still did not fit. Real mode calls this column "Q·K rel",
+   which at 0.08em needed a second line the 26px head has no room for, so "rel"
+   landed on the first row of data. Measured, not guessed: the head's content
+   was 36px tall in a 26px box, on this palette and on the one before it.
+   Two things, so it cannot come back: the tracking drops to 0.02em, and the
+   cell is pinned to one line. What is left is 48px of glyphs in a 46px column,
+   right-aligned, so the two it borrows fall in the 10px gutter beside it
+   rather than under it. */
+.attn-head .c-score{letter-spacing:0.02em;white-space:nowrap;}
 .c-tok{
   font-family:var(--mono);font-size:12px;color:var(--screen-text);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
@@ -1014,7 +1074,7 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 }
 .file-row.is-on .file-row-name{color:var(--frozen);}
 .file-row-shape,.file-row-type,.file-row-bytes{
-  font-family:var(--mono);font-size:9.5px;line-height:17px;
+  font-family:var(--mono);font-size:10px;line-height:17px;
   font-variant-numeric:tabular-nums;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
@@ -1022,7 +1082,7 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 .file-row-type{grid-area:type;color:var(--frozen);text-align:right;}
 .file-row-bytes{grid-area:bytes;color:var(--muted);text-align:right;}
 .file-row-note{
-  grid-area:note;font-family:var(--mono);font-size:9px;line-height:13px;
+  grid-area:note;font-family:var(--mono);font-size:10px;line-height:13px;
   color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 
@@ -1065,7 +1125,7 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
 .file-bracket{
   position:absolute;top:0;height:15px;min-width:0;
   border-left:1px solid var(--rule);border-top:1px solid var(--rule);
-  font-family:var(--mono);font-size:9px;line-height:14px;color:var(--muted);
+  font-family:var(--mono);font-size:10px;line-height:14px;color:var(--muted);
   text-align:center;overflow:hidden;white-space:nowrap;
 }
 .file-bar-readout{
@@ -1074,7 +1134,7 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .file-bar-key{
-  font-family:var(--mono);font-size:9.5px;line-height:15px;height:15px;
+  font-family:var(--mono);font-size:10px;line-height:15px;height:15px;
   color:var(--muted);letter-spacing:0.02em;margin:3px 0 0;overflow:hidden;
 }
 
@@ -1085,7 +1145,7 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
    assumed — it was the only shift instrument E was producing. */
 .file-source{
   flex:none;width:100px;margin-left:auto;text-align:left;
-  font-family:var(--mono);font-size:9.5px;line-height:15px;color:var(--muted);
+  font-family:var(--mono);font-size:10px;line-height:15px;color:var(--muted);
   letter-spacing:0.02em;white-space:nowrap;overflow:hidden;
 }
 .label-row.file-label{flex-wrap:nowrap;}
@@ -1135,7 +1195,13 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
 .file-curve-fill{fill:var(--frozen-dim);}
 .file-curve-zero{fill:var(--frozen);}
 .file-curve-axis{fill:var(--rule);}
-.file-curve-ticks{position:relative;height:15px;}
+/* overflow:hidden because each tick below is a full-axis-wide box shoved to
+   the right by a percentage of itself, so the one furthest right hung a whole
+   axis width off the end of the page: document.scrollWidth was 1610 at a 1280
+   viewport, invisible only because the body hides its horizontal overflow.
+   The width has to stay 100% — it is the basis the percentage translate is
+   measured against — so the clip goes here instead. */
+.file-curve-ticks{position:relative;height:15px;overflow:hidden;}
 /* Each tick is a full-width box pinned at the left and moved into place by a
    transform, so a percentage translate is a percentage of the axis. It has to
    be a transform: the ticks land somewhere different for every tensor, and an
@@ -1143,7 +1209,7 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
    same element moved by `transform` is not. */
 .file-curve-ticks span{
   position:absolute;left:0;top:0;width:100%;
-  font-family:var(--mono);font-size:9px;line-height:15px;color:var(--muted);
+  font-family:var(--mono);font-size:10px;line-height:15px;color:var(--muted);
   font-variant-numeric:tabular-nums;white-space:nowrap;
 }
 .file-curve-ticks span i{display:inline-block;transform:translateX(-50%);font-style:normal;}
@@ -1190,7 +1256,7 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
      fixed so appending rack rows scrolls instead of reflowing the page. */
   .stepper-panes{grid-template-columns:1fr;}
   .seq-box{height:118px;}
-  .rack-box{height:212px;}
+  .rack-box{height:212px;--sweep-travel:212px;}
 
   /* The pipeline stacks: x above the die above the vector, arrows turned
      to point down. Labels fit one line at this width, so their reserved
@@ -1218,7 +1284,7 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
   h2{font-size:24px;}
   .eyebrow{margin-top:56px;}
   .callout{padding:18px;}
-  .controls-note{margin-left:0;width:100%;}
+  .controls-note{margin-left:0;width:100%;flex:1 1 100%;}
 
   .attn-row{
     grid-template-columns:minmax(0,1fr) 46px 26px;
@@ -1294,14 +1360,30 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
   .file-curve svg{height:88px;}
   .file-curve-stat{height:45px;}
   .file-bar-readout{height:30px;white-space:normal;text-overflow:clip;}
-  .file-bar-key{height:30px;}
+  /* Three lines, not two. The key naming the six regions of the file left to
+     right is a fixed sentence, and at the 10px floor it needs a third line at
+     this width — reserved at two, it lost "trailer", which is one of the six
+     things it exists to name. */
+  .file-bar-key{height:45px;}
   .file-proof{height:71px;}
   /* Both halves of this row want more than a phone has: the eyebrow was
      losing "window" and the tag was losing "build". The tag takes a line of
      its own here, where it is the only thing on its row and its four
-     wordings can therefore differ in length without moving a glyph. */
-  .label-row.file-label{flex-wrap:wrap;}
-  .file-source{width:auto;margin-left:0;font-size:9px;}
+     wordings can therefore differ in length without moving a glyph.
+
+     `flex-wrap:wrap` alone did not deliver that, and the difference was worth
+     23 pixels of document. Wrapping is a consequence, not a promise: while
+     the tag said "from the build" it was too wide to share the line and the
+     row stood at two rows — 40.3px — and the moment the model loaded and the
+     tag became "read live" it fitted beside the label again, the row fell to
+     one row of 17.3px, and every section below instrument E rose 23px. Below
+     the fold, so the layout-shift figure never saw it.
+
+     So the tag is given its own row outright rather than left to earn one,
+     and the row's height is reserved for the two it will always have: 17 for
+     the label and its badge, the 8 of the row gap, and 15 for the tag. */
+  .label-row.file-label{flex-wrap:wrap;height:40px;align-content:flex-start;}
+  .file-source{flex:1 1 100%;width:auto;margin-left:0;}
 
   /* The note has had a line to itself since 780px; here it also drops a step
      in size, one line still, in every mode. */
@@ -1313,9 +1395,19 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
   .mode-load{height:60px;flex-wrap:wrap;align-content:center;}
   .mode-hint,.mode-progress{flex:1 1 100%;}
   .token-strip{height:300px;}
-  /* Selectors on one line, their note on the next, in both modes. */
-  .attn-controls{height:56px;align-content:center;}
-  .attn-ctl-note{flex:1 1 100%;text-align:left;}
+  /* Selectors on one line, their note on the next two, in both modes. The
+     note is a whole sentence in either mode — "Q·K is printed relative to the
+     top row", or the one saying the selectors arrive with the real model —
+     and on one nowrap line at this width it was ellipsized to "relative to
+     …", which loses the half that says what the number means. It wraps here
+     instead, and the row reserves the two lines it takes in both modes and at
+     every width down to 320, so the mode swap still moves nothing. */
+  .attn-controls{height:76px;align-content:center;}
+  .attn-ctl-note{
+    flex:1 1 100%;text-align:left;
+    white-space:normal;overflow:visible;text-overflow:clip;
+    line-height:14px;
+  }
   /* The K/V note is too long to share a line with its label here. */
   .kv-head{height:38px;flex-wrap:wrap;align-content:center;}
   .kv-note{flex:1 1 100%;margin-left:0;}
