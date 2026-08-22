@@ -3,6 +3,7 @@ import { LAYERS } from '../lib/toyModel.js'
 import InfoTag from '../components/InfoTag.jsx'
 import KVInspector from '../components/KVInspector.jsx'
 import LoadNote from '../components/LoadNote.jsx'
+import ReadingLine from '../components/ReadingLine.jsx'
 import TeachPair from '../components/TeachPair.jsx'
 
 const RUN_INTERVAL_MS = 800
@@ -99,6 +100,7 @@ function Candidates({ candidates, scripted, stepTick, hasInput, real, pending })
  * Instrument B — forward-pass stepper and KV rack.
  */
 export default function Stepper({
+  text,
   baseTokens,
   sequence,
   stepTick,
@@ -205,6 +207,8 @@ export default function Stepper({
       </div>
 
       <div className="inst-body">
+        <ReadingLine text={text} />
+
         <div className="controls">
           <button
             type="button"
@@ -247,7 +251,7 @@ export default function Stepper({
             <div className="pane-head">
               <span>SEQUENCE SO FAR</span>
             </div>
-            <div className="pane-box seq-box">
+            <div className="pane-box seq-box screen">
               {sequence.map((token, i) => (
                 <span
                   className={`seq-token${i === sequence.length - 1 ? ' newest' : ''}`}
@@ -269,7 +273,7 @@ export default function Stepper({
                 <InfoTag topic="value" />
               </span>
             </div>
-            <div className="pane-box rack-box">
+            <div className="pane-box rack-box screen">
               {stepTick > 0 && <span className="sweep" key={stepTick} />}
               <ul className="rack-list" ref={rackRef}>
                 {sequence.map((token, i) => (

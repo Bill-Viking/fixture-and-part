@@ -3,19 +3,20 @@
 // Do not refactor the prose.
 
 export const header = {
-  titleHtml: 'The Fixture<br>and the <span class="amber">Part</span>',
+  titleHtml: 'The Fixture<br>and the <span class="moving">Part</span>',
   sub: 'How a language model thinks, how a brain remembers, and why the honest comparison flatters neither.',
   legend: [
-    { swatch: 'steel', label: 'STEEL — frozen machinery' },
-    { swatch: 'amber', label: 'AMBER — the moving part' },
+    { swatch: 'frozen', label: 'BLUE — frozen machinery' },
+    { swatch: 'moving', label: 'YELLOW — the moving part' },
+    { swatch: 'keys', label: 'GREEN — keys' },
   ],
 }
 
 // The note half is hidden on narrow screens so the overlay stays small.
 export const miniLegend = [
-  { swatch: 'steel', name: 'steel', note: 'frozen weights' },
-  { swatch: 'amber', name: 'amber', note: 'values in flight' },
-  { swatch: 'green', name: 'green', note: 'keys' },
+  { swatch: 'frozen', name: 'blue', note: 'frozen weights' },
+  { swatch: 'moving', name: 'yellow', note: 'values in flight' },
+  { swatch: 'keys', name: 'green', note: 'keys' },
 ]
 
 export const sections = [
@@ -84,7 +85,7 @@ export const sections = [
     blocks: [
       {
         type: 'p',
-        html: 'Attention is a lookup system. Every token, at every layer, is pressed through three different weight matrices — three dies, same blank — producing three vectors. The <strong>Query</strong> is what this token seeks (&ldquo;find me a recent noun to refer to&rdquo;). The <strong class="green" style="color:var(--green)">Key</strong> is how the token advertises itself to future searches (&ldquo;noun, subject, machine&rdquo;). The <strong class="k">Value</strong> is the content actually handed over when the token is selected.',
+        html: 'Attention is a lookup system. Every token, at every layer, is pressed through three different weight matrices — three dies, same blank — producing three vectors. The <strong>Query</strong> is what this token seeks (&ldquo;find me a recent noun to refer to&rdquo;). The <strong class="keys">Key</strong> is how the token advertises itself to future searches (&ldquo;noun, subject, machine&rdquo;). The <strong class="k">Value</strong> is the content actually handed over when the token is selected.',
       },
       {
         type: 'p',
@@ -186,7 +187,7 @@ export const sections = [
         type: 'duo',
         cards: [
           {
-            variant: 'steelc',
+            variant: 'frozenc',
             title: 'THE MODEL',
             paragraphs: [
               'Weights frozen; never learns in use.',
@@ -197,7 +198,7 @@ export const sections = [
             ],
           },
           {
-            variant: 'amberc',
+            variant: 'movingc',
             title: 'THE BRAIN',
             paragraphs: [
               'Weights update while running; never stops learning.',

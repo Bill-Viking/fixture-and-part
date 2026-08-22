@@ -1,18 +1,66 @@
 /* ==========================================================================
    The Fixture and the Part — interactive guide
-   Design tokens are copied verbatim from the static essay and are the
-   visual thesis: steel = frozen machinery, amber = the moving part,
-   green = keys. Never swap them.
+
+   The page is paper: an operators'-manual ground with ink drawn on it, and
+   dense fields of data set into it on dark screens the way a manual sets a
+   code block into a page.
+
+   The colour law is the visual thesis and the tokens are named for the roles
+   it assigns, not for the colours that fill them. Never swap the roles.
+
+     --frozen  frozen machinery — weights, dies, anything that never changes
+     --moving  the moving part  — activations, tokens in flight, values
+     --keys    keys and searchable metadata
+     --alert   the one loud thing — errors and warnings, used sparingly
+
+   Two rules about the roles, because paper is not a dark screen:
+
+   1. Yellow is a fill, never body-size text on paper. Bars, token grounds,
+      highlights and the one filled button take --moving with ink on top;
+      anything that has to be READ in the moving-part role takes --moving-ink,
+      a dark amber that passes AA on paper.
+   2. A role colour on a screen is not the same swatch as on paper. Yellow
+      carries at 10:1 on ink and needs no variant; blue and green do, so
+      --frozen-on-screen and --keys-on-screen exist and are the only forms of
+      those two allowed on a dark panel.
    ========================================================================== */
 
 /* Fonts are loaded by the <link> in index.html, matching the static essay. */
 
 :root{
-  --bg:#10151C; --panel:#161D27; --panel2:#0D1218;
-  --steel:#5B7A99; --steel-dim:#3A4A5C;
-  --amber:#E8A33D; --amber-dim:#8A7A5A; --amber-bg:#241C10;
-  --green:#7FB069;
-  --text:#D8E0E8; --muted:#6B7A8A; --hair:#2A3441;
+  /* grounds: the page, a sheet laid on it, a box recessed into the sheet */
+  --paper:#F5F0E4; --card:#FDFBF4; --sunk:#EFE9DA;
+  /* Ink, and the two weights of drawn line the page uses.
+     --rule is a boundary: it draws the edge of a control, a panel or a
+     section, and is dark enough to pass 3:1 on both grounds. --hair is a
+     decorative separator between rows of a list or a table, where the rows
+     themselves are the content and the line is only a comb; it is deliberately
+     lighter than 3:1 and must never be the only thing identifying a control. */
+  --ink:#181512; --muted:#6B6355; --hair:#D8D2C4; --rule:#8C8472;
+
+  /* A dark panel set into the page, and what may be written on one.
+     --screen-hair is the decorative comb between rows, like --hair. */
+  --screen:#181512; --screen-sunk:#242019;
+  --screen-text:#F5F0E4; --screen-muted:#A79E8E; --screen-hair:#3B352C;
+
+  /* frozen machinery */
+  /* --frozen-dim carries real information — the unselected segments of
+     instrument E's byte bar and the fill under its bell curve — so it is dark
+     enough to pass 3:1 on the ground it is drawn on rather than being a pale
+     tint. */
+  --frozen:#1E5AA8; --frozen-dim:#5588C4; --frozen-tint:#E6EEF8;
+  /* --frozen-on-screen is the readable blue on a dark panel; --frozen-lit is
+     the top of instrument E's byte ramp, where the largest weight in a tensor
+     lands. Nothing on the page is brighter than the latter. */
+  --frozen-on-screen:#7FB0E8; --frozen-lit:#D6E9FF;
+  /* the moving part */
+  --moving:#F2B705; --moving-ink:#8A6400; --moving-tint:#FDF4D9;
+  /* keys */
+  --keys:#356B3D; --keys-tint:#E3EDE4;
+  --keys-on-screen:#63B36F;
+  /* the one loud thing */
+  --alert:#E4432D; --alert-ink:#B32D19;
+
   --mono:'IBM Plex Mono',ui-monospace,monospace;
   --display:'Space Grotesk',sans-serif;
 }
@@ -20,7 +68,7 @@
 *{margin:0;padding:0;box-sizing:border-box;}
 html{-webkit-text-size-adjust:100%;}
 body{
-  background:var(--bg);color:var(--text);
+  background:var(--paper);color:var(--ink);
   font-family:'IBM Plex Sans',sans-serif;font-size:17px;line-height:1.65;
   overflow-x:hidden;
 }
@@ -30,57 +78,73 @@ body{
 .wrap{max-width:760px;margin:0 auto;padding:0 24px 120px;}
 header{padding:88px 0 48px;}
 h1{font-family:var(--display);font-size:clamp(38px,7vw,58px);font-weight:700;line-height:1.05;letter-spacing:-0.02em;}
-h1 .amber{color:var(--amber);}
+/* Yellow at display size on paper is 1.6:1 — a fill, not a word. The title's
+   moving-part half takes the dark amber the law reserves for text. */
+h1 .moving{color:var(--moving-ink);}
 .sub{margin-top:20px;color:var(--muted);font-size:19px;max-width:560px;}
 .legend{display:flex;flex-wrap:wrap;gap:16px 28px;margin-top:36px;font-family:var(--mono);font-size:12.5px;}
 .legend span{display:flex;align-items:center;gap:8px;color:var(--muted);}
-.sw{width:22px;height:10px;display:inline-block;flex:none;}
-.sw.steel{background:var(--steel);}
-.sw.amber{background:var(--amber);}
-.sw.green{background:var(--green);}
+/* Swatches are the only place a role colour is shown as itself. A hairline of
+   ink around each keeps the pale ones from dissolving into the paper. */
+.sw{
+  width:22px;height:10px;display:inline-block;flex:none;
+  box-shadow:inset 0 0 0 1px var(--rule);
+}
+.sw.frozen{background:var(--frozen);}
+.sw.moving{background:var(--moving);}
+.sw.keys{background:var(--keys);}
 .sentinel{height:1px;}
 
-.eyebrow{font-family:var(--mono);font-size:12.5px;letter-spacing:0.18em;color:var(--steel);margin:76px 0 6px;}
-.eyebrow.warm{color:var(--amber);}
+.eyebrow{font-family:var(--mono);font-size:12.5px;letter-spacing:0.18em;color:var(--frozen);margin:76px 0 6px;}
+.eyebrow.warm{color:var(--moving-ink);}
 h2{font-family:var(--display);font-size:29px;font-weight:500;letter-spacing:-0.01em;padding-bottom:14px;border-bottom:1px solid var(--hair);margin-bottom:22px;}
 p{margin-bottom:18px;}
 p:last-child{margin-bottom:0;}
-strong{color:#fff;font-weight:600;}
-em{color:var(--text);}
-.k{color:var(--amber);}
-.s{color:var(--steel);}
-code{font-family:var(--mono);font-size:0.86em;background:var(--panel);border:1px solid var(--hair);border-radius:3px;padding:1px 6px;color:#A8BCCE;overflow-wrap:anywhere;}
+strong{color:var(--ink);font-weight:600;}
+em{color:var(--ink);}
+/* The prose's two role words. .k is the moving part, and on paper that has to
+   be the dark amber: the pale yellow is a fill colour. */
+.k{color:var(--moving-ink);}
+.s{color:var(--frozen);}
+.keys{color:var(--keys);}
+code{font-family:var(--mono);font-size:0.86em;background:var(--sunk);border:1px solid var(--hair);border-radius:3px;padding:1px 6px;color:var(--ink);overflow-wrap:anywhere;}
 
 figure{margin:34px 0;}
 figcaption{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:10px;line-height:1.55;}
 
-.callout{background:var(--panel2);border:1px solid var(--hair);border-left:3px solid var(--amber);border-radius:4px;padding:20px 24px;margin:28px 0;font-size:16px;}
-.callout.cool{border-left-color:var(--steel);}
-.callout .lbl{font-family:var(--mono);font-size:11.5px;letter-spacing:0.14em;color:var(--amber);display:block;margin-bottom:8px;}
-.callout.cool .lbl{color:var(--steel);}
+.callout{background:var(--card);border:1px solid var(--hair);border-left:3px solid var(--moving);border-radius:4px;padding:20px 24px;margin:28px 0;font-size:16px;}
+.callout.cool{border-left-color:var(--frozen);}
+.callout .lbl{font-family:var(--mono);font-size:11.5px;letter-spacing:0.14em;color:var(--moving-ink);display:block;margin-bottom:8px;}
+.callout.cool .lbl{color:var(--frozen);}
 
 .duo{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:30px 0;}
 .card{border-radius:6px;padding:22px;font-size:15.5px;line-height:1.6;}
 .card h3{font-family:var(--display);font-size:16px;letter-spacing:0.04em;margin-bottom:12px;}
-.card.steelc{background:var(--panel);border:1px solid var(--steel);}
-.card.steelc h3{color:var(--steel);}
-.card.amberc{background:var(--amber-bg);border:1px solid var(--amber);}
-.card.amberc h3{color:var(--amber);}
-.card p{margin-bottom:10px;color:#B8C4D0;}
-.card.amberc p{color:#D8C9A8;}
+.card.frozenc{background:var(--frozen-tint);border:1px solid var(--frozen);}
+.card.frozenc h3{color:var(--frozen);}
+.card.movingc{background:var(--moving-tint);border:1px solid var(--moving-ink);}
+.card.movingc h3{color:var(--moving-ink);}
+.card p{margin-bottom:10px;color:var(--ink);}
 
 .foot{margin-top:100px;padding-top:28px;border-top:1px solid var(--hair);font-family:var(--mono);font-size:12px;color:var(--muted);line-height:1.9;}
 
 /* --- focus, always visible --------------------------------------------- */
 
-:focus-visible{outline:2px solid var(--amber);outline-offset:2px;}
+/* Ink, not a role colour. The ring used to be amber, which on paper would be
+   a 1.6:1 smudge — and worse, invisible on the one filled yellow control the
+   page has. Ink is 16:1 on paper and 10:1 on the yellow button.
+   Inside a dark screen the same ring would vanish, so screens flip it to the
+   screen's own text colour. */
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px;}
+.screen :focus-visible,
+.screen:focus-visible{outline-color:var(--screen-text);}
 
 /* --- mini legend -------------------------------------------------------- */
 
 .mini-legend{
   position:fixed;right:14px;bottom:14px;z-index:20;
   display:flex;flex-direction:column;gap:6px;
-  background:var(--panel2);border:1px solid var(--hair);border-radius:4px;
+  background:var(--card);border:1px solid var(--hair);border-radius:4px;
   padding:10px 12px;font-family:var(--mono);font-size:10.5px;color:var(--muted);
   letter-spacing:0.04em;line-height:1.2;
   opacity:0;visibility:hidden;transform:translateY(6px);pointer-events:none;
@@ -89,23 +153,57 @@ figcaption{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:
 .mini-legend.show{opacity:1;visibility:visible;transform:translateY(0);transition-delay:0s;}
 .mini-legend span{display:flex;align-items:center;gap:7px;white-space:nowrap;}
 .mini-legend .sw{width:16px;height:8px;}
-.mini-legend .ml-note{color:var(--steel-dim);font-style:normal;}
+.mini-legend .ml-note{color:var(--muted);font-style:normal;}
+
+/* --- ink screens on paper ------------------------------------------------ */
+
+/* Where the graphic is a dense field of values rather than a labelled chart,
+   it is set into the page on a dark panel — the same move an operators'
+   manual makes with a code block. Four of them: instrument B's two panes,
+   instrument C's lookup table, instrument D's lens rows, and the byte window
+   in instrument E. Everything else stays ink on card.
+   Each one is bordered with a full-strength ink hairline so it reads as
+   something set INTO the sheet, and each already carries a mono eyebrow —
+   the field label immediately above it — so none is unlabelled. */
+.screen{
+  background:var(--screen);color:var(--screen-text);
+  border:1px solid var(--ink);border-radius:4px;
+}
 
 /* --- instrument shell --------------------------------------------------- */
 
+/* A sheet laid on the page: a shade lighter than the paper, with a drawn
+   rule around it rather than the hairline used inside it. */
 .instrument{
-  margin:34px 0;background:var(--panel2);
-  border:1px solid var(--hair);border-radius:6px;
+  margin:34px 0;background:var(--card);
+  border:1px solid var(--rule);border-radius:6px;
 }
 .inst-head{
   display:flex;justify-content:space-between;align-items:center;gap:12px;
   flex-wrap:nowrap;
   /* 8px on the right plus the note's own 8px puts the note's text back on the
      same 16px margin as the title. */
-  padding:12px 8px 12px 16px;border-bottom:1px solid var(--hair);
+  padding:12px 8px 12px 16px;border-bottom:1px solid var(--rule);
   font-family:var(--mono);font-size:11px;letter-spacing:0.16em;
 }
-.inst-title{color:var(--steel);flex:none;}
+.inst-title{color:var(--frozen);flex:none;}
+/* Instrument E's label is the longest on the page — it names the file, its
+   size and the command in one sentence — so its head gives the note a row of
+   its own at every width instead of ellipsizing the words that matter. Two
+   rows, always, so nothing swaps height.
+   This note is the one that wraps rather than truncates, so its box carries
+   the height of its longest state up front: one line above 760px, two below,
+   where the words no longer fit on one. The shorter states — loading, and the
+   loaded label — sit inside the same box, so no state change moves the page.
+   26px is one 18px line plus 6 of padding and 2 of border. */
+.inst-head.is-stacked{flex-wrap:wrap;}
+.inst-head.is-stacked .inst-note{
+  flex:1 1 100%;text-align:left;margin-left:-8px;
+  white-space:normal;height:26px;
+}
+@media(max-width:760px){
+  .inst-head.is-stacked .inst-note{height:44px;}
+}
 /* The note says which numbers are on screen, and it changes length when the
    mode changes. It is pinned to exactly one line so that swap can never add
    or drop a row in the head.
@@ -128,13 +226,13 @@ figcaption{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:
    without losing the words that matter. The line box is fixed at 18px, so the
    smaller glyphs change the width and nothing else. */
 button.inst-note{
-  cursor:pointer;color:var(--amber);
-  background:var(--amber-bg);border-color:var(--amber);
+  cursor:pointer;color:var(--moving-ink);
+  background:var(--moving-tint);border-color:var(--moving);
   font-size:10.5px;letter-spacing:0.02em;
   transition:background-color .15s ease,border-color .15s ease;
 }
-button.inst-note:hover{background:color-mix(in srgb,var(--amber) 16%,var(--amber-bg));}
-.inst-note.is-loading{color:var(--amber);}
+button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--moving-tint));}
+.inst-note.is-loading{color:var(--moving-ink);}
 /* Wide enough to hold "downloading distilgpt2 — 100%", so the percentage
    ticking up does not resize the box. Only reserved where there is room for
    it; narrower than this the note has a line to itself and its width is
@@ -149,7 +247,18 @@ button.inst-note:hover{background:color-mix(in srgb,var(--amber) 16%,var(--amber
   display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:0.16em;
   color:var(--muted);margin-bottom:8px;
 }
-.teach{font-family:var(--mono);font-size:12px;color:var(--amber);margin:14px 0 0;letter-spacing:0.04em;}
+.teach{font-family:var(--mono);font-size:12px;color:var(--moving-ink);margin:14px 0 0;letter-spacing:0.04em;}
+
+/* Which sentence the instrument is reading. A and its input are three
+   sections up by the time B, C and D are on screen, and the page never said
+   out loud that all four run on the same text. One reserved line per
+   instrument, always drawn, so it can never move anything. */
+.inst-reading{
+  font-family:var(--mono);font-size:10.5px;line-height:15px;height:15px;
+  color:var(--muted);letter-spacing:0.02em;margin:0 0 14px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.inst-reading b{color:var(--ink);font-weight:400;}
 .teach.dim{color:var(--muted);margin-top:8px;letter-spacing:0.02em;line-height:1.6;}
 
 /* Both wordings of a mode-dependent line occupy one grid cell, so the cell is
@@ -167,44 +276,44 @@ button.inst-note:hover{background:color-mix(in srgb,var(--amber) 16%,var(--amber
 .label-gap{flex:0 0 10px;}
 .label-row + .token-strip{margin-top:0;}
 
-/* --- info badges (UI chrome: steel and muted, never amber) --------------- */
+/* --- info badges (UI chrome: ink and muted, never a data colour) --------- */
 
 .info-tag{
   position:relative;flex:none;
   display:inline-flex;align-items:center;justify-content:center;
   width:15px;height:15px;padding:0;vertical-align:-3px;
   font-family:var(--mono);font-size:9.5px;line-height:1;letter-spacing:0;
-  color:var(--muted);background:var(--panel);
-  border:1px solid var(--steel-dim);border-radius:2px;cursor:pointer;
+  color:var(--muted);background:var(--card);
+  border:1px solid var(--rule);border-radius:2px;cursor:pointer;
   transition:color .15s ease,border-color .15s ease;
 }
 /* Widens the hit area without taking any more layout space. */
 .info-tag::after{content:'';position:absolute;inset:-4px;}
-.info-tag:hover{color:var(--text);border-color:var(--steel);}
-.info-tag[aria-expanded="true"]{color:var(--steel);border-color:var(--steel);background:var(--panel2);}
+.info-tag:hover{color:var(--ink);border-color:var(--frozen);}
+.info-tag[aria-expanded="true"]{color:var(--frozen);border-color:var(--frozen);background:var(--frozen-tint);}
 .counter .info-tag{margin-left:8px;}
 
 /* Portalled to <body> and fixed, so no parent overflow can clip it and
    opening it cannot move anything on the page. */
 .info-pop{
   position:fixed;z-index:40;
-  background:var(--panel2);border:1px solid var(--steel);border-radius:4px;
+  background:var(--card);border:1px solid var(--frozen);border-radius:4px;
   padding:11px 13px;
   font-family:var(--mono);font-size:11px;line-height:1.65;
-  color:var(--text);letter-spacing:0.01em;
-  box-shadow:0 8px 24px rgba(0,0,0,.55);
+  color:var(--ink);letter-spacing:0.01em;
+  box-shadow:0 6px 18px color-mix(in srgb,var(--ink) 22%,transparent);
   animation:pop-in .14s ease-out;
 }
 .info-pop-title{
   display:block;font-size:9.5px;letter-spacing:0.16em;
-  color:var(--steel);margin-bottom:6px;text-transform:uppercase;
+  color:var(--frozen);margin-bottom:6px;text-transform:uppercase;
 }
 @keyframes pop-in{
   from{opacity:0;transform:translateY(-3px);}
   to{opacity:1;transform:none;}
 }
 
-/* --- mode switch (UI chrome: steel and muted, never a data colour) ------- */
+/* --- mode switch (UI chrome: ink and muted, never a data colour) -------- */
 
 /* Three rows, each a fixed height. Loading, finishing, failing and toggling
    all swap text inside boxes that were reserved up front, so none of it moves
@@ -217,17 +326,17 @@ button.inst-note:hover{background:color-mix(in srgb,var(--amber) 16%,var(--amber
 .mode-row .field-label{margin-bottom:0;flex:none;}
 .mode-seg{
   display:flex;flex:none;
-  border:1px solid var(--steel-dim);border-radius:3px;overflow:hidden;
+  border:1px solid var(--rule);border-radius:3px;overflow:hidden;
 }
 .mode-btn{
   font-family:var(--mono);font-size:10.5px;letter-spacing:0.12em;
-  color:var(--muted);background:var(--panel);border:0;
+  color:var(--muted);background:var(--card);border:0;
   padding:5px 10px;cursor:pointer;
   transition:color .15s ease,background-color .15s ease;
 }
-.mode-btn + .mode-btn{border-left:1px solid var(--steel-dim);}
-.mode-btn:hover{color:var(--text);}
-.mode-btn.is-on{color:var(--steel);background:#141C25;}
+.mode-btn + .mode-btn{border-left:1px solid var(--rule);}
+.mode-btn:hover{color:var(--ink);}
+.mode-btn.is-on{color:var(--frozen);background:var(--frozen-tint);}
 /* Locked rather than disabled: it keeps its place in the tab order, and the
    row below says why it is not available yet. */
 .mode-btn.is-locked{opacity:.45;cursor:not-allowed;}
@@ -240,52 +349,54 @@ button.inst-note:hover{background:color-mix(in srgb,var(--amber) 16%,var(--amber
 .mode-load{height:38px;overflow:hidden;}
 .mode-load .btn{flex:none;padding:6px 12px;font-size:10.5px;letter-spacing:0.12em;}
 /* The one filled control on the page. The reader could not find this command
-   while it looked like every other steel button, so it takes the amber it is
-   asking for — the moving part — and everything else in the bar stays quiet.
+   while it looked like every other outlined button, so it takes the yellow it
+   is asking for — the moving part — and everything else in the bar stays
+   quiet. Ink on yellow is 10:1, which is why yellow may be a fill here even
+   though it may never be a word on paper.
    The row's height is reserved for it, so the button, the progress track and
    the ready line all sit in the same box. */
 .mode-load .btn-primary{flex:none;padding:8px 14px;font-size:11.5px;letter-spacing:0.14em;}
 /* Doubled up so it outranks `.btn`, which is declared further down the file. */
 .btn.btn-primary{
-  color:var(--bg);background:var(--amber);border-color:var(--amber);
+  color:var(--ink);background:var(--moving);border-color:var(--moving-ink);
   font-weight:600;
 }
 .btn.btn-primary:hover:not(:disabled){
-  color:var(--bg);
-  background:color-mix(in srgb,var(--amber) 82%,var(--text));
-  border-color:color-mix(in srgb,var(--amber) 82%,var(--text));
+  color:var(--ink);
+  background:color-mix(in srgb,var(--moving) 78%,var(--ink));
+  border-color:var(--moving-ink);
 }
-/* An amber ring around an amber control reads as a smudge; these two take the
-   text colour instead so the ring is always visible. */
-.btn-primary:focus-visible,button.inst-note:focus-visible{outline-color:var(--text);}
 .mode-track{
   flex:0 0 140px;display:block;height:10px;
-  background:var(--hair);border:1px solid var(--steel-dim);
+  background:var(--sunk);border:1px solid var(--rule);
 }
-.mode-fill{display:block;height:100%;background:var(--steel);transition:width .25s linear;}
+.mode-fill{display:block;height:100%;background:var(--frozen);transition:width .25s linear;}
 .mode-hint,.mode-progress{
   font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.04em;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;
 }
-.mode-hint.is-error{color:var(--amber-dim);}
+.mode-hint.is-error{color:var(--alert-ink);}
 /* What is real and what is not, in one line that changes with the mode. */
 .mode-manifest{
   font-family:var(--mono);font-size:10px;color:var(--muted);
   letter-spacing:0.03em;line-height:1.55;margin:10px 0 0;
 }
 .mode-note{
-  font-family:var(--mono);font-size:10px;color:var(--steel-dim);
+  font-family:var(--mono);font-size:10px;color:var(--muted);
   letter-spacing:0.03em;line-height:1.5;margin:6px 0 0;
 }
 
 /* --- instrument A: tokenizer -------------------------------------------- */
 
+/* The only control on the page whose box is its whole affordance — every
+   other one carries a word — so its edge is drawn in the text colour's weight
+   rather than in the page's rule. */
 .text-input{
-  width:100%;background:var(--panel);color:var(--text);
-  border:1px solid var(--steel-dim);border-radius:3px;
+  width:100%;background:var(--card);color:var(--ink);
+  border:1px solid var(--muted);border-radius:3px;
   padding:10px 12px;font-family:var(--mono);font-size:14px;line-height:1.4;
 }
-.text-input:focus{border-color:var(--steel);}
+.text-input:focus{border-color:var(--frozen);}
 
 /* Fixed, not max-height: a BPE split and a word split rarely produce the same
    number of pills, so a growing strip would move the page on a mode toggle.
@@ -296,24 +407,29 @@ button.inst-note:hover{background:color-mix(in srgb,var(--amber) 16%,var(--amber
   display:flex;flex-wrap:wrap;align-content:flex-start;gap:8px;margin-top:16px;
   height:312px;overflow-y:auto;
 }
+/* A token in flight, on paper: the yellow is the ground and a 2px bar of it
+   down the left edge, because a 1px yellow outline on cream is a rumour of a
+   line. Everything written inside is ink or the dark amber. */
 .token-pill{
   display:flex;flex-direction:column;gap:2px;
-  background:var(--amber-bg);border:1px solid var(--amber);border-radius:4px;
-  padding:6px 9px;min-width:0;
+  background:var(--moving-tint);border:1px solid var(--moving);
+  border-left:2px solid var(--moving);border-radius:4px;
+  padding:6px 9px 6px 8px;min-width:0;
 }
-.token-idx{font-family:var(--mono);font-size:9.5px;color:var(--amber-dim);letter-spacing:0.12em;}
+.token-idx{font-family:var(--mono);font-size:9.5px;color:var(--muted);letter-spacing:0.12em;}
 /* The model's own id for this piece, sat next to the position. */
-.token-id{color:var(--amber-dim);letter-spacing:0.06em;}
-.token-text{font-family:var(--mono);font-size:13px;color:var(--amber);}
+.token-id{color:var(--muted);letter-spacing:0.06em;}
+.token-text{font-family:var(--mono);font-size:13px;color:var(--ink);font-weight:500;}
 /* The six numbers are the vector — the thing the instrument exists to show —
-   so they take the full moving-part amber. The index and the id above them
-   stay dim; they are labels, not values. */
+   so they take the moving-part role at full strength, which on paper is the
+   dark amber. The index and the id above them stay muted; they are labels,
+   not values. */
 .token-vec{
-  font-family:var(--mono);font-size:10px;color:var(--amber);
+  font-family:var(--mono);font-size:10px;color:var(--moving-ink);
   font-variant-numeric:tabular-nums;white-space:nowrap;
 }
 /* The BPE leading-space marker: present, readable, and quiet. */
-.tok-space{color:var(--amber-dim);}
+.tok-space{color:var(--muted);}
 
 
 /* --- instrument B: stepper + rack ---------------------------------------- */
@@ -321,14 +437,17 @@ button.inst-note:hover{background:color-mix(in srgb,var(--amber) 16%,var(--amber
 .controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:16px;}
 .btn{
   font-family:var(--mono);font-size:11.5px;letter-spacing:0.14em;
-  color:var(--steel);background:var(--panel);
-  border:1px solid var(--steel-dim);border-radius:3px;
+  color:var(--frozen);background:var(--card);
+  border:1px solid var(--rule);border-radius:3px;
   padding:7px 14px;cursor:pointer;
-  transition:border-color .15s ease,color .15s ease;
+  transition:border-color .15s ease,color .15s ease,background-color .15s ease;
 }
-.btn:hover:not(:disabled){border-color:var(--steel);color:var(--text);}
-.btn:disabled{opacity:.4;cursor:not-allowed;}
-.btn-on{color:var(--amber);border-color:var(--amber);}
+.btn:hover:not(:disabled){border-color:var(--frozen);background:var(--frozen-tint);}
+.btn:disabled{opacity:.42;cursor:not-allowed;}
+/* RUN, while it is running: the moving part, so the dark amber and its own
+   ground rather than a yellow word. */
+.btn-on{color:var(--moving-ink);border-color:var(--moving-ink);background:var(--moving-tint);}
+.btn-on:hover:not(:disabled){color:var(--moving-ink);border-color:var(--moving-ink);background:var(--moving-tint);}
 .controls-note{
   font-family:var(--mono);font-size:10.5px;color:var(--muted);
   margin-left:auto;letter-spacing:0.04em;
@@ -371,7 +490,7 @@ button.inst-note:hover{background:color-mix(in srgb,var(--amber) 16%,var(--amber
   animation:cand-in .24s ease-out both;
 }
 .cand-word{
-  font-family:var(--mono);font-size:11.5px;color:var(--text);
+  font-family:var(--mono);font-size:11.5px;color:var(--ink);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 /* The track is the machinery the value runs in, so it is drawn whether or not
@@ -379,26 +498,28 @@ button.inst-note:hover{background:color-mix(in srgb,var(--amber) 16%,var(--amber
    rather than as a missing one. */
 .cand-track{
   display:block;height:10px;min-width:0;
-  background:var(--hair);border:1px solid var(--steel-dim);
+  background:var(--sunk);border:1px solid var(--rule);
 }
-/* Candidate probabilities are values in flight, not keys: amber. */
-.cand-fill{display:block;height:100%;background:var(--amber);opacity:.6;}
+/* Candidate probabilities are values in flight, not keys: the moving part.
+   A bar is a fill, so it takes the yellow itself. */
+.cand-fill{display:block;height:100%;background:var(--moving);opacity:.55;}
 .cand-wt{
-  font-family:var(--mono);font-size:10px;color:var(--text);
+  font-family:var(--mono);font-size:10px;color:var(--ink);
   font-variant-numeric:tabular-nums;text-align:right;
 }
-/* The winner is the token about to move — amber, per the colour law. */
-.cand.is-winner{border-left-color:var(--amber);animation:cand-win .34s ease-out both;}
-.cand.is-winner .cand-word{color:var(--amber);}
+/* The winner is the token about to move. Its bar is full yellow; its words
+   are the dark amber, because words on paper are never the yellow. */
+.cand.is-winner{border-left-color:var(--moving-ink);animation:cand-win .34s ease-out both;}
+.cand.is-winner .cand-word{color:var(--moving-ink);font-weight:500;}
 .cand.is-winner .cand-fill{opacity:1;}
-.cand.is-winner .cand-wt{color:var(--amber);}
+.cand.is-winner .cand-wt{color:var(--moving-ink);}
 @keyframes cand-in{
   from{opacity:0;transform:translateY(-3px);}
   to{opacity:1;transform:none;}
 }
 @keyframes cand-win{
-  0%{opacity:0;transform:translateY(-3px);background:var(--amber-bg);}
-  45%{opacity:1;background:var(--amber-bg);}
+  0%{opacity:0;transform:translateY(-3px);background:var(--moving-tint);}
+  45%{opacity:1;background:var(--moving-tint);}
   100%{opacity:1;transform:none;background:transparent;}
 }
 
@@ -412,59 +533,84 @@ button.inst-note:hover{background:color-mix(in srgb,var(--amber) 16%,var(--amber
 }
 .chip-legend{display:flex;align-items:center;gap:5px;letter-spacing:0;}
 .chip-legend .chip{width:22px;}
+/* Both panes are screens: a run of tokens and a rack of chips are dense
+   fields of values, not labelled charts, and on ink the K green and the V
+   yellow finally read as the two different things they are. */
 .pane-box{
-  height:224px;background:var(--panel);
-  border:1px solid var(--hair);border-radius:4px;
+  height:224px;
   position:relative;overflow:hidden;
 }
 .seq-box{display:flex;flex-wrap:wrap;align-content:flex-start;gap:6px;padding:10px;overflow-y:auto;}
 .seq-token{
   font-family:var(--mono);font-size:12.5px;
-  color:var(--steel);opacity:.8;
-  border-bottom:1px solid var(--steel-dim);padding:1px 2px;
+  color:var(--frozen-on-screen);
+  border-bottom:1px solid var(--screen-hair);padding:1px 2px;
 }
-.seq-token.newest{color:var(--amber);opacity:1;font-weight:500;border-bottom-color:var(--amber);}
+.seq-token.newest{color:var(--moving);font-weight:500;border-bottom-color:var(--moving);}
 
 .rack-list{list-style:none;height:100%;overflow-y:auto;padding:6px;margin:0;}
 .rack-row{
   display:grid;grid-template-columns:22px 12px minmax(0,1fr) 26px 26px;
   align-items:center;gap:6px;height:26px;
-  border-bottom:1px solid var(--hair);
+  border-bottom:1px solid var(--screen-hair);
   animation:settle .28s ease-out;
 }
 .rack-row:last-child{border-bottom:0;}
-.rack-idx{font-family:var(--mono);font-size:9.5px;color:var(--muted);font-variant-numeric:tabular-nums;}
-.rack-bolt{font-size:7px;color:var(--steel-dim);line-height:1;}
+.rack-idx{font-family:var(--mono);font-size:9.5px;color:var(--screen-muted);font-variant-numeric:tabular-nums;}
+.rack-bolt{font-size:7px;color:var(--frozen-on-screen);line-height:1;}
 .rack-token{
-  font-family:var(--mono);font-size:11.5px;color:var(--text);
+  font-family:var(--mono);font-size:11.5px;color:var(--screen-text);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .chip{
   font-family:var(--mono);font-size:9.5px;letter-spacing:0.06em;
   text-align:center;border-radius:2px;padding:2px 0;
 }
-.chip-k{color:var(--green);border:1px solid var(--green);background:#151E12;}
-/* A value is the part that moves, so the chip reads at full amber. Only the
-   masked ones — rows the query cannot see yet — are held back. */
-.chip-v{color:var(--amber);border:1px solid var(--amber);background:#1A1610;}
-.chip-v.off{opacity:.35;}
+/* Chips live on screens, so they take the on-screen forms of their roles.
+   The one exception is the chip legend in the pane head, which sits on card
+   and is given its paper forms below. */
+.chip-k{
+  color:var(--keys-on-screen);border:1px solid var(--keys-on-screen);
+  background:color-mix(in srgb,var(--keys-on-screen) 14%,var(--screen));
+}
+/* A value is the part that moves, so the chip reads at full yellow — which on
+   ink is 10:1 and needs no dark variant. Only the masked ones — rows the
+   query cannot see yet — are held back. */
+.chip-v{
+  color:var(--moving);border:1px solid var(--moving);
+  background:color-mix(in srgb,var(--moving) 14%,var(--screen));
+}
+.chip-v.off{opacity:.4;}
+/* The legend above the rack is on card, not on a screen. */
+.chip-legend .chip-k{
+  color:var(--keys);border-color:var(--keys);background:var(--keys-tint);
+}
+.chip-legend .chip-v{
+  color:var(--moving-ink);border-color:var(--moving-ink);background:var(--moving-tint);
+}
 
 /* Racked chips are buttons: clicking one opens the K/V inspector below.
    The selected ring sits outside the chip's own border, so selecting a chip
-   changes no geometry, and it reads differently from the amber focus ring. */
+   changes no geometry, and it reads differently from the focus ring. */
 .chip-btn{
   display:block;width:100%;line-height:1.2;
   cursor:pointer;
   transition:box-shadow .15s ease,background-color .15s ease;
 }
-.chip-k.chip-btn:hover{background:#1B2717;}
-.chip-v.chip-btn:hover{background:#241E14;}
-.chip-k.chip-btn.is-sel{background:#22331B;box-shadow:0 0 0 1px var(--green);}
-.chip-v.chip-btn.is-sel{background:#2A2214;box-shadow:0 0 0 1px var(--amber);color:var(--amber);}
+.chip-k.chip-btn:hover{background:color-mix(in srgb,var(--keys-on-screen) 26%,var(--screen));}
+.chip-v.chip-btn:hover{background:color-mix(in srgb,var(--moving) 26%,var(--screen));}
+.chip-k.chip-btn.is-sel{
+  background:color-mix(in srgb,var(--keys-on-screen) 34%,var(--screen));
+  box-shadow:0 0 0 1px var(--keys-on-screen);
+}
+.chip-v.chip-btn.is-sel{
+  background:color-mix(in srgb,var(--moving) 34%,var(--screen));
+  box-shadow:0 0 0 1px var(--moving);color:var(--moving);
+}
 
 .sweep{
   position:absolute;left:0;right:0;top:0;height:3px;
-  background:var(--green);opacity:.8;z-index:2;pointer-events:none;
+  background:var(--keys-on-screen);opacity:.85;z-index:2;pointer-events:none;
   animation:sweep .45s linear 1;
 }
 /* Animates `top` as a percentage of the rack box, so the sweep always
@@ -479,7 +625,7 @@ button.inst-note:hover{background:color-mix(in srgb,var(--amber) 16%,var(--amber
 }
 
 .counter{
-  font-family:var(--mono);font-size:12px;color:var(--steel);
+  font-family:var(--mono);font-size:12px;color:var(--frozen);
   margin:14px 0 0;letter-spacing:0.06em;font-variant-numeric:tabular-nums;
 }
 
@@ -490,7 +636,7 @@ button.inst-note:hover{background:color-mix(in srgb,var(--amber) 16%,var(--amber
    box inside it is fixed too, for the same reason. */
 .kv-inspector{
   height:228px;margin-top:16px;overflow:hidden;
-  border-top:1px solid var(--hair);padding-top:12px;
+  border-top:1px solid var(--rule);padding-top:12px;
 }
 .kv-head{display:flex;align-items:center;gap:8px;height:16px;}
 .kv-head .field-label{margin-bottom:0;white-space:nowrap;}
@@ -504,7 +650,7 @@ button.inst-note:hover{background:color-mix(in srgb,var(--amber) 16%,var(--amber
 .kv-empty{
   height:100%;display:flex;align-items:center;justify-content:center;
   padding:0 14px;text-align:center;
-  border:1px dashed var(--hair);border-radius:4px;
+  border:1px dashed var(--rule);border-radius:4px;
 }
 .kv-stack{animation:kv-in .18s ease-out both;}
 
@@ -520,10 +666,10 @@ button.inst-note:hover{background:color-mix(in srgb,var(--amber) 16%,var(--amber
 .kv-stage-label .info-tag{margin-left:5px;}
 .kv-arrow{
   align-self:center;font-family:var(--mono);font-size:14px;
-  color:var(--steel-dim);line-height:1;
+  color:var(--muted);line-height:1;
 }
 
-/* Stage 1 — the same amber pill instrument A shows, same six numbers. */
+/* Stage 1 — the same moving-part pill instrument A shows, same six numbers. */
 .kv-pill{padding:5px 7px;gap:2px;}
 .kv-pill .token-idx{line-height:12px;}
 .kv-pill .token-text{
@@ -533,34 +679,35 @@ button.inst-note:hover{background:color-mix(in srgb,var(--amber) 16%,var(--amber
   font-size:9.5px;line-height:13px;height:26px;white-space:normal;
 }
 
-/* Stage 2 — frozen machinery, so steel. The two dies not used on this pass
+/* Stage 2 — frozen machinery, so blue. The two dies not used on this pass
    are still shown, ghosted: one blank, three dies. */
 .kv-dies{display:flex;gap:5px;}
 .kv-die{
   font-family:var(--mono);font-size:10px;line-height:12px;
   padding:3px 5px;border-radius:2px;
-  border:1px solid var(--steel-dim);background:var(--panel);color:var(--steel-dim);
+  border:1px solid var(--frozen-dim);background:var(--card);color:var(--muted);
 }
-.kv-die.is-on{border-color:var(--steel);color:var(--steel);background:#141C25;}
+.kv-die.is-on{border-color:var(--frozen);color:var(--frozen);background:var(--frozen-tint);}
 .kv-die.is-off{opacity:.45;}
 .kv-die-note{
   font-family:var(--mono);font-size:9.5px;line-height:13px;height:26px;
   color:var(--muted);overflow:hidden;
 }
 
-/* Stage 3 — the vector that falls out: green for a key, amber-dim for a
-   value, matching the chips that opened the panel. */
+/* Stage 3 — the vector that falls out: green for a key, the dark amber for a
+   value, matching the chips that opened the panel. This panel is on card, so
+   both take their paper forms. */
 .kv-vec{
   display:block;font-family:var(--mono);font-size:9.5px;line-height:13px;
   height:36px;padding:4px 6px;border-radius:3px;border:1px solid;
   font-variant-numeric:tabular-nums;overflow:hidden;
 }
-.kv-vec-k{color:var(--green);border-color:var(--green);background:#151E12;}
-.kv-vec-v{color:var(--amber);border-color:var(--amber);background:#1A1610;}
+.kv-vec-k{color:var(--keys);border-color:var(--keys);background:var(--keys-tint);}
+.kv-vec-v{color:var(--moving-ink);border-color:var(--moving-ink);background:var(--moving-tint);}
 
 .kv-goes{
   font-family:var(--mono);font-size:10.5px;line-height:1.55;
-  color:var(--text);letter-spacing:0.02em;margin:10px 0 0;
+  color:var(--ink);letter-spacing:0.02em;margin:10px 0 0;
 }
 .kv-prov{
   font-family:var(--mono);font-size:10.5px;line-height:1.55;
@@ -585,16 +732,16 @@ button.inst-note:hover{background:color-mix(in srgb,var(--amber) 16%,var(--amber
 }
 .attn-sel select{
   font-family:var(--mono);font-size:11.5px;letter-spacing:0.08em;
-  color:var(--steel);background:var(--panel);
-  border:1px solid var(--steel-dim);border-radius:3px;
+  color:var(--frozen);background:var(--card);
+  border:1px solid var(--rule);border-radius:3px;
   padding:3px 20px 3px 8px;cursor:pointer;
   appearance:none;-webkit-appearance:none;
 }
-.attn-sel select:hover{border-color:var(--steel);color:var(--text);}
+.attn-sel select:hover{border-color:var(--frozen);background:var(--frozen-tint);}
 .attn-sel::after{
   content:'\25BE';position:absolute;right:7px;top:50%;
   transform:translateY(-50%);pointer-events:none;
-  font-size:8px;color:var(--steel-dim);line-height:1;
+  font-size:8px;color:var(--muted);line-height:1;
 }
 .attn-ctl-note{
   flex:1 1 auto;min-width:0;text-align:right;
@@ -608,27 +755,29 @@ button.inst-note:hover{background:color-mix(in srgb,var(--amber) 16%,var(--amber
   display:flex;flex-wrap:wrap;align-content:flex-start;gap:6px;
   height:68px;overflow-y:auto;margin-bottom:18px;
 }
-/* These strips are the sequence itself — tokens in flight — so they are amber
-   pills like instrument A's, not neutral steel chips. The one under the
-   window keeps its heavier border and a lifted ground so the selection still
-   reads at a glance; the geometry is unchanged, the 2px border eats a pixel
-   of padding on each side exactly as it did before. */
+/* These strips are the sequence itself — tokens in flight — so they are the
+   moving part's pills, like instrument A's, not neutral chips. The selected
+   one keeps its heavier border and takes the yellow as a ground; the geometry
+   is unchanged, the 2px border eating a pixel of padding on each side exactly
+   as it did before. */
 .query-token{
   font-family:var(--mono);font-size:12.5px;
-  color:var(--amber);background:var(--amber-bg);
-  border:1px solid var(--amber-dim);border-radius:3px;
+  color:var(--ink);background:var(--moving-tint);
+  border:1px solid var(--moving);border-radius:3px;
   padding:4px 8px;cursor:pointer;
   transition:border-color .15s ease,background-color .15s ease;
 }
-.query-token:hover{border-color:var(--amber);}
+.query-token:hover{border-color:var(--moving-ink);}
 .query-token.is-query{
-  color:var(--amber);border-color:var(--amber);border-width:2px;
-  background:color-mix(in srgb,var(--amber) 14%,var(--amber-bg));
+  color:var(--ink);border-color:var(--moving-ink);border-width:2px;
+  background:var(--moving);
   font-weight:500;padding:3px 7px;
 }
 
+/* The lookup is a screen: forty rows of keys, scores and softmax bars is a
+   field of values, and on ink the green of the budget finally separates from
+   the yellow of the row that owns the query. */
 .attn-table{
-  border:1px solid var(--hair);border-radius:4px;background:var(--panel);
   height:282px;overflow-y:auto;
 }
 .attn-row{
@@ -636,73 +785,75 @@ button.inst-note:hover{background:color-mix(in srgb,var(--amber) 16%,var(--amber
   grid-template-columns:78px minmax(0,1fr) 46px 152px 26px;
   align-items:center;gap:10px;
   height:32px;padding:0 10px;
-  border-bottom:1px solid var(--hair);
+  border-bottom:1px solid var(--screen-hair);
 }
 .attn-row:last-child{border-bottom:0;}
 .attn-head{
   height:26px;font-family:var(--mono);font-size:9.5px;
-  letter-spacing:0.14em;color:var(--muted);
-  position:sticky;top:0;z-index:1;background:var(--panel);
+  letter-spacing:0.14em;color:var(--screen-muted);
+  position:sticky;top:0;z-index:1;background:var(--screen);
 }
 .c-tok{
-  font-family:var(--mono);font-size:12px;color:var(--text);
+  font-family:var(--mono);font-size:12px;color:var(--screen-text);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .c-k{
-  font-family:var(--mono);font-size:10px;color:var(--green);
+  font-family:var(--mono);font-size:10px;color:var(--keys-on-screen);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .c-score{
-  font-family:var(--mono);font-size:11px;color:var(--muted);
+  font-family:var(--mono);font-size:11px;color:var(--screen-muted);
   font-variant-numeric:tabular-nums;text-align:right;
 }
 .c-bar{display:flex;align-items:center;gap:8px;}
 /* The full budget, drawn whether or not this row spent any of it. */
 .track{
   flex:1 1 auto;height:12px;min-width:0;
-  background:var(--hair);border:1px solid var(--steel-dim);
+  background:var(--screen-sunk);border:1px solid var(--screen-hair);
   display:block;
 }
 .fill{
-  display:block;height:100%;background:var(--green);
+  display:block;height:100%;background:var(--keys-on-screen);
   transition:width .45s cubic-bezier(.22,.7,.3,1);
 }
 .wt{
-  font-family:var(--mono);font-size:10px;color:var(--text);
+  font-family:var(--mono);font-size:10px;color:var(--screen-text);
   font-variant-numeric:tabular-nums;width:44px;text-align:right;flex:none;
 }
 .c-v{display:flex;justify-content:flex-end;}
 .c-v .chip{width:26px;}
-.attn-row.locked{background:#121821;}
-.attn-row.locked .c-tok,.attn-row.locked .c-k,.attn-row.locked .wt{color:var(--steel-dim);}
+.attn-row.locked{background:var(--screen-sunk);}
+.attn-row.locked .c-tok,.attn-row.locked .c-k,.attn-row.locked .wt{color:var(--screen-muted);}
 /* A row the mask hides spent none of the budget and is not going to, so its
-   track drops back to the unlit ground the live rows are drawn against. */
-.attn-row.locked .track{background:var(--panel2);border-color:var(--hair);}
-.attn-row.self{background:var(--amber-bg);}
-.attn-row.self .c-tok{color:var(--amber);font-weight:500;}
-.attn-row.self .c-k{color:var(--amber-dim);}
-.attn-row.self .wt{color:var(--amber);}
+   track drops back to the screen's own ground. */
+.attn-row.locked .track{background:var(--screen);border-color:var(--screen-hair);}
+.attn-row.self{background:color-mix(in srgb,var(--moving) 12%,var(--screen));}
+.attn-row.self .c-tok{color:var(--moving);font-weight:500;}
+.attn-row.self .c-k{color:var(--moving);}
+.attn-row.self .wt{color:var(--moving);}
 
 .budget{display:flex;align-items:center;gap:12px;margin-top:14px;}
 .budget .field-label{margin-bottom:0;flex:none;}
+/* The budget bar is on card, not on the screen, so it takes the paper green
+   and is separated by paper rather than by ink. */
 .budget-track{
   flex:1 1 auto;display:flex;height:14px;min-width:0;
-  background:var(--hair);border:1px solid var(--steel-dim);
+  background:var(--sunk);border:1px solid var(--rule);
 }
 .budget-seg{
-  display:block;height:100%;background:var(--green);
-  border-right:1px solid var(--panel2);
+  display:block;height:100%;background:var(--keys);
+  border-right:1px solid var(--card);
   transition:width .45s cubic-bezier(.22,.7,.3,1);
 }
 .budget-seg:last-child{border-right:0;}
 
 .blend{
-  font-family:var(--mono);font-size:12px;color:var(--steel);
+  font-family:var(--mono);font-size:12px;color:var(--frozen);
   margin:16px 0 0;letter-spacing:0.03em;
 }
-.blend-target{color:var(--amber);}
+.blend-target{color:var(--moving-ink);}
 .blend-plain{
-  font-family:var(--mono);font-size:12px;color:var(--amber);
+  font-family:var(--mono);font-size:12px;color:var(--moving-ink);
   margin:6px 0 0;letter-spacing:0.03em;line-height:1.5;min-height:36px;
 }
 
@@ -727,28 +878,31 @@ button.inst-note:hover{background:color-mix(in srgb,var(--amber) 16%,var(--amber
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .lens-head-trace{text-align:right;}
+/* Seven depths of running vector, shortlist and share: a field of values, so
+   a screen. */
 .lens-rows{
   margin-top:6px;
-  background:var(--panel);border:1px solid var(--hair);border-radius:4px;
 }
-.lens-row{height:72px;border-bottom:1px solid var(--hair);}
+.lens-row{height:72px;border-bottom:1px solid var(--screen-hair);}
 .lens-row:last-child{border-bottom:0;}
 /* The last row is not another sample of the stack: it is the end of it, and
-   the numbers on it are the model's own output. Steel, because the seam it
+   the numbers on it are the model's own output. Blue, because the seam it
    marks is machinery rather than a value. */
-.lens-row.is-final{border-top:1px solid var(--steel-dim);background:#141C25;}
+.lens-row.is-final{
+  border-top:1px solid var(--frozen-on-screen);background:var(--screen-sunk);
+}
 
 .lens-stop{
   font-family:var(--mono);font-size:9.5px;letter-spacing:0.06em;
-  color:var(--muted);
+  color:var(--screen-muted);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-/* The running vector itself, so amber — and full amber, because it is the
-   thing this instrument is about, not an echo of it. Six of 768, three
-   reserved lines. */
+/* The running vector itself, so the moving part — and at full strength on
+   ink, because it is the thing this instrument is about, not an echo of it.
+   Six of 768, three reserved lines. */
 .lens-res{
   font-family:var(--mono);font-size:9.5px;line-height:12px;height:36px;
-  color:var(--amber);font-variant-numeric:tabular-nums;
+  color:var(--moving);font-variant-numeric:tabular-nums;
   overflow:hidden;
 }
 
@@ -758,34 +912,34 @@ button.inst-note:hover{background:color-mix(in srgb,var(--amber) 16%,var(--amber
   align-items:center;gap:6px;height:14px;
 }
 .lens-word{
-  font-family:var(--mono);font-size:10px;line-height:14px;color:var(--text);
+  font-family:var(--mono);font-size:10px;line-height:14px;color:var(--screen-text);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .lens-track{
   display:block;height:8px;min-width:0;
-  background:var(--hair);border:1px solid var(--steel-dim);
+  background:var(--screen-sunk);border:1px solid var(--screen-hair);
 }
-/* Probabilities in flight — amber, and the widths are the probabilities
-   themselves rather than a share of the row, so an early depth's bars are
-   honestly almost nothing. The track behind them is drawn at all times, so
-   "almost nothing" reads as a short bar rather than as no bar. */
+/* Probabilities in flight — the moving part — and the widths are the
+   probabilities themselves rather than a share of the row, so an early
+   depth's bars are honestly almost nothing. The track behind them is drawn at
+   all times, so "almost nothing" reads as a short bar rather than as no bar. */
 .lens-fill{
-  display:block;height:100%;background:var(--amber);opacity:.62;
+  display:block;height:100%;background:var(--moving);opacity:.62;
   transition:width .35s cubic-bezier(.22,.7,.3,1);
 }
 .lens-wt{
-  font-family:var(--mono);font-size:9.5px;line-height:14px;color:var(--text);
+  font-family:var(--mono);font-size:9.5px;line-height:14px;color:var(--screen-text);
   font-variant-numeric:tabular-nums;text-align:right;
 }
-.lens-bar.is-top .lens-word{color:var(--amber);}
+.lens-bar.is-top .lens-word{color:var(--moving);}
 .lens-bar.is-top .lens-fill{opacity:1;}
-.lens-bar.is-top .lens-wt{color:var(--amber);}
+.lens-bar.is-top .lens-wt{color:var(--moving);}
 
-/* One token priced at every depth. It starts steel — a rumour the stack is
-   carrying — and ends amber, which is the whole reading in one column. */
+/* One token priced at every depth. It starts blue — a rumour the stack is
+   carrying — and ends yellow, which is the whole reading in one column. */
 .lens-trace{
   display:flex;flex-direction:column;align-items:flex-end;gap:4px;
-  color:var(--steel-dim);
+  color:var(--frozen-on-screen);
 }
 .lens-trace-val{
   font-family:var(--mono);font-size:11px;line-height:14px;
@@ -793,7 +947,7 @@ button.inst-note:hover{background:color-mix(in srgb,var(--amber) 16%,var(--amber
 }
 .lens-trace-track{
   display:block;width:100%;height:6px;
-  background:var(--hair);border:1px solid var(--steel-dim);
+  background:var(--screen-sunk);border:1px solid var(--screen-hair);
 }
 .lens-trace-fill{
   display:block;height:100%;background:currentColor;
@@ -807,16 +961,18 @@ button.inst-note:hover{background:color-mix(in srgb,var(--amber) 16%,var(--amber
 }
 .lens-final{
   font-family:var(--mono);font-size:10.5px;line-height:1.55;
-  color:var(--text);letter-spacing:0.02em;margin:0;
+  color:var(--ink);letter-spacing:0.02em;margin:0;
 }
 
 /* --- instrument E: the file ----------------------------------------------- */
 
-/* Everything here is steel. This panel is the file at rest — weights before
-   anything moves — so there is no amber in it at all, and the one ramp it
-   uses runs from the panel's own background through steel to the text
-   colour. The only amber on screen is the global focus ring, which is
-   chrome rather than data. */
+/* Everything here is frozen machinery. This panel is the file at rest —
+   weights before anything moves — so there is no moving-part colour in it at
+   all. Two of the three panels are drawn in ink on card, because they are
+   labelled charts: the tensor list and the bell curve. The third, the byte
+   window, is a field of 1,536 values and is drawn on a screen, where its one
+   ramp runs from the screen's own ground through the frozen blue to a pale
+   blue at the tensor's largest magnitude. */
 
 .file-stat{
   font-family:var(--mono);font-size:10.5px;line-height:15px;height:30px;
@@ -830,7 +986,7 @@ button.inst-note:hover{background:color-mix(in srgb,var(--amber) 16%,var(--amber
    move every right-aligned column in it by fifteen pixels. */
 .file-list{
   position:relative;height:258px;overflow-y:scroll;scrollbar-gutter:stable;
-  background:var(--panel);border:1px solid var(--hair);border-radius:4px;
+  background:var(--sunk);border:1px solid var(--rule);border-radius:4px;
 }
 .file-row{
   display:grid;width:100%;height:32px;
@@ -842,29 +998,29 @@ button.inst-note:hover{background:color-mix(in srgb,var(--amber) 16%,var(--amber
   transition:background-color .15s ease;
 }
 .file-row:last-child{border-bottom:0;}
-/* Derived from the tokens rather than picked: one step of the page's own
+/* Derived from the tokens rather than picked: one step of the card's own
    ground mixed into the list's panel, which keeps hover distinct from the
-   selected row's #141C25 without inventing a colour. */
-.file-row:hover{background:color-mix(in srgb,var(--panel) 80%,var(--bg));}
+   selected row's tint without inventing a colour. */
+.file-row:hover{background:color-mix(in srgb,var(--sunk) 55%,var(--card));}
 /* An inset rule rather than a border: a selected row must not be one pixel
    narrower than an unselected one. */
-.file-row.is-on{background:#141C25;box-shadow:inset 2px 0 0 var(--steel);}
+.file-row.is-on{background:var(--frozen-tint);box-shadow:inset 2px 0 0 var(--frozen);}
 .file-row-name{
   grid-area:name;font-family:var(--mono);font-size:11px;line-height:17px;
-  color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.file-row.is-on .file-row-name{color:var(--steel);}
+.file-row.is-on .file-row-name{color:var(--frozen);}
 .file-row-shape,.file-row-type,.file-row-bytes{
   font-family:var(--mono);font-size:9.5px;line-height:17px;
   font-variant-numeric:tabular-nums;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .file-row-shape{grid-area:shape;color:var(--muted);text-align:right;}
-.file-row-type{grid-area:type;color:var(--steel);text-align:right;}
+.file-row-type{grid-area:type;color:var(--frozen);text-align:right;}
 .file-row-bytes{grid-area:bytes;color:var(--muted);text-align:right;}
 .file-row-note{
   grid-area:note;font-family:var(--mono);font-size:9px;line-height:13px;
-  color:var(--steel-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 
 /* The whole file, byte-proportional, in file order. Segment widths are the
@@ -875,46 +1031,48 @@ button.inst-note:hover{background:color-mix(in srgb,var(--amber) 16%,var(--amber
 .file-bar-wrap{position:relative;}
 .file-ticks{position:relative;height:6px;}
 .file-tick{
-  position:absolute;top:1px;width:1px;height:5px;background:var(--steel-dim);
+  position:absolute;top:1px;width:1px;height:5px;background:var(--rule);
 }
-.file-tick.is-on{background:var(--text);height:6px;top:0;}
+.file-tick.is-on{background:var(--ink);height:6px;top:0;}
 .file-bar{
   position:relative;height:22px;
-  background:var(--panel);border:1px solid var(--hair);border-radius:2px;
+  background:var(--sunk);border:1px solid var(--rule);border-radius:2px;
   overflow:hidden;
 }
 .file-seg{
   position:absolute;top:0;bottom:0;min-width:0;padding:0;
-  background:var(--steel-dim);border:0;border-radius:0;
+  background:var(--frozen-dim);border:0;border-radius:0;
   transition:background-color .15s ease;
 }
 button.file-seg{cursor:pointer;}
-button.file-seg:hover{background:color-mix(in srgb,var(--steel) 70%,var(--text));}
-/* The selected tensor is steel, not white: wte alone is 46% of the bar, and
-   at the top of the ramp it would be the loudest thing in the section. */
-.file-seg.is-on{background:var(--steel);}
+button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--frozen-dim));}
+/* The selected tensor is the full frozen blue. The step from the unselected
+   blue is only 1.85:1, so it also takes an ink edge — and the tick above it
+   and the readout below it both name it, so the state is never carried by
+   colour alone. */
+.file-seg.is-on{background:var(--frozen);box-shadow:inset 0 0 0 1px var(--ink);}
 /* Not weights: the graph itself at the front, and the declaration of outputs
    and value shapes at the back. Hatched the way a section cut is hatched, so
    the eye reads it as a different material. */
 .file-seg.is-meta{
   background:repeating-linear-gradient(
-    45deg,var(--hair) 0 3px,var(--steel-dim) 3px 6px);
+    45deg,var(--sunk) 0 3px,var(--frozen-dim) 3px 6px);
 }
 .file-brackets{position:relative;height:15px;}
 .file-bracket{
   position:absolute;top:0;height:15px;min-width:0;
-  border-left:1px solid var(--steel-dim);border-top:1px solid var(--steel-dim);
+  border-left:1px solid var(--rule);border-top:1px solid var(--rule);
   font-family:var(--mono);font-size:9px;line-height:14px;color:var(--muted);
   text-align:center;overflow:hidden;white-space:nowrap;
 }
 .file-bar-readout{
   font-family:var(--mono);font-size:10px;line-height:15px;height:15px;
-  color:var(--text);letter-spacing:0.02em;margin:7px 0 0;
+  color:var(--ink);letter-spacing:0.02em;margin:7px 0 0;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .file-bar-key{
   font-family:var(--mono);font-size:9.5px;line-height:15px;height:15px;
-  color:var(--steel-dim);letter-spacing:0.02em;margin:3px 0 0;overflow:hidden;
+  color:var(--muted);letter-spacing:0.02em;margin:3px 0 0;overflow:hidden;
 }
 
 /* Which copy the panel is reading from. Fixed width so the box never moves,
@@ -923,8 +1081,8 @@ button.file-seg:hover{background:color-mix(in srgb,var(--steel) 70%,var(--text))
    even when the box holding them has not moved a pixel. Measured, not
    assumed — it was the only shift instrument E was producing. */
 .file-source{
-  flex:none;width:80px;margin-left:auto;text-align:left;
-  font-family:var(--mono);font-size:9.5px;line-height:15px;color:var(--steel-dim);
+  flex:none;width:100px;margin-left:auto;text-align:left;
+  font-family:var(--mono);font-size:9.5px;line-height:15px;color:var(--muted);
   letter-spacing:0.02em;white-space:nowrap;overflow:hidden;
 }
 .label-row.file-label{flex-wrap:nowrap;}
@@ -934,12 +1092,15 @@ button.file-seg:hover{background:color-mix(in srgb,var(--steel) 70%,var(--text))
 
 .file-eyebrow{
   font-family:var(--mono);font-size:10px;line-height:15px;height:15px;
-  color:var(--steel);letter-spacing:0.02em;margin:0 0 6px;
+  color:var(--frozen);letter-spacing:0.02em;margin:0 0 6px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
+/* 24 rows of 64 values. At 1280 the body is 680px wide, which puts a cell at
+   10.6 x 10.5 px with a one-pixel gutter of screen ground between them —
+   large enough to read as a grid of numbers rather than as noise. The height
+   follows from the width so the cells stay square. */
 .file-canvas-box{
-  height:210px;overflow:hidden;
-  background:var(--panel);border:1px solid var(--hair);border-radius:4px;
+  height:252px;overflow:hidden;
 }
 /* The drawing surface is sized from the box, not the other way round, so a
    resize repaints at the new device pixel ratio without the box moving. */
@@ -957,20 +1118,20 @@ button.file-seg:hover{background:color-mix(in srgb,var(--steel) 70%,var(--text))
 /* Two reserved lines: the arithmetic that turns one byte into one weight. */
 .file-readout{
   font-family:var(--mono);font-size:10.5px;line-height:15px;height:30px;
-  color:var(--text);letter-spacing:0.02em;margin:8px 0 0;overflow:hidden;
+  color:var(--ink);letter-spacing:0.02em;margin:8px 0 0;overflow:hidden;
 }
 
 .file-curve{
   position:relative;
-  background:var(--panel);border:1px solid var(--hair);border-radius:4px;
+  background:var(--sunk);border:1px solid var(--rule);border-radius:4px;
   padding:6px 8px 0;
 }
 /* Stretched on x only, so a vertical mark is drawn as a rectangle one bin
    wide rather than as a hairline that would stretch with it. */
 .file-curve svg{display:block;width:100%;height:108px;}
-.file-curve-fill{fill:var(--steel-dim);}
-.file-curve-zero{fill:var(--steel);}
-.file-curve-axis{fill:var(--hair);}
+.file-curve-fill{fill:var(--frozen-dim);}
+.file-curve-zero{fill:var(--frozen);}
+.file-curve-axis{fill:var(--rule);}
 .file-curve-ticks{position:relative;height:15px;}
 /* Each tick is a full-width box pinned at the left and moved into place by a
    transform, so a percentage translate is a percentage of the axis. It has to
@@ -985,7 +1146,7 @@ button.file-seg:hover{background:color-mix(in srgb,var(--steel) 70%,var(--text))
 .file-curve-ticks span i{display:inline-block;transform:translateX(-50%);font-style:normal;}
 .file-curve-stat{
   font-family:var(--mono);font-size:10px;line-height:15px;height:30px;
-  color:var(--text);letter-spacing:0.02em;margin:6px 0 0;overflow:hidden;
+  color:var(--ink);letter-spacing:0.02em;margin:6px 0 0;overflow:hidden;
 }
 
 /* Where the numbers came from, and whether the copy in this browser is still
@@ -996,9 +1157,13 @@ button.file-seg:hover{background:color-mix(in srgb,var(--steel) 70%,var(--text))
 .file-proof{
   font-family:var(--mono);font-size:10px;line-height:15px;height:41px;
   color:var(--muted);letter-spacing:0.02em;
-  margin:14px 0 0;padding-top:10px;border-top:1px solid var(--hair);
+  margin:14px 0 0;padding-top:10px;border-top:1px solid var(--rule);
   overflow:hidden;
 }
+/* The one place the alert red is used: the file in this browser stopped
+   agreeing with the file these numbers were read from. Nothing else on the
+   page is allowed to be this loud. */
+.file-proof.is-alert{color:var(--alert-ink);border-top-color:var(--alert);}
 
 /* --- responsive ---------------------------------------------------------- */
 
@@ -1116,14 +1281,24 @@ button.file-seg:hover{background:color-mix(in srgb,var(--steel) 70%,var(--text))
   .file-row-shape,.file-row-type,.file-row-bytes{line-height:14px;}
   .file-row-shape{text-align:left;}
   .file-eyebrow{height:30px;white-space:normal;text-overflow:clip;}
-  .file-canvas-box{height:132px;}
+  .file-canvas-box{height:126px;}
+  /* Two reserved rows: the two paging buttons on one, the sentence saying
+     where the window is on the other. It no longer fits beside them, and
+     ellipsizing it lost the half that told the reader what to do. */
+  .file-blob-controls{height:48px;flex-wrap:wrap;align-content:center;row-gap:4px;}
+  .file-page{flex:1 1 100%;padding-left:0;}
   .file-readout{height:45px;}
   .file-curve svg{height:88px;}
   .file-curve-stat{height:45px;}
   .file-bar-readout{height:30px;white-space:normal;text-overflow:clip;}
   .file-bar-key{height:30px;}
   .file-proof{height:71px;}
-  .file-source{width:72px;font-size:9px;}
+  /* Both halves of this row want more than a phone has: the eyebrow was
+     losing "window" and the tag was losing "build". The tag takes a line of
+     its own here, where it is the only thing on its row and its four
+     wordings can therefore differ in length without moving a glyph. */
+  .label-row.file-label{flex-wrap:wrap;}
+  .file-source{width:auto;margin-left:0;font-size:9px;}
 
   /* The note has had a line to itself since 780px; here it also drops a step
      in size, one line still, in every mode. */

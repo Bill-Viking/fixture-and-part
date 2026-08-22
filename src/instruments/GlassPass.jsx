@@ -10,25 +10,28 @@ import {
 import { formatRealVector, residualPreview } from '../lib/realModel.js'
 import InfoTag from '../components/InfoTag.jsx'
 import LoadNote from '../components/LoadNote.jsx'
+import ReadingLine from '../components/ReadingLine.jsx'
 import TeachPair from '../components/TeachPair.jsx'
 
 const SLOTS = Array.from({ length: CANDIDATE_COUNT }, (_, i) => i)
 const LAST_STOP = LENS_STOPS - 1
 
 /**
- * The winner's share, painted steel where it is still a rumour and amber
- * where it has become the answer. The colour is doing the same job the bars
- * do — showing a value move — so it comes off the same two tokens.
+ * The winner's share, painted the frozen blue where it is still a rumour and
+ * the moving yellow where it has become the answer. The colour is doing the
+ * same job the bars do — showing a value move — so it comes off the same two
+ * tokens. These rows are a screen, so it is the on-screen blue.
  *
  * The ramp saturates before the top of the range rather than at it, so the
- * bottom row of a real reading arrives at unmistakable amber instead of at a
- * near miss, and it starts a little off the floor so the faintest share still
- * reads as carried-but-barely rather than as nothing at all.
+ * bottom row of a real reading arrives at the unmistakable moving-part yellow
+ * instead of at a near miss, and it starts a little off the floor so the
+ * faintest share still reads as carried-but-barely rather than as nothing at
+ * all.
  */
 function traceColour(share) {
   if (share == null) return undefined
   const mix = Math.round((0.08 + 0.92 * Math.min(1, share / 0.45)) * 100)
-  return `color-mix(in srgb, var(--amber) ${mix}%, var(--steel-dim))`
+  return `color-mix(in srgb, var(--moving) ${mix}%, var(--frozen-on-screen))`
 }
 
 /** One candidate of one depth. An empty slot keeps the row's geometry. */
@@ -70,6 +73,7 @@ function LensBar({ token, weight, wins }) {
  * whatever instrument B is about to commit — the two must never disagree.
  */
 export default function GlassPass({
+  text,
   sequence,
   baseTokens,
   lensIndex,
@@ -138,6 +142,8 @@ export default function GlassPass({
       </div>
 
       <div className="inst-body">
+        <ReadingLine text={text} />
+
         <div className="label-row tight">
           <span className="field-label">
             read at — click any token to move the window
@@ -165,7 +171,7 @@ export default function GlassPass({
           <span className="lens-head-trace">winner</span>
         </div>
 
-        <div className="lens-rows">
+        <div className="lens-rows screen">
           {STOP_LABELS.map((label, stop) => {
             const rows = shortlist(stop)
             const share = trace ? trace[stop] : null

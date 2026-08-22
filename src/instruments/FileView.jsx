@@ -5,6 +5,7 @@ import {
   decodeWindow,
   readHistogram,
   readManifest,
+  readSha,
   readWindow,
 } from '../lib/fileBytes.js'
 import { WINDOW_COLS, WINDOW_ROWS, rawValue } from '../lib/onnxScan.js'
@@ -70,18 +71,32 @@ function rgbOf(hex) {
 }
 
 /**
- * Weights at rest, so the blob is painted in one colour and its magnitude:
- * the panel's own background through steel to the page's text colour. The
- * tokens are read off the document rather than copied, so the ramp cannot
+ * Weights at rest, so the window is painted in one colour and its magnitude.
+ *
+ * The panel is a dark screen set into the page, and the ramp runs across it:
+ * near-ink where a weight is zero, through the frozen blue, to a luminous
+ * pale blue at the largest magnitude in the tensor. One colour family the
+ * whole way, because everything in this instrument is frozen machinery.
+ *
+ * The tokens are read off the document rather than copied, so the ramp cannot
  * drift away from the palette.
  */
+const RAMP_FLOOR = 0.16
+
 function readRamp() {
-  const fallback = ['#0D1218', '#5B7A99', '#D8E0E8']
+  const fallback = ['#181512', '#1E5AA8', '#D6E9FF']
   if (typeof document === 'undefined') return fallback.map(rgbOf)
   const style = getComputedStyle(document.documentElement)
-  return ['--panel2', '--steel', '--text'].map((token, i) =>
-    rgbOf(style.getPropertyValue(token) || fallback[i]),
+  const [screen, frozen, lit] = ['--screen', '--frozen', '--frozen-lit'].map(
+    (token, i) => rgbOf(style.getPropertyValue(token) || fallback[i]),
   )
+  // The bottom of the ramp is a hair off the screen's own ground rather than
+  // on it. A weight of zero should read as the darkest thing in the window,
+  // not as a hole in it — with the floor at the ground exactly, the cells
+  // holding almost nothing dissolved into the panel and took the grid with
+  // them. The mapping of magnitude to lightness is unchanged.
+  const floor = screen.map((c, i) => Math.round(c + (frozen[i] - c) * RAMP_FLOOR))
+  return [floor, frozen, lit]
 }
 
 function rampColour(ramp, t) {
@@ -324,7 +339,7 @@ function Curve({ histogram }) {
   )
 }
 
-export default function FileView({ modelStatus, progress, onLoad }) {
+export default function FileView({ text, ranKey, modelStatus, progress, onLoad }) {
   const [facts, setFacts] = useState(null)
   const [live, setLive] = useState(null)
   const [liveError, setLiveError] = useState(null)
@@ -336,6 +351,14 @@ export default function FileView({ modelStatus, progress, onLoad }) {
   const [page, setPage] = useState(0)
   const [cell, setCell] = useState(null)
   const [hovered, setHovered] = useState(null)
+  // The reader changed the text and the model ran on it; this is what the
+  // file hashed to when that happened. 'reading' while the hash is in flight,
+  // then {sha} — or {error} if the read failed.
+  const [afterRun, setAfterRun] = useState(null)
+  // The text the panel's current statement is about. Set once the live read
+  // has landed, so the first sentence typed after that is a change and the
+  // sentence that was already there is not.
+  const answeredFor = useRef(null)
 
   const listRef = useRef(null)
   const canvasRef = useRef(null)
@@ -449,6 +472,46 @@ export default function FileView({ modelStatus, progress, onLoad }) {
     }
   }, [live, facts, selected, page, windowKey, windows, noteMismatch])
 
+  /**
+   * The moment the whole instrument exists for.
+   *
+   * A reader types a new sentence, watches every instrument below change, and
+   * reasonably expects this one to change too. It cannot: the file is the same
+   * file. Saying nothing at that moment reads as the panel being broken, so
+   * the panel goes and looks — it hashes all 83.5 MB again, in the worker,
+   * and reports what it found.
+   *
+   * It waits for `ranKey`, which is the model's own run over the new text:
+   * the claim is "you changed the text and the model ran, and the file still
+   * did not change", and the second half of that has to have happened.
+   *
+   * Only with a hash in hand. Without SubtleCrypto there is nothing to
+   * compare and the panel keeps its existing wording rather than inventing a
+   * claim it did not check.
+   */
+  useEffect(() => {
+    if (!ready || !live || !live.sha) return
+    if (answeredFor.current === null) {
+      answeredFor.current = text
+      return
+    }
+    if (text === answeredFor.current) return
+    if (!ranKey) return
+    answeredFor.current = text
+    let cancelled = false
+    setAfterRun({ status: 'reading' })
+    readSha()
+      .then((sha) => {
+        if (!cancelled) setAfterRun({ status: 'done', sha })
+      })
+      .catch((error) => {
+        if (!cancelled) setAfterRun({ status: 'error', message: error.message })
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [ready, live, text, ranKey])
+
   const histogram = histograms.get(selected) ?? facts?.histograms[selected] ?? null
   const view = useMemo(() => {
     const held = windows.get(windowKey)
@@ -547,6 +610,11 @@ export default function FileView({ modelStatus, progress, onLoad }) {
     if (!view || !grid) return
     const cellW = width / grid.cols
     const cellH = height / grid.rows
+    // A hairline of the screen's own ground between cells, so the window
+    // reads as a grid of separate numbers rather than as one wash. Dropped
+    // below 7px, where a whole pixel of gutter would be a fifth of the cell
+    // and the picture would go to lace.
+    const gutter = Math.min(cellW, cellH) >= 7 ? 1 : 0
 
     const quant = entry?.quant
     for (let r = 0; r < grid.drawRows; r++) {
@@ -561,7 +629,12 @@ export default function FileView({ modelStatus, progress, onLoad }) {
         // paint the whole window the background colour and call it a reading.
         const t = Math.min(1, Math.sqrt(Math.abs(value) / maxAbs))
         ctx.fillStyle = rampColour(ramp, t)
-        ctx.fillRect(c * cellW, r * cellH, Math.ceil(cellW), Math.ceil(cellH))
+        ctx.fillRect(
+          c * cellW,
+          r * cellH,
+          Math.max(1, Math.ceil(cellW) - gutter),
+          Math.max(1, Math.ceil(cellH) - gutter),
+        )
       }
     }
 
@@ -633,7 +706,7 @@ export default function FileView({ modelStatus, progress, onLoad }) {
   }
 
   const NOTHING_PICKED =
-    'click a byte, or press the arrow keys inside the blob, for one value'
+    'click a square, or press the arrow keys inside the window, for one value'
 
   const readout = () => {
     if (!entry || !view || !grid) return 'no tensor selected'
@@ -694,29 +767,45 @@ export default function FileView({ modelStatus, progress, onLoad }) {
   // second selection arrived before the first read had landed, because the
   // effect for an already-cached tensor returns early and had nothing to
   // clear. What has landed is the only thing worth asking.
+  //
+  // Eighty pixels, so the words have to be short. Which reading is on screen
+  // is spelled out in full underneath.
   const source = () => {
-    if (!ready) return 'ahead of time'
-    if (liveError) return 'shipped copy'
-    if (!histograms.has(selected)) return 're-reading…'
-    return 're-read here'
+    if (!ready) return 'from the build'
+    if (liveError) return 'from the build'
+    if (!histograms.has(selected)) return 'reading…'
+    return 'read live'
   }
 
+  /**
+   * Where the numbers came from, and whether the file they came from is still
+   * the file sitting in this browser.
+   *
+   * Every branch says what was actually observed. The panel never claims a
+   * check it did not run — which is why there is a branch for a browser with
+   * no hashing at all, and why a file that reads differently is reported as
+   * exactly that rather than explained away.
+   */
   const proof = () => {
     const p = facts?.provenance
-    if (!p) return 'reading the file…'
+    if (!p) return { text: 'reading the file…' }
     if (!ready) {
-      return (
-        `read from the file ahead of time on ${p.readAt} · sha256 ${shortSha(p.sha256)} ` +
-        `· load the real model to re-read it here`
-      )
+      return {
+        text:
+          `these numbers were read from the model file on ${p.readAt}, when this ` +
+          `page was built. load the model and the page reads the same file again, ` +
+          `right here.`,
+      }
     }
     if (liveError) {
-      return (
-        `this browser's copy could not be read — ${liveError}. ` +
-        `the numbers shown are the ones read on ${p.readAt}.`
-      )
+      return {
+        alert: true,
+        text:
+          `the file in this browser could not be read — ${liveError}. ` +
+          `the numbers shown are the ones read on ${p.readAt}.`,
+      }
     }
-    if (!live) return `re-reading this browser's cached copy…`
+    if (!live) return { text: 'reading the whole model file again…' }
 
     // Whether what is on screen for the selected tensor is the live reading
     // or still the shipped one. Until both have landed the panel is showing
@@ -725,56 +814,104 @@ export default function FileView({ modelStatus, progress, onLoad }) {
 
     if (live.sha && live.sha !== p.sha256) {
       // What the difference means is not knowable from here — a new upload, a
-      // re-quantized variant and a damaged cache entry all read the same — so
-      // this says what was observed and stops.
-      return (
-        `this browser's copy differs from the one read on ${p.readAt} ` +
-        `(sha256 ${shortSha(live.sha)}) — ` +
-        (liveHere
-          ? 'the numbers shown are read from it'
-          : 'still re-reading this tensor from it')
-      )
+      // re-quantized variant and a damaged copy all read the same — so this
+      // says what was observed and stops.
+      return {
+        alert: true,
+        text:
+          `the file in this browser is not the file read on ${p.readAt} ` +
+          `(fingerprint sha256 ${shortSha(live.sha)}) — ` +
+          (liveHere
+            ? 'the numbers shown are read from it'
+            : 'still reading this tensor out of it'),
+      }
     }
     if (mismatches.length > 0) {
       const more = mismatches.length > 1 ? ` and ${mismatches.length - 1} more` : ''
-      return (
-        `this browser's copy hashes the same but reads differently — ` +
-        `${mismatches[0]}${more} — the numbers shown are read from it`
-      )
+      return {
+        alert: true,
+        text:
+          `the file in this browser has the same fingerprint but reads ` +
+          `differently — ${mismatches[0]}${more} — the numbers shown are read from it`,
+      }
     }
+
+    // The reader changed the text, the model ran, and the panel went back to
+    // the file to see whether anything about it had moved.
+    if (afterRun && live.sha) {
+      if (afterRun.status === 'reading') {
+        return { text: 'you changed the text and the model ran. reading the file again…' }
+      }
+      if (afterRun.status === 'error') {
+        return {
+          alert: true,
+          text:
+            `you changed the text and the model ran. the file could not be read ` +
+            `again just now — ${afterRun.message}`,
+        }
+      }
+      if (afterRun.sha && afterRun.sha !== p.sha256) {
+        return {
+          alert: true,
+          text:
+            `you changed the text and the model ran, and the file read ` +
+            `differently just now (sha256 ${shortSha(afterRun.sha)}) — that is ` +
+            `not the file these numbers came from.`,
+        }
+      }
+      if (afterRun.sha) {
+        return {
+          text:
+            `you changed the text and the model ran. the file did not change — ` +
+            `read again just now, still the same file ` +
+            `(sha256 ${shortSha(afterRun.sha)}).`,
+        }
+      }
+    }
+
     if (live.sha) {
-      return (
-        `re-read from this browser's cached copy just now · ` +
-        `sha256 ${shortSha(live.sha)} — identical to the copy read on ${p.readAt}`
-      )
+      return {
+        text:
+          `this page just read the whole model file again (${mb(p.bytes)}) — byte ` +
+          `for byte the same file that was read on ${p.readAt}. fingerprint ` +
+          `sha256 ${shortSha(live.sha)}.`,
+      }
     }
-    // No SubtleCrypto: a non-secure origin. Without a hash of the whole file
-    // the only honest claim is the one covering what was actually compared.
+    // No SubtleCrypto: a non-secure origin. Without a fingerprint of the whole
+    // file the only honest claim is the one covering what was actually
+    // compared.
     if (manifestMatch === null || !liveHere) {
-      return (
-        `re-read from this browser's cached copy · no hash available here · ` +
-        `still comparing it with the copy read on ${p.readAt}`
-      )
+      return {
+        text:
+          `this page is reading the model file again here · no fingerprint can ` +
+          `be taken in this browser · still comparing it with the file read on ` +
+          `${p.readAt}`,
+      }
     }
-    return (
-      `re-read from this browser's cached copy just now · no hash available ` +
-      `here · the manifest and this tensor's bytes match the copy read on ${p.readAt}`
-    )
+    return {
+      text:
+        `this page just read the model file again here · no fingerprint can be ` +
+        `taken in this browser · the tensor list and this tensor's bytes match ` +
+        `the file read on ${p.readAt}`,
+    }
   }
 
-  // Short enough that the idle state — which appends "— load the real model"
-  // — still fits one line at 390px, where the note has a line of its own.
-  // What the two readings actually are is spelled out in the proof line.
+  // The note has a row of its own in this instrument's head at every width,
+  // so the sentence can say what it means rather than fit beside a title.
+  const size = mb(facts?.provenance.bytes ?? 0)
   const label = ready
-    ? `re-read from this browser's copy · ${mb(facts?.provenance.bytes ?? 0)}`
-    : `read ahead of time · ${mb(facts?.provenance.bytes ?? 0)}`
+    ? `read live from the model file, here in your browser · ${size}`
+    : `read from the model file when this page was built · ${size}`
+
+  const proofLine = proof()
 
   return (
     <figure className="instrument">
-      <div className="inst-head">
+      <div className="inst-head is-stacked">
         <span className="inst-title">INSTRUMENT E &mdash; THE FILE</span>
         <LoadNote
           label={label}
+          action="load the model to read it live"
           status={modelStatus}
           progress={progress}
           onLoad={onLoad}
@@ -878,12 +1015,12 @@ export default function FileView({ modelStatus, progress, onLoad }) {
         <p className="file-bar-key">{header?.key ?? '—'}</p>
 
         <div className="label-row file-label">
-          <span className="field-label">the blob &mdash; raw bytes</span>
+          <span className="field-label">the bytes &mdash; one small window</span>
           <InfoTag topic="fileBlob" />
           <span className="file-source">{source()}</span>
         </div>
         <p className="file-eyebrow">{blobEyebrow()}</p>
-        <div className="file-canvas-box">
+        <div className="file-canvas-box screen">
           {/* Not an image: it takes focus and the arrow keys move a reading
               around inside it, and an image role would have it announced as
               something to look at rather than something to operate. The
@@ -894,7 +1031,7 @@ export default function FileView({ modelStatus, progress, onLoad }) {
             className="file-canvas"
             tabIndex={0}
             role="application"
-            aria-label={`the blob — ${blobEyebrow()} — arrow keys move the reading`}
+            aria-label={`the bytes — ${blobEyebrow()} — arrow keys move the reading`}
             aria-describedby={readoutId}
             onClick={pickCell}
             onKeyDown={onCanvasKey}
@@ -925,7 +1062,7 @@ export default function FileView({ modelStatus, progress, onLoad }) {
           </button>
           <span className="file-page">
             {!live && pages > 1
-              ? `window ${page + 1} of ${count(pages)} — load the real model to move it`
+              ? `window ${page + 1} of ${count(pages)} — load the model to move it`
               : `window ${page + 1} of ${count(pages)}`}
           </span>
         </div>
@@ -940,8 +1077,11 @@ export default function FileView({ modelStatus, progress, onLoad }) {
         <Curve histogram={histogram} />
         <p className="file-curve-stat">{curveStat()}</p>
 
-        <p className="file-proof" aria-live="polite">
-          {proof()}
+        <p
+          className={`file-proof${proofLine.alert ? ' is-alert' : ''}`}
+          aria-live="polite"
+        >
+          {proofLine.text}
         </p>
       </div>
 

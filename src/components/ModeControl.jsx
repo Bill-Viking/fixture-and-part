@@ -1,4 +1,3 @@
-import { MODEL_ID } from '../lib/realModel.js'
 import TeachPair from './TeachPair.jsx'
 import { progressLabel } from '../lib/loadProgress.js'
 
@@ -15,9 +14,9 @@ import { progressLabel } from '../lib/loadProgress.js'
  * all swap text inside boxes that were already reserved, so nothing on the
  * page moves.
  *
- * The load button is the one filled control on the page. It was a steel
- * outline like every other button here and readers did not find it; it is now
- * amber on amber-dark text, and the rest of the bar is deliberately quiet so
+ * The load button is the one filled control on the page. It was an outline
+ * like every other button here and readers did not find it; it is now ink on
+ * the moving part's yellow, and the rest of the bar is deliberately quiet so
  * that it carries.
  */
 
@@ -83,15 +82,15 @@ export default function ModeControl({
           <>
             {!loaded && (
               <button type="button" className="btn btn-primary" onClick={onLoad}>
-                LOAD REAL MODEL (~90 MB)
+                LOAD THE REAL MODEL (83.5 MB)
               </button>
             )}
             <span className={`mode-hint${error ? ' is-error' : ''}`}>
               {error
                 ? 'real model unavailable — showing illustrative weights'
                 : loaded
-                  ? `${MODEL_ID} is in the browser cache — switch freely`
-                  : 'real mode needs the download; the browser caches it afterwards'}
+                  ? 'distilgpt2 is here in your browser — switch freely'
+                  : 'real mode needs an 83.5 MB download, once'}
             </span>
           </>
         )}

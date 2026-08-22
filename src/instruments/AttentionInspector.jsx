@@ -8,6 +8,7 @@ import {
 import { REAL_HEADS, REAL_LAYERS } from '../lib/realModel.js'
 import InfoTag from '../components/InfoTag.jsx'
 import LoadNote from '../components/LoadNote.jsx'
+import ReadingLine from '../components/ReadingLine.jsx'
 import TeachPair from '../components/TeachPair.jsx'
 
 const LAYER_OPTIONS = Array.from({ length: REAL_LAYERS }, (_, i) => i)
@@ -29,6 +30,7 @@ function score(value) {
  * the constant that would pin the raw scores down.
  */
 export default function AttentionInspector({
+  text,
   sequence,
   queryIndex,
   onQueryChange,
@@ -75,6 +77,8 @@ export default function AttentionInspector({
       </div>
 
       <div className="inst-body">
+        <ReadingLine text={text} />
+
         <div className="attn-controls">
           {real ? (
             <>
@@ -145,7 +149,7 @@ export default function AttentionInspector({
           <InfoTag topic="mask" />
         </div>
 
-        <div className="attn-table" role="table" aria-label="attention lookup">
+        <div className="attn-table screen" role="table" aria-label="attention lookup">
           <div className="attn-row attn-head" role="row">
             <span className="c-tok" role="columnheader">token</span>
             <span className="c-k" role="columnheader">
