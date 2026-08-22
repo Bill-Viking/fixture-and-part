@@ -34,8 +34,28 @@ export const MODEL_ID = 'Xenova/distilgpt2'
 export const REAL_LAYERS = 6
 export const REAL_HEADS = 12
 export const REAL_HIDDEN = 768
-/** The sampling rule instrument B uses in real mode, named in the UI. */
-export const SAMPLING = 'greedy · whitespace skipped'
+
+/**
+ * The two decoding rules instrument B offers in real mode, and the numbers
+ * behind the sampled one.
+ *
+ * Greedy takes the top token every time. On a six-block model that is how you
+ * get "the tree of the tree of the tree": the top token after "of the" is
+ * "tree" again, and nothing in greedy decoding can break the cycle. The
+ * sampled rule is the standard three-part answer to that — a temperature that
+ * flattens the distribution slightly, a top-k that throws away the long tail
+ * before drawing, and a penalty on tokens the sequence has already used.
+ *
+ * The seed is fixed and the draw is a pure function of it and of the step
+ * number, so the same prompt gives the same continuation every time and RESET
+ * replays it exactly. Nothing here is random between reloads.
+ */
+export const DECODING = {
+  temperature: 0.8,
+  topK: 40,
+  repetitionPenalty: 1.3,
+  seed: 7,
+}
 
 // The no-cache decoder graph: input_ids + attention_mask in, logits out. We
 // re-run the whole sequence on every step rather than carrying a KV cache,
@@ -381,6 +401,19 @@ function softmaxInPlace(row) {
   return out
 }
 
+/**
+ * The two constants that turn a raw logit back into the probability the
+ * shortlist prints, without keeping the whole 50,257-wide softmax around:
+ * p(id) = exp(logit − max − logSum).
+ */
+function normalizerOf(row) {
+  let max = -Infinity
+  for (let i = 0; i < row.length; i++) if (row[i] > max) max = row[i]
+  let total = 0
+  for (let i = 0; i < row.length; i++) total += Math.exp(row[i] - max)
+  return { max, logSum: Math.log(total) }
+}
+
 // Greedy distilgpt2 on a short prompt often collapses into predicting "\n"
 // forever — real behavior, but it reads as a broken instrument. Tokens whose
 // text is nothing but whitespace are skipped, along with <|endoftext|>, and
@@ -489,7 +522,7 @@ export function realForward(ids) {
       return {
         key: '', ids: [], tokens: [], n: 0,
         candidates: [], attention: [], embeddings: [], k: [], v: [],
-        residuals: [],
+        residuals: [], lastLogits: null, lastNorm: null,
       }
     }
     const outputs = await session.run(feedFor(Tensor, ids))
@@ -547,6 +580,12 @@ export function realForward(ids) {
       k,
       v,
       residuals,
+      // The last position's logits, kept whole so the sampler can work from
+      // the model's own scores rather than from the four the shortlist
+      // prints. 50,257 floats — 200 KB, against the megabyte of residual
+      // stream already held here.
+      lastLogits: new Float32Array(lastRow),
+      lastNorm: normalizerOf(lastRow),
     }
     return lastRun
   })
@@ -642,6 +681,157 @@ export function nextTokenFrom(run, generatedCount) {
   return run.candidates.length > 0 ? run.candidates[0] : null
 }
 
+// ---------------------------------------------------------------------------
+// Decoding — how the next token is picked out of the distribution
+// ---------------------------------------------------------------------------
+
+/**
+ * mulberry32. Thirty-two bits of state, one multiply-xor round, and a
+ * distribution good enough for one draw per token — which is all this page
+ * ever asks of it.
+ */
+function mulberry32(seed) {
+  let a = seed | 0
+  return () => {
+    a = (a + 0x6d2b79f5) | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+/**
+ * The draw for one step, as a pure function of the seed and the step number
+ * rather than of a running generator state.
+ *
+ * That is deliberate. A generator carried across steps would have to be
+ * rewound by RESET, and rewound to exactly the right place, or the second run
+ * of a sequence would not reproduce the first. Deriving the draw instead
+ * makes replay free: step 3 of seed 7 is the same number whether it is the
+ * third token of this run or of the run before it.
+ */
+function drawFor(seed, step) {
+  const rng = mulberry32((Math.imul(seed, 0x9e3779b1) + Math.imul(step, 0x85ebca6b)) | 0)
+  rng()
+  return rng()
+}
+
+/** The probability the shortlist would print for one id, out of a finished pass. */
+export function rawProbability(run, id) {
+  if (!run?.lastLogits || !run.lastNorm) return 0
+  return Math.exp(run.lastLogits[id] - run.lastNorm.max - run.lastNorm.logSum)
+}
+
+/**
+ * The `topK` best-scoring tokens after the repetition penalty and the
+ * temperature, with whitespace-only pieces and <|endoftext|> dropped.
+ *
+ * Extra are gathered before the drop, for the same reason the shortlist
+ * gathers extra: a newline ranking second must not cost the draw one of its
+ * forty real options.
+ */
+function penalizedTop(tokenizer, logits, seen, topK) {
+  const { temperature, repetitionPenalty } = DECODING
+  const gather = topK + 16
+  const best = []
+  let floor = -Infinity
+  for (let id = 0; id < logits.length; id++) {
+    let logit = logits[id]
+    if (seen.has(id)) {
+      logit = logit > 0 ? logit / repetitionPenalty : logit * repetitionPenalty
+    }
+    const adjusted = logit / temperature
+    if (best.length < gather) {
+      best.push({ id, adjusted })
+      if (best.length === gather) {
+        best.sort((a, b) => b.adjusted - a.adjusted)
+        floor = best[gather - 1].adjusted
+      }
+    } else if (adjusted > floor) {
+      best[gather - 1] = { id, adjusted }
+      best.sort((a, b) => b.adjusted - a.adjusted)
+      floor = best[gather - 1].adjusted
+    }
+  }
+  best.sort((a, b) => b.adjusted - a.adjusted)
+  return best.filter((entry) => !isSkippedToken(tokenizer, entry.id)).slice(0, topK)
+}
+
+/**
+ * The token a real STEP commits, under whichever decoding rule is selected.
+ *
+ * `greedy` is exactly what instrument B did before this control existed: the
+ * top row of the shortlist, unchanged. `sampled` works from the model's own
+ * logits — repetition penalty over everything already in the sequence, then
+ * temperature, then top-k, then one seeded draw.
+ *
+ * The result carries both the token chosen and the token that would have won
+ * on probability alone, so the instrument can say which of the two happened
+ * without recomputing anything.
+ *
+ * @param {object} run       a finished forward pass
+ * @param {number[]} context the ids the sequence already holds
+ * @param {'sampled'|'greedy'} mode
+ * @param {number} step      how many tokens have been generated so far
+ */
+export function chooseNext(run, context, mode, step) {
+  if (!run || !run.candidates || run.candidates.length === 0) return null
+  const top = run.candidates[0]
+  if (mode !== 'sampled' || !run.lastLogits) {
+    return { ...top, sampled: false, top }
+  }
+  const { tokenizer } = requireReady()
+  const shortlist = penalizedTop(
+    tokenizer,
+    run.lastLogits,
+    new Set(context),
+    DECODING.topK,
+  )
+  if (shortlist.length === 0) return { ...top, sampled: false, top }
+
+  let total = 0
+  const weights = shortlist.map((entry) => {
+    const w = Math.exp(entry.adjusted - shortlist[0].adjusted)
+    total += w
+    return w
+  })
+  let draw = drawFor(DECODING.seed, step) * total
+  let chosen = shortlist[shortlist.length - 1]
+  for (let i = 0; i < shortlist.length; i++) {
+    draw -= weights[i]
+    if (draw <= 0) {
+      chosen = shortlist[i]
+      break
+    }
+  }
+  return {
+    id: chosen.id,
+    token: displayToken(tokenizer, chosen.id),
+    score: run.lastLogits[chosen.id],
+    weight: rawProbability(run, chosen.id),
+    wins: true,
+    sampled: true,
+    top,
+  }
+}
+
+/**
+ * What one repeated token's logit looks like before and after the penalty —
+ * the check that the penalty is applied rather than merely configured. Dev
+ * console only; nothing on the page calls it.
+ */
+export function penaltyTrace(run, context, id) {
+  if (!run?.lastLogits) return null
+  const raw = run.lastLogits[id]
+  const repeated = context.includes(id)
+  const penalized = repeated
+    ? raw > 0
+      ? raw / DECODING.repetitionPenalty
+      : raw * DECODING.repetitionPenalty
+    : raw
+  return { id, token: tokenText(id), repeated, raw, penalized }
+}
+
 /**
  * One head's view of one lookup, straight from the model's softmax.
  *
@@ -697,17 +887,21 @@ export async function realAttention(text, layer, head, queryIndex) {
 }
 
 /**
- * Greedy continuation of `text`, capped by the same MAX_GENERATED ceiling
- * instrument B uses. Returns the appended pieces and their ids.
+ * Continuation of `text` under one of the two decoding rules, capped by the
+ * same MAX_GENERATED ceiling instrument B uses. Returns the appended pieces
+ * and their ids.
+ *
+ * Steps through the same `chooseNext` the instrument does, so a continuation
+ * taken here and one taken by pressing RUN are the same tokens.
  */
-export async function realGenerate(text, count = MAX_GENERATED) {
+export async function realGenerate(text, count = MAX_GENERATED, mode = 'greedy') {
   const { ids } = await realTokenize(text)
   const limit = Math.min(count, MAX_GENERATED)
   const sequence = ids.slice()
   const tokens = []
   for (let i = 0; i < limit; i++) {
     const run = await realForward(sequence)
-    const next = nextTokenFrom(run, i)
+    const next = chooseNext(run, sequence, mode, i)
     if (!next) break
     sequence.push(next.id)
     tokens.push(next.token)

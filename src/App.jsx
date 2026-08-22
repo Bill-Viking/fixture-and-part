@@ -18,6 +18,7 @@ import {
 import {
   RESIDUAL_STOPS,
   attentionRows,
+  chooseNext,
   loadModel,
   realForward,
   realTokenize,
@@ -115,6 +116,12 @@ export default function App() {
   const [realRun, setRealRun] = useState(null)
   const [layer, setLayer] = useState(0)
   const [head, setHead] = useState(0)
+  // How instrument B picks the next token in real mode. Sampled is the
+  // default: greedy on a six-block model loops, which is a true fact about
+  // greedy decoding and a poor advertisement for the machine. Illustrative
+  // mode is pinned to greedy — the toy numbers are hand-tuned, and drawing
+  // from a hand-tuned distribution would be theatre.
+  const [decode, setDecode] = useState('sampled')
   const realBaseKey = useRef(null)
   // Read from the forward-pass effect, which must not re-subscribe on typing.
   const textRef = useRef(text)
@@ -351,11 +358,23 @@ export default function App() {
     () => nextCandidates(wordTokens, generated),
     [wordTokens, generated],
   )
-  const candidates = isReal
-    ? runReady && underCap
-      ? realRun.candidates
-      : []
-    : toyCandidates
+  // The token the next STEP will commit, worked out before it is pressed.
+  // The draw is a pure function of the seed and of how many tokens have been
+  // generated, so naming the winner up front cannot disagree with the step
+  // that follows — the shortlist marks exactly the row STEP appends.
+  const pick = useMemo(
+    () =>
+      isReal && runReady && underCap
+        ? chooseNext(realRun, sequenceIds, decode, generated.length)
+        : null,
+    [isReal, runReady, realRun, sequenceIds, decode, generated.length, underCap],
+  )
+  const realCandidates = useMemo(() => {
+    if (!isReal || !runReady || !underCap) return []
+    if (!pick) return realRun.candidates
+    return realRun.candidates.map((c) => ({ ...c, wins: c.id === pick.id }))
+  }, [isReal, runReady, underCap, realRun, pick])
+  const candidates = isReal ? realCandidates : toyCandidates
   const scriptedNext = useMemo(
     () => !isReal && isScriptedStep(wordTokens, generated),
     [isReal, wordTokens, generated],
@@ -363,8 +382,8 @@ export default function App() {
 
   const handleStep = useCallback(() => {
     if (isReal) {
-      if (!runReady || realRun.candidates.length === 0) return
-      const next = realRun.candidates[0]
+      if (!runReady || !pick) return
+      const next = pick
       setGenerated((prev) =>
         prev.length >= MAX_GENERATED ? prev : [...prev, next.token],
       )
@@ -379,7 +398,7 @@ export default function App() {
       return token === null ? prev : [...prev, token]
     })
     setStepTick((t) => t + 1)
-  }, [isReal, runReady, realRun, wordTokens])
+  }, [isReal, runReady, pick, wordTokens])
 
   const handleReset = useCallback(() => {
     setGenerated([])
@@ -491,6 +510,9 @@ export default function App() {
         canStep={canStep}
         candidates={candidates}
         scriptedNext={scriptedNext}
+        decode={isReal ? decode : 'greedy'}
+        onDecodeChange={setDecode}
+        pick={pick}
         kvSelection={kvSelection}
         real={isReal}
         vectors={isReal && runReady ? realRun : null}
