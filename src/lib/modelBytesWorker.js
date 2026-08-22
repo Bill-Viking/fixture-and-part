@@ -1,4 +1,23 @@
-// The logit lens, computed off the main thread.
+// The model file, off the main thread.
+//
+// One worker, two readers, and one copy of an 83 MB file between them.
+//
+// Instrument E reads the file as a file: the manifest of its tensors, a
+// window of raw bytes out of one of them, the distribution of a whole one.
+// Instrument D reads it as a model: the quantized embedding table and the
+// final LayerNorm, which together are the logit lens. Both want the same
+// bytes, and a second worker would mean a second 83 MB, so they share this
+// one and take their turns in one queue.
+//
+// The worker never downloads anything if it can help it: the model file is
+// already in the cache bucket the page wrote when it loaded distilgpt2, so it
+// opens that bucket, finds the request whose URL ends in the ONNX file name,
+// and reads the bytes back. Only if that fails does it fall back to the
+// network.
+//
+// ---------------------------------------------------------------------------
+// The lens
+// ---------------------------------------------------------------------------
 //
 // A lens reading is the residual stream at one depth pushed through the two
 // pieces of machinery that sit at the very end of the stack: the final
@@ -8,20 +27,12 @@
 // multiply-adds, which is a third of a second of arithmetic and would be a
 // third of a second of frozen page if it ran on the main thread.
 //
-// Two things about it are worth explaining.
-//
-// The first is where the numbers come from. The worker never downloads
-// anything: the model file is already in the cache bucket the page wrote when
-// it loaded distilgpt2, so it opens that bucket, finds the request whose URL
-// ends in the ONNX file name, and reads the bytes back. Only if that fails
-// does it fall back to the network.
-//
-// The second is how it reads them. ONNX Runtime will not hand out an
-// initializer, so the four tensors this needs — the quantized embedding table
-// and its two dequantization constants, plus the final LayerNorm's gain and
-// bias — are pulled straight out of the protobuf by walking its fields and
-// matching initializers by name. By name, never by offset: an offset is only
-// true of the file as it was uploaded on one particular day.
+// ONNX Runtime will not hand out an initializer, so the four tensors this
+// needs — the quantized embedding table and its two dequantization constants,
+// plus the final LayerNorm's gain and bias — are pulled straight out of the
+// protobuf by walking its fields and matching initializers by name. By name,
+// never by offset: an offset is only true of the file as it was uploaded on
+// one particular day.
 //
 // The table is quantized to bytes, so a lens logit is not a plain dot
 // product. With w[r][d] = scale * (q[r][d] - zeroPoint), a row's logit for a
@@ -32,7 +43,17 @@
 // which is one pass over the bytes plus a single correction computed once per
 // depth. That is exactly the arithmetic the graph's own lm_head performs, so
 // the last stop reproduces the model's own logits row for the position — the
-// identity the instrument is built to show.
+// identity instrument D is built to show.
+
+import {
+  findInitializers,
+  histogramOf,
+  scalarFloat,
+  scalarInt,
+  scanManifest,
+  vectorFloats,
+  windowOf,
+} from './onnxScan.js'
 
 const HIDDEN = 768
 // GPT-2's layer_norm_epsilon. It sits inside the square root, as PyTorch and
@@ -50,149 +71,15 @@ const WANTED = {
 /** @type {{table:Uint8Array,scale:number,zeroPoint:number,gain:Float32Array,bias:Float32Array,vocab:number}|null} */
 let parts = null
 
-// ---------------------------------------------------------------------------
-// Just enough protobuf to find five initializers
-// ---------------------------------------------------------------------------
-
-function readVarint(bytes, pos) {
-  let result = 0n
-  let shift = 0n
-  for (;;) {
-    const byte = bytes[pos++]
-    result |= BigInt(byte & 127) << shift
-    if ((byte & 128) === 0) break
-    shift += 7n
-  }
-  return [result, pos]
-}
-
-/**
- * Calls `visit(field, wire, value, start, end)` once per field between
- * `start` and `end`, skipping every payload by its length rather than
- * decoding it. Nothing but the fields asked for is ever materialized, which
- * is what keeps a walk of an 83 MB file cheap.
- */
-function walkFields(bytes, start, end, visit) {
-  let p = start
-  while (p < end) {
-    let tag
-    ;[tag, p] = readVarint(bytes, p)
-    const field = Number(tag >> 3n)
-    const wire = Number(tag & 7n)
-    if (wire === 0) {
-      let value
-      ;[value, p] = readVarint(bytes, p)
-      visit(field, wire, value, p, p)
-    } else if (wire === 2) {
-      let len
-      ;[len, p] = readVarint(bytes, p)
-      const from = p
-      p += Number(len)
-      visit(field, wire, null, from, p)
-    } else if (wire === 5) {
-      visit(field, wire, null, p, p + 4)
-      p += 4
-    } else if (wire === 1) {
-      visit(field, wire, null, p, p + 8)
-      p += 8
-    } else {
-      throw new Error(`unreadable protobuf wire type ${wire} at ${p}`)
-    }
-  }
-}
-
-const decoder = new TextDecoder()
-
-/**
- * One TensorProto's spans, decoded no further than it has to be. Field
- * numbers: dims 1, data_type 2, float_data 4, int32_data 5, name 8,
- * raw_data 9. Bulk payloads are almost always raw_data; the two single-value
- * quantization constants are the exception and can land in either of the
- * typed lists, packed or not, so all three encodings are read.
- */
-function readTensor(bytes, start, end, names) {
-  let name = null
-  let raw = null
-  let floats = null
-  let ints = null
-  const dims = []
-  const looseFloats = []
-  const looseInts = []
-  walkFields(bytes, start, end, (field, wire, value, from, to) => {
-    if (field === 1 && wire === 0) dims.push(Number(value))
-    else if (field === 1 && wire === 2) {
-      let p = from
-      while (p < to) {
-        let v
-        ;[v, p] = readVarint(bytes, p)
-        dims.push(Number(v))
-      }
-    } else if (field === 4 && wire === 2) floats = [from, to]
-    else if (field === 4 && wire === 5) looseFloats.push(from)
-    else if (field === 5 && wire === 2) ints = [from, to]
-    else if (field === 5 && wire === 0) looseInts.push(Number(value))
-    else if (field === 8 && wire === 2) name = decoder.decode(bytes.subarray(from, to))
-    else if (field === 9 && wire === 2) raw = [from, to]
-  })
-  if (name === null || !names.has(name)) return null
-  return { name, dims, raw, floats, ints, looseFloats, looseInts }
-}
-
-/** The initializers named in `names`, out of a whole ModelProto. */
-function findInitializers(bytes, names) {
-  // ModelProto.graph is field 7. Our own patch appends a second, tiny graph
-  // field at the end of the file — protobuf merges repeated messages, which
-  // is how the promoted outputs get in — so the walk sees two. The first is
-  // the real one, and it is the only one holding initializers.
-  let graph = null
-  walkFields(bytes, 0, bytes.length, (field, wire, value, from, to) => {
-    if (field === 7 && wire === 2 && graph === null) graph = [from, to]
-  })
-  if (!graph) throw new Error('the model file declares no graph')
-
-  const found = new Map()
-  walkFields(bytes, graph[0], graph[1], (field, wire, value, from, to) => {
-    if (field !== 5 || wire !== 2) return
-    if (found.size === names.size) return
-    const tensor = readTensor(bytes, from, to, names)
-    if (tensor) found.set(tensor.name, tensor)
-  })
-  return found
-}
-
-function floatsFrom(bytes, span) {
-  const count = (span[1] - span[0]) / 4
-  const view = new DataView(bytes.buffer, bytes.byteOffset + span[0], count * 4)
-  const out = new Float32Array(count)
-  for (let i = 0; i < count; i++) out[i] = view.getFloat32(i * 4, true)
-  return out
-}
-
-/** A whole f32 initializer, from raw bytes or from the typed list. */
-function vectorFloats(bytes, tensor) {
-  if (tensor.raw) return floatsFrom(bytes, tensor.raw)
-  if (tensor.floats) return floatsFrom(bytes, tensor.floats)
-  throw new Error(`${tensor.name} holds no values`)
-}
-
-/** The single f32 in a scalar initializer, wherever the exporter put it. */
-function scalarFloat(bytes, tensor) {
-  if (tensor.raw) return floatsFrom(bytes, tensor.raw)[0]
-  if (tensor.floats) return floatsFrom(bytes, tensor.floats)[0]
-  if (tensor.looseFloats.length > 0) {
-    const at = tensor.looseFloats[0]
-    return floatsFrom(bytes, [at, at + 4])[0]
-  }
-  throw new Error(`${tensor.name} holds no value`)
-}
-
-/** The single integer in a scalar initializer, likewise. */
-function scalarInt(bytes, tensor) {
-  if (tensor.ints) return Number(readVarint(bytes, tensor.ints[0])[0])
-  if (tensor.looseInts.length > 0) return tensor.looseInts[0]
-  if (tensor.raw) return bytes[tensor.raw[0]]
-  throw new Error(`${tensor.name} holds no value`)
-}
+// The whole file, kept only once instrument E has asked for something that
+// needs it. Instrument D on its own holds the 38.6 MB table and three small
+// vectors instead, as it always did.
+/** @type {Uint8Array|null} */
+let held = null
+/** @type {ReturnType<typeof scanManifest>|null} */
+let manifest = null
+/** @type {string|null} */
+let sha = null
 
 // ---------------------------------------------------------------------------
 // Getting the file
@@ -216,11 +103,45 @@ async function modelBytes({ cacheKey, onnxFile, fallbackUrl }) {
   return new Uint8Array(await response.arrayBuffer())
 }
 
+function hex(buffer) {
+  return Array.from(new Uint8Array(buffer), (b) => b.toString(16).padStart(2, '0')).join('')
+}
+
+/**
+ * The file's hash — of the file as published, not as cached.
+ *
+ * The copy in the browser's cache has our own promoted-outputs fragment
+ * appended to it, so hashing all of it would answer a question nobody asked.
+ * `manifest.bytes` is where the published file ends, which is where this
+ * stops.
+ */
+async function digest(bytes, length) {
+  if (typeof crypto === 'undefined' || !crypto.subtle) return null
+  const buffer = await crypto.subtle.digest('SHA-256', bytes.subarray(0, length))
+  return hex(buffer)
+}
+
+/** The file, the walk of it, and its hash — each done once. */
+async function fileState(config) {
+  if (!held) held = await modelBytes(config)
+  if (!manifest) {
+    manifest = scanManifest(held)
+    sha = await digest(held, manifest.bytes)
+  }
+  return { bytes: held, manifest, sha }
+}
+
+// ---------------------------------------------------------------------------
+// The lens's four tensors
+// ---------------------------------------------------------------------------
+
 async function init(config) {
   if (parts) return
-  // The 83 MB is held only for the length of this function. What the worker
-  // keeps afterwards is the 38.6 MB table and three small vectors.
-  const bytes = await modelBytes(config)
+  // If instrument E has already pulled the file in, the table is a view into
+  // those bytes rather than a second copy of 38.6 MB of them. On its own the
+  // lens still holds only what it needs and lets the 83 MB go.
+  const retained = Boolean(held)
+  const bytes = held ?? (await modelBytes(config))
   const names = new Set(Object.values(WANTED))
   const found = findInitializers(bytes, names)
   for (const name of names) {
@@ -228,7 +149,8 @@ async function init(config) {
   }
   const table = found.get(WANTED.table)
   if (!table.raw) throw new Error(`${WANTED.table} is not stored as raw bytes`)
-  const quantized = new Uint8Array(bytes.subarray(table.raw[0], table.raw[1]))
+  const span = bytes.subarray(table.raw[0], table.raw[1])
+  const quantized = retained ? span : new Uint8Array(span)
   const vocab = table.dims[0] || quantized.length / HIDDEN
   if (quantized.length !== vocab * HIDDEN) {
     throw new Error(
@@ -246,7 +168,7 @@ async function init(config) {
 }
 
 // ---------------------------------------------------------------------------
-// The reading itself
+// The lens reading itself
 // ---------------------------------------------------------------------------
 
 function layerNorm(source, offset, out) {
@@ -306,7 +228,9 @@ function topRows(logits, count) {
 
 // Requests run one at a time, and a cancelled one stops at the next depth.
 // The yield between depths is what lets a cancel message arrive at all: a
-// worker processes its queue between tasks, never during one.
+// worker processes its queue between tasks, never during one. Instrument E's
+// reads yield on the same terms, so a lens request queued behind them waits
+// for at most one of them rather than for a whole panel's worth.
 const cancelled = new Set()
 let queue = Promise.resolve()
 
@@ -361,10 +285,70 @@ async function read({ requestId, stops, count, depths }) {
   postMessage({ type: 'done', requestId })
 }
 
+// ---------------------------------------------------------------------------
+// Instrument E's three questions
+// ---------------------------------------------------------------------------
+
+async function sendManifest({ requestId, config }) {
+  const state = await fileState(config)
+  postMessage({
+    type: 'file-manifest',
+    requestId,
+    manifest: state.manifest,
+    sha: state.sha,
+    cachedBytes: state.bytes.length,
+  })
+}
+
+async function sendWindow({ requestId, config, name, row0, col0 }) {
+  const state = await fileState(config)
+  const view = windowOf(state.bytes, state.manifest, name, row0, col0)
+  // A fresh copy: the window is a slice of a retained 83 MB buffer, and a
+  // transferable view into it would take the whole thing with it.
+  const data = view.data.slice()
+  postMessage({ type: 'file-window', requestId, window: { ...view, data } }, [data.buffer])
+}
+
+async function sendHistogram({ requestId, config, name }) {
+  const state = await fileState(config)
+  postMessage({
+    type: 'file-histogram',
+    requestId,
+    name,
+    histogram: histogramOf(state.bytes, state.manifest, name),
+  })
+}
+
+// ---------------------------------------------------------------------------
+// The queue
+// ---------------------------------------------------------------------------
+
+const FILE_TASKS = {
+  'file-manifest': sendManifest,
+  'file-window': sendWindow,
+  'file-histogram': sendHistogram,
+}
+
 self.onmessage = (event) => {
   const message = event.data
   if (message.type === 'cancel') {
     cancelled.add(message.requestId)
+    return
+  }
+  const fileTask = FILE_TASKS[message.type]
+  if (fileTask) {
+    queue = queue.then(async () => {
+      try {
+        await fileTask(message)
+      } catch (error) {
+        postMessage({
+          type: 'error',
+          requestId: message.requestId,
+          message: error instanceof Error ? error.message : String(error),
+        })
+      }
+      await yieldToQueue()
+    })
     return
   }
   if (message.type !== 'lens') return

@@ -1,62 +1,22 @@
-// The main-thread half of the logit lens: it owns the worker, and it owns
-// nothing else. The 38.6 MB embedding table lives on the worker side and
-// never crosses back, so this page holds one Worker handle and a map of
-// requests in flight.
+// The main-thread half of the logit lens: it asks the shared worker for a
+// reading, and it owns nothing else. The 38.6 MB embedding table lives on the
+// worker side and never crosses back, so this page holds a map of requests in
+// flight and nothing more.
 //
 // Nothing here runs until instrument D asks for its first real reading. The
-// worker is created on that call, and it reads the model out of the cache
-// bucket the page already filled — no second download.
+// worker is created on that call — or was already created by instrument E,
+// which reads the same file — and it reads the model out of the cache bucket
+// the page already filled, so there is no second download either way.
 
 import { CANDIDATE_COUNT } from './toyModel.js'
-import { CACHE_KEY, MODEL_ID, ONNX_FILE, RESIDUAL_STOPS } from './realModel.js'
-
-const FALLBACK_URL =
-  `https://huggingface.co/${MODEL_ID}/resolve/main/onnx/${ONNX_FILE}`
-
-const CONFIG = {
-  cacheKey: CACHE_KEY,
-  onnxFile: ONNX_FILE,
-  fallbackUrl: FALLBACK_URL,
-}
-
-/** @type {Worker|null} */
-let worker = null
-let nextRequestId = 1
-/** @type {Map<number, {onStop:Function,onTrace:Function,onDone:Function,onError:Function}>} */
-const open = new Map()
-
-function handle(event) {
-  const message = event.data
-  const handlers = open.get(message.requestId)
-  if (!handlers) return
-  if (message.type === 'stop') {
-    handlers.onStop(message.stop, message.candidates)
-  } else if (message.type === 'trace') {
-    handlers.onTrace(message.winnerId, message.probabilities)
-  } else if (message.type === 'done') {
-    open.delete(message.requestId)
-    handlers.onDone()
-  } else if (message.type === 'error') {
-    open.delete(message.requestId)
-    handlers.onError(message.message)
-  }
-}
-
-function ensureWorker() {
-  if (worker) return worker
-  worker = new Worker(new URL('./lensWorker.js', import.meta.url), {
-    type: 'module',
-  })
-  worker.onmessage = handle
-  worker.onerror = (event) => {
-    const message = event.message || 'the lens worker stopped'
-    for (const [requestId, handlers] of open) {
-      open.delete(requestId)
-      handlers.onError(message)
-    }
-  }
-  return worker
-}
+import { RESIDUAL_STOPS } from './realModel.js'
+import {
+  MODEL_CONFIG,
+  cancelRequest,
+  closeRequest,
+  openRequest,
+  postToWorker,
+} from './workerHost.js'
 
 /**
  * Reads the lens for one position.
@@ -74,24 +34,34 @@ function ensureWorker() {
  * @param {number} [count] how many rows of each depth's shortlist to return
  */
 export function readLens(stops, handlers, count = CANDIDATE_COUNT) {
-  const requestId = nextRequestId++
-  open.set(requestId, handlers)
-  const target = ensureWorker()
-  target.postMessage(
+  const requestId = openRequest({
+    onMessage: (message) => {
+      if (message.type === 'stop') {
+        handlers.onStop(message.stop, message.candidates)
+      } else if (message.type === 'trace') {
+        handlers.onTrace(message.winnerId, message.probabilities)
+      } else if (message.type === 'done') {
+        closeRequest(requestId)
+        handlers.onDone()
+      } else if (message.type === 'error') {
+        closeRequest(requestId)
+        handlers.onError(message.message)
+      }
+    },
+    onError: handlers.onError,
+  })
+  postToWorker(
     {
       type: 'lens',
       requestId,
-      config: CONFIG,
+      config: MODEL_CONFIG,
       stops: stops.buffer,
       count,
       depths: RESIDUAL_STOPS,
     },
     [stops.buffer],
   )
-  return () => {
-    if (!open.delete(requestId)) return
-    target.postMessage({ type: 'cancel', requestId })
-  }
+  return () => cancelRequest(requestId)
 }
 
 // The instrument's central claim is an identity: the last stop's lens is the

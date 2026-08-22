@@ -33,6 +33,7 @@ export const sections = [
         type: 'p',
         html: 'Everything the model knows — every fact, every style, every skill — is smeared across those numbers in superposition, with no address where any particular fact lives. You cannot point at the parameters that hold a given memory, and you cannot delete one fact from the file. The organization is not in how the numbers look. It is in how they multiply.',
       },
+      { type: 'instrument', name: 'file' },
     ],
   },
   {
