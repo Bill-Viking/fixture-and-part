@@ -79,17 +79,33 @@ function rgbOf(hex) {
  * whole way, because everything in this instrument is frozen machinery.
  *
  * The tokens are read off the document rather than copied, so the ramp cannot
- * drift away from the palette.
+ * drift away from the palette. There is deliberately no second copy of those
+ * three colours in this file: a hard-coded fallback would go stale the next
+ * time the page is repainted, and it would go stale silently, which is the
+ * one thing an instrument that claims to show real bytes cannot do. If the
+ * palette cannot be read the window is not painted at all.
+ *
+ * Read on every draw rather than once at mount, for the same reason — three
+ * getPropertyValue calls per repaint is nothing, and a ramp memoised at mount
+ * would keep painting the old palette after a token changed under it.
  */
 const RAMP_FLOOR = 0.16
+const RAMP_TOKENS = ['--screen', '--frozen', '--frozen-lit']
 
 function readRamp() {
-  const fallback = ['#181512', '#1E5AA8', '#D6E9FF']
-  if (typeof document === 'undefined') return fallback.map(rgbOf)
   const style = getComputedStyle(document.documentElement)
-  const [screen, frozen, lit] = ['--screen', '--frozen', '--frozen-lit'].map(
-    (token, i) => rgbOf(style.getPropertyValue(token) || fallback[i]),
-  )
+  const stops = []
+  for (const token of RAMP_TOKENS) {
+    const value = style.getPropertyValue(token).trim()
+    if (!value) {
+      if (import.meta.env.DEV) {
+        console.error(`instrument E: ${token} is not defined; the byte window cannot be painted`)
+      }
+      return null
+    }
+    stops.push(rgbOf(value))
+  }
+  const [screen, frozen, lit] = stops
   // The bottom of the ramp is a hair off the screen's own ground rather than
   // on it. A weight of zero should read as the darkest thing in the window,
   // not as a hole in it — with the floor at the ground exactly, the cells
@@ -364,7 +380,6 @@ export default function FileView({ text, ranKey, modelStatus, progress, onLoad }
   const canvasRef = useRef(null)
   const readoutId = useId()
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 })
-  const ramp = useMemo(readRamp, [])
 
   const ready = modelStatus === 'ready'
 
@@ -608,6 +623,10 @@ export default function FileView({ text, ranKey, modelStatus, progress, onLoad }
     ctx.clearRect(0, 0, width, height)
 
     if (!view || !grid) return
+    // Read on every draw, so the window follows the page's tokens rather than
+    // a copy of them taken at mount.
+    const ramp = readRamp()
+    if (!ramp) return
     const cellW = width / grid.cols
     const cellH = height / grid.rows
     // A hairline of the screen's own ground between cells, so the window
@@ -648,7 +667,7 @@ export default function FileView({ text, ranKey, modelStatus, progress, onLoad }
         cellH + 1,
       )
     }
-  }, [canvasSize, view, grid, entry, maxAbs, ramp, cell])
+  }, [canvasSize, view, grid, entry, maxAbs, cell])
 
   const pickCell = useCallback(
     (event) => {

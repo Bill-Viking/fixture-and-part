@@ -10,8 +10,9 @@ Spec: `interactive-guide-spec.md`.
 
 Phases 1, 2, 3A and instrument E are merged and deployed: the illustrative
 build, real `distilgpt2` running in the browser behind a load button, the glass
-pass (instrument D), and the file itself (instrument E). The paper pass — the
-light theme and the plain-words rewrite — is on the `paper` branch.
+pass (instrument D), and the file itself (instrument E). The light-theme pass —
+the white page ground, the role-named tokens and the plain-words rewrite — is
+on the `paper` branch.
 
 The page works with no model loaded; in that state every number outside
 instrument E is an illustrative heuristic from `src/lib/toyModel.js` and is
@@ -121,30 +122,37 @@ claim is a reading rather than a memory, which is why `readSha` in
 
 ## Design
 
-The page is paper: an operators'-manual ground with ink drawn on it. Dense
-fields of data — instrument B's two panes, instrument C's lookup table,
-instrument D's lens rows, instrument E's byte window — are set into it on dark
-panels, the way a manual sets a code block into a page. Everything else is ink
-and role colour on card. Full token table and the rules that go with it:
+The page is a white page ground with ink drawn on it. Dense fields of data —
+instrument B's KV rack, instrument C's lookup table, instrument D's lens rows,
+instrument E's byte window — are set into it on dark panels, the way a manual
+sets a code block into a page. Everything else is ink and role colour on card.
+
+The card is one twentieth of a stop off the page (`#FFFFFF` on `#F4F5F7`), so
+nothing on this page may be identified by its fill: every card, callout, chip
+and frame carries a drawn edge. Full token table and the rules that go with it:
 `interactive-guide-spec.md` §3.
 
 ## Colour law
 
 Three roles, and the tokens are named for the roles rather than for the colours
-filling them, because the colours have been repainted once and the roles have
-not:
+filling them, because the colours have now been repainted twice and the roles
+have not:
 
-- `--frozen` (blue) is frozen machinery — weights, dies, anything that never
-  changes.
-- `--moving` (yellow) is the moving part — activations, tokens in flight,
+- `--frozen` (the steel) is frozen machinery — weights, dies, anything that
+  never changes.
+- `--moving` (the amber) is the moving part — activations, tokens in flight,
   values.
-- `--keys` (green) is keys and searchable metadata.
+- `--keys` (the green) is keys and searchable metadata.
 
 This mapping is the visual thesis — do not swap it. `--alert` (red) is not one
-of the roles; it is errors and warnings, used sparingly.
+of the roles; it is errors and warnings, used sparingly. The page's legend and
+the essay's prose both call them the steel, the amber and the green; keep the
+two in step.
 
-Two rules follow from the ground being light. Yellow is a fill and never
-body-size text on paper, so anything that has to be read in the moving-part
-role takes `--moving-ink`. And a role colour on a dark panel is not the same
-swatch as on paper: `--frozen-on-screen` and `--keys-on-screen` are the only
+Three rules follow from the ground being light. Yellow is a fill and never
+body-size text on the page ground, so anything that has to be read in the
+moving-part role takes `--moving-ink`. What is written on top of a full yellow
+fill takes `--moving-on`, which is a token so that a future repaint stays a
+swap of the table. And a role colour on a dark panel is not the same swatch as
+on the page ground: `--frozen-on-screen` and `--keys-on-screen` are the only
 forms of those two allowed there.

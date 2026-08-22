@@ -35,7 +35,10 @@ function ensureWorker() {
   })
   worker.onmessage = route
   worker.onerror = (event) => {
-    const message = event.message || 'the model worker stopped'
+    // This string is not for a console: instrument E interpolates it into a
+    // sentence the reader sees, so it says what happened rather than which
+    // piece of machinery it happened to.
+    const message = event.message || 'the read stopped before it finished'
     for (const [requestId, entry] of open) {
       open.delete(requestId)
       entry.onError(message)

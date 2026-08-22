@@ -6,16 +6,16 @@ export const header = {
   titleHtml: 'The Fixture<br>and the <span class="moving">Part</span>',
   sub: 'How a language model thinks, how a brain remembers, and why the honest comparison flatters neither.',
   legend: [
-    { swatch: 'frozen', label: 'BLUE — frozen machinery' },
-    { swatch: 'moving', label: 'YELLOW — the moving part' },
+    { swatch: 'frozen', label: 'STEEL — frozen machinery' },
+    { swatch: 'moving', label: 'AMBER — the moving part' },
     { swatch: 'keys', label: 'GREEN — keys' },
   ],
 }
 
 // The note half is hidden on narrow screens so the overlay stays small.
 export const miniLegend = [
-  { swatch: 'frozen', name: 'blue', note: 'frozen weights' },
-  { swatch: 'moving', name: 'yellow', note: 'values in flight' },
+  { swatch: 'frozen', name: 'steel', note: 'frozen weights' },
+  { swatch: 'moving', name: 'amber', note: 'values in flight' },
   { swatch: 'keys', name: 'green', note: 'keys' },
 ]
 

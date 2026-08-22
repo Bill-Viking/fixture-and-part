@@ -192,7 +192,7 @@ export default function Stepper({
 
   return (
     <figure className="instrument">
-      <div className="inst-head">
+      <div className="inst-head is-stacked">
         <span className="inst-title">INSTRUMENT B — FORWARD PASS &amp; KV RACK</span>
         <LoadNote
           label={
@@ -251,7 +251,7 @@ export default function Stepper({
             <div className="pane-head">
               <span>SEQUENCE SO FAR</span>
             </div>
-            <div className="pane-box seq-box screen">
+            <div className="pane-box seq-box">
               {sequence.map((token, i) => (
                 <span
                   className={`seq-token${i === sequence.length - 1 ? ' newest' : ''}`}
@@ -295,7 +295,8 @@ export default function Stepper({
         </div>
 
         <p className="counter">
-          cache entries: {sequence.length} &times; {LAYERS} layers
+          cache entries: <span className="counter-n">{sequence.length}</span>{' '}
+          &times; {LAYERS} layers
           <InfoTag topic="cache" />
         </p>
 
