@@ -825,8 +825,11 @@ button.inst-note:hover{background:color-mix(in srgb,var(--amber) 16%,var(--amber
 
 /* Eight rows visible, and the box never changes size: selecting a tensor
    scrolls this box's own scrollTop and nothing else on the page. */
+/* scroll, not auto: the box is always taller than eight rows, and a
+   scrollbar that appears when the rows arrive would narrow the content and
+   move every right-aligned column in it by fifteen pixels. */
 .file-list{
-  position:relative;height:258px;overflow-y:auto;
+  position:relative;height:258px;overflow-y:scroll;scrollbar-gutter:stable;
   background:var(--panel);border:1px solid var(--hair);border-radius:4px;
 }
 .file-row{
@@ -883,8 +886,10 @@ button.inst-note:hover{background:color-mix(in srgb,var(--amber) 16%,var(--amber
   transition:background-color .15s ease;
 }
 button.file-seg{cursor:pointer;}
-button.file-seg:hover{background:var(--steel);}
-.file-seg.is-on{background:var(--text);}
+button.file-seg:hover{background:color-mix(in srgb,var(--steel) 70%,var(--text));}
+/* The selected tensor is steel, not white: wte alone is 46% of the bar, and
+   at the top of the ramp it would be the loudest thing in the section. */
+.file-seg.is-on{background:var(--steel);}
 /* Not weights: the graph itself at the front, and the declaration of outputs
    and value shapes at the back. Hatched the way a section cut is hatched, so
    the eye reads it as a different material. */
@@ -909,10 +914,13 @@ button.file-seg:hover{background:var(--steel);}
   color:var(--steel-dim);letter-spacing:0.02em;margin:3px 0 0;overflow:hidden;
 }
 
-/* Which copy the panel is reading from. Fixed width, right-aligned: the word
-   changes three times over a load and the label beside it must not move. */
+/* Which copy the panel is reading from. Fixed width so the box never moves,
+   and left-aligned inside it so the words do not either: right-aligned text
+   that changes length moves its own glyphs, which counts as a layout shift
+   even when the box holding them has not moved a pixel. Measured, not
+   assumed — it was the only shift instrument E was producing. */
 .file-source{
-  flex:none;width:92px;margin-left:auto;text-align:right;
+  flex:none;width:80px;margin-left:auto;text-align:left;
   font-family:var(--mono);font-size:9.5px;line-height:15px;color:var(--steel-dim);
   letter-spacing:0.02em;white-space:nowrap;overflow:hidden;
 }
@@ -935,8 +943,11 @@ button.file-seg:hover{background:var(--steel);}
 .file-canvas{display:block;width:100%;height:100%;cursor:crosshair;}
 .file-blob-controls{display:flex;align-items:center;gap:8px;height:28px;margin-top:8px;}
 .file-blob-controls .btn{padding:4px 10px;font-size:10.5px;letter-spacing:0.1em;}
+/* Anchored to the left, immediately after two buttons whose labels never
+   change, so the sentence can get longer or shorter without its first
+   character moving. Pushed to the right it moved every time the window did. */
 .file-page{
-  margin-left:auto;min-width:0;
+  flex:1 1 0;min-width:0;padding-left:4px;
   font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.03em;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
@@ -958,11 +969,17 @@ button.file-seg:hover{background:var(--steel);}
 .file-curve-zero{fill:var(--steel);}
 .file-curve-axis{fill:var(--hair);}
 .file-curve-ticks{position:relative;height:15px;}
+/* Each tick is a full-width box pinned at the left and moved into place by a
+   transform, so a percentage translate is a percentage of the axis. It has to
+   be a transform: the ticks land somewhere different for every tensor, and an
+   absolutely positioned element moved by `left` is a layout shift while the
+   same element moved by `transform` is not. */
 .file-curve-ticks span{
-  position:absolute;top:0;transform:translateX(-50%);
+  position:absolute;left:0;top:0;width:100%;
   font-family:var(--mono);font-size:9px;line-height:15px;color:var(--muted);
   font-variant-numeric:tabular-nums;white-space:nowrap;
 }
+.file-curve-ticks span i{display:inline-block;transform:translateX(-50%);font-style:normal;}
 .file-curve-stat{
   font-family:var(--mono);font-size:10px;line-height:15px;height:30px;
   color:var(--text);letter-spacing:0.02em;margin:6px 0 0;overflow:hidden;
@@ -970,8 +987,11 @@ button.file-seg:hover{background:var(--steel);}
 
 /* Where the numbers came from, and whether the copy in this browser is still
    the copy they were read from. */
+/* 41px is two lines of text plus the ten of padding and the one of rule:
+   box-sizing is border-box here, so the reserved height has to carry them
+   too, and two lines is what the longest of the four wordings takes. */
 .file-proof{
-  font-family:var(--mono);font-size:10px;line-height:15px;height:30px;
+  font-family:var(--mono);font-size:10px;line-height:15px;height:41px;
   color:var(--muted);letter-spacing:0.02em;
   margin:14px 0 0;padding-top:10px;border-top:1px solid var(--hair);
   overflow:hidden;
@@ -1099,8 +1119,8 @@ button.file-seg:hover{background:var(--steel);}
   .file-curve-stat{height:45px;}
   .file-bar-readout{height:30px;white-space:normal;text-overflow:clip;}
   .file-bar-key{height:30px;}
-  .file-proof{height:60px;}
-  .file-source{width:78px;font-size:9px;}
+  .file-proof{height:71px;}
+  .file-source{width:72px;font-size:9px;}
 
   /* The note has had a line to itself since 780px; here it also drops a step
      in size, one line still, in every mode. */
@@ -1148,4 +1168,8 @@ button.file-seg:hover{background:var(--steel);}
   /* Phase 3: the glass pass fills a depth at a time either way, but the bars
      appear at their width instead of growing into it. */
   .lens-fill,.lens-trace-fill{transition:none;}
+  /* Instrument E declares no animation at all — checked, not assumed: nothing
+     under the instrument reports an animationName. Its only motion is the
+     hover tint on a tensor row and on a segment of the byte bar, and the
+     blanket rule above already stops those. */
 }

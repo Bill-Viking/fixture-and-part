@@ -280,8 +280,8 @@ function Curve({ histogram }) {
       </svg>
       <div className="file-curve-ticks">
         {ticks.map((tick) => (
-          <span key={tick.i} style={{ left: `${tick.left}%` }}>
-            {tick.i === 0 ? '0' : sig(tick.value, 2)}
+          <span key={tick.i} style={{ transform: `translateX(${tick.left}%)` }}>
+            <i>{tick.i === 0 ? '0' : sig(tick.value, 2)}</i>
           </span>
         ))}
       </div>
@@ -431,9 +431,12 @@ export default function FileView({ modelStatus, progress, onLoad }) {
     const box = listRef.current
     const row = box?.querySelector('[data-selected="1"]')
     if (!box || !row) return
+    // Below the box — which is where the default selection sits, fifty rows
+    // down — the row goes to the top, so what follows it is visible too. A
+    // row the reader can already see is never moved.
     if (row.offsetTop < box.scrollTop) box.scrollTop = row.offsetTop
     else if (row.offsetTop + row.offsetHeight > box.scrollTop + box.clientHeight) {
-      box.scrollTop = row.offsetTop + row.offsetHeight - box.clientHeight
+      box.scrollTop = row.offsetTop
     }
   }, [selected, header])
 
@@ -570,7 +573,10 @@ export default function FileView({ modelStatus, progress, onLoad }) {
     return (
       `row ${count(row)} · col ${count(view.col0 + cell.col)} · byte ${plain(q)} · ` +
       `(${plain(q)} ${NBSP_MINUS} ${plain(zp)}) × ${sig(entry.quant.scale, 5)} = ${signed(value, 4)}` +
-      (piece ? ` · token ${piece}` : '')
+      // A wte row is a token id, so the row number names a piece of the
+      // vocabulary. The low ids are single raw bytes and print as one
+      // replacement character; that is what is in the table.
+      (piece ? ` · token "${piece}"` : '')
     )
   }
 
@@ -643,9 +649,12 @@ export default function FileView({ modelStatus, progress, onLoad }) {
     )
   }
 
+  // Short enough that the idle state — which appends "— load the real model"
+  // — still fits one line at 390px, where the note has a line of its own.
+  // What the two readings actually are is spelled out in the proof line.
   const label = ready
-    ? `re-read from this browser's cached copy · ${mb(facts?.provenance.bytes ?? 0)}`
-    : `from the file, read ahead of time · ${mb(facts?.provenance.bytes ?? 0)}`
+    ? `re-read from this browser's copy · ${mb(facts?.provenance.bytes ?? 0)}`
+    : `read ahead of time · ${mb(facts?.provenance.bytes ?? 0)}`
 
   return (
     <figure className="instrument">
@@ -661,7 +670,7 @@ export default function FileView({ modelStatus, progress, onLoad }) {
 
       <div className="inst-body">
         <div className="label-row tight">
-          <span className="field-label">the header &mdash; every tensor, in file order</span>
+          <span className="field-label">the header &mdash; every tensor</span>
           <InfoTag topic="file" />
         </div>
         <p className="file-stat">{header?.stat ?? '—'}</p>
@@ -806,7 +815,7 @@ export default function FileView({ modelStatus, progress, onLoad }) {
         </p>
 
         <div className="label-row">
-          <span className="field-label">the bell curve &mdash; every value in the tensor</span>
+          <span className="field-label">the bell curve &mdash; every value</span>
           <InfoTag topic="fileCurve" />
         </div>
         <Curve histogram={histogram} />

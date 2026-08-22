@@ -8,6 +8,7 @@
 - [x] finish verifying Phase 2's real-distilgpt2 mode — verified 2026-08-20 (build/chunking, real BPE ids, embeddings cross-checked against the published fp32 weights, real attention with working layer/head selectors, RUN pacing fix, mode toggle both ways, zero CLS, 390px, reduced-motion, failure path with muted fallback)
 - [x] Phase 2 merged into main 2026-08-20
 - [x] Phase 3A "glass pass" (Instrument D: residual stream + logit lens, polish pass, ghost callout) merged to main and deployed 2026-08-21
+- [ ] Instrument E "the file" (section 01: the real decoder_model_quantized.onnx — tensor manifest, byte bar, raw-byte blob, byte-exact bell curve, sha-checked re-read) built on branch `the-file`, awaiting independent verification before merge
 - [x] deployed to GitHub Pages 2026-08-20: https://bill-viking.github.io/fixture-and-part/ — link this from Confluence (README documents the `VITE_BASE` env var needed); link from Confluence for Blue Origin teammates — their network must allow huggingface.co for real mode, otherwise the page stays illustrative with a muted notice
 
 ## Important
