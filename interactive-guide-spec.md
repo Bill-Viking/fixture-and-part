@@ -246,15 +246,24 @@ visibly inside it.
   block averages of the real bytes, contrast-stretched, read at build time into
   `fileFacts.json` — drawn faintly inside the box in the frozen blue. It is
   real in BOTH modes, because it was read out of the file rather than out of a
-  pass, and it is the grain of the steel rather than a decoration. As the water
-  crosses a box the same bytes glint in the moving amber, by opacity alone.
+  pass, and it is the grain of the steel rather than a decoration. The stretch
+  is per tensor and it is said on the page, because it is a drawing decision:
+  a tensor with a narrow range shows the grain of its own rounding, and one
+  whose 576 blocks all read alike to within a byte is drawn as an even wash at
+  a low alpha — neither invisible, which is what a span of zero used to draw,
+  nor bold, which is what one rounding step stretched to full contrast drew.
+  As the water crosses a box the same bytes glint in the moving amber, by
+  opacity alone.
 - The water: the selected token's running vector as a 768-cell amber strip, one
   cell per number, nothing downsampled and nothing picked out — so what the
   reader sees is the vector and not a summary of it. On RUN THE PASS it appears
   at the embedding and travels down, its cells morphing at each of the seven
   stops to that stop's real values. Two normalisations, both named on screen: a
-  cell's brightness is |value| against the largest magnitude at that depth, and
-  the strip's overall brightness is log ‖residual‖ across the run. Clicking any
+  cell's brightness is |value| against four times the middle magnitude at that
+  depth — the largest was tried and rejected, because a GPT-2 stream carries a
+  few outlier dimensions hundreds of times everything else and a ramp against
+  the maximum paints 760 of the 768 cells black — and the strip's overall
+  brightness is log ‖residual‖ across the run. Clicking any
   node parks the strip at that depth — the microscope — until the next pass.
   Reduced motion puts it at the bottom of the fall immediately.
 - The columns are named on the drawing rather than under it: a line beside the
