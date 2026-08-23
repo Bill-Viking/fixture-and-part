@@ -297,7 +297,14 @@ export default function ForwardMap({
   }
 
   const arcMax = arcs ? arcs.reduce((m, v) => Math.max(m, v), 0) : 0
+  // The band the threads and the lit head squares belong to — only ever a
+  // real one, because there is no attention to draw without a run.
   const arcBand = real ? layer + 1 : null
+  // The band the C marker sits in. It is the same band, but it is drawn in
+  // both modes: the window onto instrument C is part of the machinery, not
+  // part of the reading, and a reader who has not loaded the model still
+  // needs the door.
+  const headBand = layer + 1
 
   const note = () => {
     if (n === 0) return 'no input — type something into instrument A'
@@ -653,16 +660,14 @@ export default function ForwardMap({
               label="open instrument A, the tokenizer — your tokens become rows of wte"
               onOpen={() => onOpenInstrument('tokenizer')}
             />
-            {arcBand != null ? (
-              <Window
-                letter="C"
-                x={bands[arcBand].boxes[1].x + bands[arcBand].boxes[1].w - g.mark - 4}
-                y={g.bandY(arcBand) + g.boxTop + 2}
-                size={g.mark}
-                label="open instrument C, one head of this layer in detail"
-                onOpen={() => onOpenInstrument('attention')}
-              />
-            ) : null}
+            <Window
+              letter="C"
+              x={bands[headBand].boxes[1].x + bands[headBand].boxes[1].w - g.mark - 4}
+              y={g.bandY(headBand) + g.boxTop + 2}
+              size={g.mark}
+              label="open instrument C, one head of this layer in detail"
+              onOpen={() => onOpenInstrument('attention')}
+            />
             <Window
               letter="D"
               x={g.MX}

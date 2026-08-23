@@ -374,7 +374,7 @@ export function nextToken(baseTokens, generated) {
 // Hand-tuned raw Q-dot-K scores for the default sentence.
 // Index = querying token position; array = one score per prior token.
 // Row 4 ("it") is tuned so softmax gives engine 0.85, roared 0.10,
-// and 0.03, The 0.02 — the numbers printed in FIG.2 of the essay.
+// and 0.03, The 0.02 — the numbers instrument C prints, FIG.5 on the page.
 const DEFAULT_SCORE_TABLE = {
   1: [1.00],
   2: [0.40, 3.20],

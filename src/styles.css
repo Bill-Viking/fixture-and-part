@@ -689,13 +689,21 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 /* What the selected steel box is, read out of the file's own manifest, and
    the button that opens it there. One reserved line, one fixed button. */
 .map-readout-row{
-  display:flex;align-items:center;gap:10px;height:30px;margin-top:10px;
+  display:flex;align-items:center;gap:10px;height:44px;margin-top:10px;
 }
+/* Two reserved lines, always. The longest readout the map can produce —
+   `h.5.mlp.c_proj.weight [3072×768] i8 · scale … · zero point 0 · 2,359,296
+   bytes` — measures 567px against the 502px this row leaves beside the
+   button at 1280, so on one line it ellipsized away the byte count, which is
+   half of what the readout is for. Two lines hold every wording at every
+   width; the box is the height of both of them whether one is used or two,
+   so a readout that grows does not move the button under it. */
 .map-readout{
   flex:1 1 auto;min-width:0;
+  display:flex;align-items:center;
   font-family:var(--mono);font-size:10.5px;line-height:15px;
   color:var(--ink);letter-spacing:0.02em;margin:0;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  height:30px;overflow:hidden;
 }
 .map-open-btn{flex:none;padding:5px 10px;font-size:10px;letter-spacing:0.1em;}
 
