@@ -625,12 +625,41 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
   fill:color-mix(in srgb,var(--frozen-on-screen) 20%,var(--screen));
   stroke-opacity:1;stroke-width:1.4;
 }
+/* The tensor's own bytes, inside the box that names it. Twelve by forty-eight
+   block averages, read out of the real file at build time and contrast-
+   stretched so a matrix whose averages sit inside eight bytes of 256 is
+   visible at all. Faint on purpose: it is the grain of the steel, and the
+   name and spec have to stay readable on top of it. `pixelated` because each
+   cell is a real block of the tensor and a smoothed one would imply detail
+   the grid does not have. */
+.map-tex{
+  opacity:.16;image-rendering:pixelated;pointer-events:none;
+}
+.map-part:hover .map-tex,.map-part.is-on .map-tex{opacity:.24;}
+/* The water crossing the box: the same bytes again, in the moving amber,
+   at zero opacity until the strip passes. Opacity only. */
+.map-glint{
+  opacity:0;
+  animation:map-glint .34s ease-out both;animation-delay:var(--d,0ms);
+}
+.map-part:hover .map-glint,.map-part.is-on .map-glint{opacity:0;}
+@keyframes map-glint{
+  0%{opacity:0;}
+  40%{opacity:.5;}
+  100%{opacity:0;}
+}
+
 .map-part-name{
   font-family:var(--mono);letter-spacing:0.02em;fill:var(--frozen-on-screen);
 }
 .map-part-spec{
   font-family:var(--mono);letter-spacing:0;fill:var(--screen-muted);
 }
+/* The selected box carries the most text and now carries a texture under it,
+   so its spec line goes to the screen's own text colour rather than to the
+   muted one — 5.3:1 against the selected fill before, and the texture only
+   took from that. */
+.map-part.is-on .map-part-spec{fill:var(--screen-text);}
 
 /* Twelve heads. Outlined in every block, filled only in the selected one —
    the same machinery six times, one of them instrumented. What they are
@@ -1806,6 +1835,10 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
      segment, thread and head square is drawn at its final opacity the moment
      RUN THE PASS is pressed. */
   .map-lit{animation:none;}
+  /* The glint a steel box gives as the water crosses it is the same kind of
+     thing — all delay — so it is turned off rather than shortened, and the
+     box simply keeps its frozen texture. */
+  .map-glint{animation:none;opacity:0;}
   /* New in this pass: the candidate rows and the info popover appear at
      their final state instead of animating in. */
   .cand,.cand.is-winner,.info-pop,.kv-stack{animation:none;}
