@@ -529,3 +529,137 @@ export function windowOf(bytes, manifest, name, row0 = 0, col0 = 0, maxRows = WI
 export function rawValue(dtype, byte) {
   return signedOf(dtype)(byte)
 }
+
+// ---------------------------------------------------------------------------
+// Thumbnails — the whole tensor at once
+// ---------------------------------------------------------------------------
+
+/**
+ * The size of a whole-tensor thumbnail. Small on purpose: it is shipped for
+ * every one of the file's 76 readable tensors, and it is drawn inside a steel
+ * box about 240 px wide, so a cell finer than this could not be seen anyway.
+ */
+export const THUMB_COLS = 48
+export const THUMB_ROWS = 12
+
+/** The block of a dimension that thumbnail index `i` of `n` covers. */
+function span(i, n, total) {
+  const from = Math.floor((i * total) / n)
+  const to = Math.max(from + 1, Math.floor(((i + 1) * total) / n))
+  return [from, Math.min(to, total)]
+}
+
+/**
+ * The whole of one tensor as a THUMB_ROWS x THUMB_COLS grid of bytes.
+ *
+ * Not a window. `windowOf` shows one rectangle of the file at full resolution
+ * — the actual bytes, one cell each — and that is the honest way to look at a
+ * weight up close. This is the other question: what does the whole tensor look
+ * like. Every value in the tensor is read and every one of them lands in
+ * exactly one cell, which is the block average of its part of the matrix.
+ *
+ * A cell is a byte in both cases, and `lo`/`hi` say what a cell of 0 and a
+ * cell of 255 are worth as weights, so the grid can be read back to values.
+ *
+ *   quantized   cells are averaged in ascending *value* order (binOfByte), so
+ *               an i8 tensor does not come out cut in half at zero, and the
+ *               averaging is linear in the weight because dequantization is.
+ *   f32         cells are averaged as floats and then mapped onto a range
+ *               symmetric about zero, the same range floatHistogram uses, so
+ *               a bias vector and a weight matrix are read the same way.
+ *
+ * A one-dimensional tensor has no rows of its own, so it is wrapped at
+ * THUMB_ROWS rows the way the blob panel wraps a vector at 64 columns — a
+ * "row" here is a stride of the vector rather than anything the file believes
+ * in.
+ */
+export function thumbnailOf(bytes, manifest, name) {
+  const tensor = byName(manifest).get(name)
+  if (!tensor || tensor.byteLength === 0) throw new Error(`${name} holds no bytes`)
+  const quant = quantOf(manifest, name)
+  const twoD = tensor.dims.length > 1
+  const rows = twoD ? tensor.dims[0] : THUMB_ROWS
+  const cols = twoD
+    ? tensor.dims[1]
+    : Math.ceil(tensor.elements / THUMB_ROWS)
+  const out = new Uint8Array(THUMB_ROWS * THUMB_COLS)
+
+  if (quant) {
+    const { scale, zeroPoint } = quant
+    for (let tr = 0; tr < THUMB_ROWS; tr++) {
+      const [r0, r1] = span(tr, THUMB_ROWS, rows)
+      for (let tc = 0; tc < THUMB_COLS; tc++) {
+        const [c0, c1] = span(tc, THUMB_COLS, cols)
+        let sum = 0
+        let n = 0
+        for (let r = r0; r < r1; r++) {
+          const base = tensor.offset + r * cols
+          for (let c = c0; c < c1; c++) {
+            const at = base + c
+            if (at - tensor.offset >= tensor.byteLength) continue
+            sum += binOfByte(tensor.dtype, bytes[at])
+            n++
+          }
+        }
+        out[tr * THUMB_COLS + tc] = n === 0 ? 0 : Math.round(sum / n)
+      }
+    }
+    return {
+      name,
+      dtype: tensor.dtype,
+      rows: THUMB_ROWS,
+      cols: THUMB_COLS,
+      totalRows: rows,
+      totalCols: cols,
+      lo: valueOfBin(tensor.dtype, 0, scale, zeroPoint),
+      hi: valueOfBin(tensor.dtype, 255, scale, zeroPoint),
+      data: out,
+    }
+  }
+
+  const total = tensor.byteLength / 4
+  const view = new DataView(
+    bytes.buffer,
+    bytes.byteOffset + tensor.offset,
+    tensor.byteLength,
+  )
+  const means = new Float64Array(THUMB_ROWS * THUMB_COLS)
+  let extent = 0
+  for (let i = 0; i < total; i++) {
+    const v = Math.abs(view.getFloat32(i * 4, true))
+    if (v > extent) extent = v
+  }
+  if (!(extent > 0)) extent = 1
+  for (let tr = 0; tr < THUMB_ROWS; tr++) {
+    const [r0, r1] = span(tr, THUMB_ROWS, rows)
+    for (let tc = 0; tc < THUMB_COLS; tc++) {
+      const [c0, c1] = span(tc, THUMB_COLS, cols)
+      let sum = 0
+      let n = 0
+      for (let r = r0; r < r1; r++) {
+        for (let c = c0; c < c1; c++) {
+          const at = r * cols + c
+          if (at >= total) continue
+          sum += view.getFloat32(at * 4, true)
+          n++
+        }
+      }
+      means[tr * THUMB_COLS + tc] = n === 0 ? 0 : sum / n
+    }
+  }
+  for (let i = 0; i < means.length; i++) {
+    const t = (means[i] + extent) / (2 * extent)
+    out[i] = Math.max(0, Math.min(255, Math.round(t * 255)))
+  }
+  return {
+    name,
+    dtype: 'f32',
+    rows: THUMB_ROWS,
+    cols: THUMB_COLS,
+    totalRows: rows,
+    totalCols: cols,
+    lo: -extent,
+    hi: extent,
+    data: out,
+  }
+}

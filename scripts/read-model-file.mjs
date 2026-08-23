@@ -5,7 +5,9 @@
 // to survive a reader who has not pressed "load the real model" yet, so the
 // facts are read out of the file ahead of time by this script and shipped as
 // src/content/fileFacts.json — the manifest of every tensor, the distribution
-// of every one of them, and a window of raw bytes out of each weight.
+// of every one of them, a window of raw bytes out of each weight, and a
+// whole-tensor thumbnail of each one, which instrument F draws as the texture
+// inside the box that names it.
 //
 // The point of doing it here rather than by hand is that the browser re-reads
 // exactly the same things from its own cached copy the moment the model
@@ -30,12 +32,15 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import {
+  THUMB_COLS,
+  THUMB_ROWS,
   WINDOW_COLS,
   WINDOW_ROWS,
   histogramOf,
   quantOf,
   readableTensors,
   scanManifest,
+  thumbnailOf,
   windowOf,
 } from '../src/lib/onnxScan.js'
 
@@ -97,8 +102,28 @@ function main() {
 
     const histograms = {}
     const windows = {}
+    // The whole of each tensor at a size a steel box can hold. Instrument F
+    // draws these as the texture inside the box that names the tensor, so a
+    // reader who has not downloaded anything is still looking at the file's
+    // own bytes rather than at a hatch pattern somebody chose.
+    const thumbnails = {}
     for (const tensor of readableTensors(manifest)) {
       histograms[tensor.name] = histogramOf(bytes, manifest, tensor.name)
+      const thumb = thumbnailOf(bytes, manifest, tensor.name)
+      thumbnails[tensor.name] = {
+        dtype: thumb.dtype,
+        rows: thumb.rows,
+        cols: thumb.cols,
+        totalRows: thumb.totalRows,
+        totalCols: thumb.totalCols,
+        lo: thumb.lo,
+        hi: thumb.hi,
+        base64: Buffer.from(
+          thumb.data.buffer,
+          thumb.data.byteOffset,
+          thumb.data.byteLength,
+        ).toString('base64'),
+      }
       const quantized = Boolean(quantOf(manifest, tensor.name))
       const view = windowOf(
         bytes,
@@ -141,10 +166,13 @@ function main() {
         windowRows: WINDOW_ROWS,
         windowCols: WINDOW_COLS,
         floatWindowValues: FLOAT_WINDOW_ROWS * WINDOW_COLS,
+        thumbRows: THUMB_ROWS,
+        thumbCols: THUMB_COLS,
       },
       manifest,
       histograms,
       windows,
+      thumbnails,
     }
 
     const out = resolve(ROOT, arg('--out', 'src/content/fileFacts.json'))
@@ -154,7 +182,8 @@ function main() {
     process.stderr.write(
       `wrote ${out}\n` +
         `  ${json.length} bytes, ${Object.keys(histograms).length} histograms, ` +
-        `${Object.keys(windows).length} windows\n` +
+        `${Object.keys(windows).length} windows, ` +
+        `${Object.keys(thumbnails).length} thumbnails\n` +
         `  ${Date.now() - started} ms\n`,
     )
   })
