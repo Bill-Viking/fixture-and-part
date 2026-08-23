@@ -206,14 +206,6 @@ Single scrolling page, sections 01–10 mirroring the essay. Prose imported from
 - On input: split into tokens (Phase 1: simple word/punct split; Phase 2: real GPT-2 BPE from transformers.js). Render as moving-part pills with token index and a fake-but-stable embedding preview (first 6 dims, deterministic hash of token string → values in [-2,2], monospace).
 - Teaching point label: "one token → one vector."
 
-### Instrument B — Forward-pass stepper + KV rack (Section 03)
-- Controls: STEP (advance one generated token), RUN (auto-step ~800ms), RESET.
-- Left: the sequence so far; the newest token in the moving-part colour, prior tokens in the frozen colour.
-- Right: the KV rack — one row per processed token showing a K chip (keys) and V chip (moving part). On each step, exactly one new row appends with a brief settle animation; existing rows must visibly NOT change (this is the append-only lesson — consider a subtle "bolt" icon on rows once racked).
-- Counter: "cache entries: N × L layers" and a note that new tokens scan the whole rack (render a quick sweep line over all rows on each step).
-- Phase 1 generation: canned continuation for the default sentence; for arbitrary input, loop a placeholder ("…"). Phase 2: real distilgpt2 next-token sampling.
-- Decoding control (real mode only): greedy or sampled, sampled by default. Greedy on a six-block model loops within a few tokens — a true fact about greedy decoding and a poor advertisement for the machine — so the reader gets a seeded top-k draw with a repetition penalty, and the control says which rule is picking. Illustrative mode is pinned to greedy: the toy numbers are hand-tuned, and drawing from a hand-tuned distribution would be theatre. The greedy path is unchanged from the build before the sampler and must stay byte-identical.
-
 ### Instrument F — The forward pass, live (Section 02, after A)
 
 The answer to "the neural net is static — I thought we'd see the weight
@@ -250,11 +242,58 @@ visibly inside it.
   the deterministic stand-ins instrument D prints, labelled as such. A pass in
   flight draws the stream flat and says the pass is running — the illustrative
   numbers are never shown under a real-model heading.
+- Every steel box also wears its own tensor: a whole-tensor thumbnail — 48×12
+  block averages of the real bytes, contrast-stretched, read at build time into
+  `fileFacts.json` — drawn faintly inside the box in the frozen blue. It is
+  real in BOTH modes, because it was read out of the file rather than out of a
+  pass, and it is the grain of the steel rather than a decoration. As the water
+  crosses a box the same bytes glint in the moving amber, by opacity alone.
+- The water: the selected token's running vector as a 768-cell amber strip, one
+  cell per number, nothing downsampled and nothing picked out — so what the
+  reader sees is the vector and not a summary of it. On RUN THE PASS it appears
+  at the embedding and travels down, its cells morphing at each of the seven
+  stops to that stop's real values. Two normalisations, both named on screen: a
+  cell's brightness is |value| against the largest magnitude at that depth, and
+  the strip's overall brightness is log ‖residual‖ across the run. Clicking any
+  node parks the strip at that depth — the microscope — until the next pass.
+  Reduced motion puts it at the bottom of the fall immediately.
+- The columns are named on the drawing rather than under it: a line beside the
+  sequence says what a column is, an arrowhead below each band of the selected
+  column says which way depth runs, and every node answers to a hover and to a
+  screen reader in plain words ("the ␣bird vector after block 2 — length 54.4").
+  The legend's first line is set at readout size, not fine print: it is the
+  sentence that turns the drawing into a reading.
+- The lens, whispered. As the strip passes each stop, a reserved line says what
+  the logit lens hears at that depth ("the lens, after block 2 — leaning
+  ␣wings"). It is instrument D's reading through the same worker, not a second
+  implementation, and it is verified against D's own table depth by depth. The
+  word is "leaning" because the model makes no prediction at block 2 — the lens
+  is what it would say if the stack stopped there. Illustrative mode gets no
+  reading at all rather than a stand-in one. Written to the DOM, not rendered,
+  so seven updates a second cost no React renders; not announced live, because
+  D presents the same seven readings as a table.
+- The landing. The last stream reaches the unembedding and splashes across
+  50,257 words; the tallest few are drawn under the last token's own column,
+  heights proportional to the real probabilities, with the bar the sampler
+  actually took in the moving amber and the rest in frozen blue. The sampler
+  skips whitespace, so the amber bar is often not the tallest one, and the
+  drawing shows that rather than marking the argmax.
+- Both the whisper's line and the landing's row are reserved in the geometry
+  whether or not there is anything to put in them, so the figure is the same
+  height before a pass, during one and after it.
 - RUN THE PASS replays the drawing token by token and stop by stop over about
   two seconds, in opacity alone; a STEP replays it too. Reduced motion draws
   the final state instantly.
 - `__mapCheck()` in a dev build recomputes both moving claims by a second
   route and returns the largest disagreement.
+
+### Instrument B — Forward-pass stepper + KV rack (Section 03)
+- Controls: STEP (advance one generated token), RUN (auto-step ~800ms), RESET.
+- Left: the sequence so far; the newest token in the moving-part colour, prior tokens in the frozen colour.
+- Right: the KV rack — one row per processed token showing a K chip (keys) and V chip (moving part). On each step, exactly one new row appends with a brief settle animation; existing rows must visibly NOT change (this is the append-only lesson — consider a subtle "bolt" icon on rows once racked).
+- Counter: "cache entries: N × L layers" and a note that new tokens scan the whole rack (render a quick sweep line over all rows on each step).
+- Phase 1 generation: canned continuation for the default sentence; for arbitrary input, loop a placeholder ("…"). Phase 2: real distilgpt2 next-token sampling.
+- Decoding control (real mode only): greedy or sampled, sampled by default. Greedy on a six-block model loops within a few tokens — a true fact about greedy decoding and a poor advertisement for the machine — so the reader gets a seeded top-k draw with a repetition penalty, and the control says which rule is picking. Illustrative mode is pinned to greedy: the toy numbers are hand-tuned, and drawing from a hand-tuned distribution would be theatre. The greedy path is unchanged from the build before the sampler and must stay byte-identical.
 
 ### Instrument C — Attention inspector (Section 04, the centerpiece)
 - Uses the current sequence from Instrument B. Reader clicks any token → it becomes the querying token (moving-part ground, bold).
