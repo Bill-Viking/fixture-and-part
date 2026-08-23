@@ -32,7 +32,13 @@
 // on the screen names it rather than leaving the reader to guess what a lit
 // square means.
 
-import { REAL_HEADS, REAL_HIDDEN, REAL_LAYERS, RESIDUAL_STOPS } from './realModel.js'
+import {
+  REAL_HEADS,
+  REAL_HIDDEN,
+  REAL_LAYERS,
+  RESIDUAL_STOPS,
+  tokenText,
+} from './realModel.js'
 import { LENS_STOPS, residualVector } from './toyModel.js'
 
 /** How many depths the map draws a node at. Seven, for six blocks. */
@@ -293,6 +299,30 @@ export function headOutwardShares(run, layer, index) {
     out[h] = 1 - data[(h * n + q) * n + q]
   }
   return out
+}
+
+/**
+ * The top of the pass's own final logits, at the last position.
+ *
+ * Not `run.candidates[0]`. That shortlist is instrument B's, and B skips
+ * tokens whose text is nothing but whitespace, along with <|endoftext|> —
+ * deliberately, because greedy distilgpt2 on a short prompt collapses into
+ * predicting a newline forever and that reads as a broken instrument. Useful
+ * for a decoder; wrong for a map, which is claiming to print what the stack
+ * settles on. On the default sentence the two disagree: B's shortlist tops
+ * out at "␣The" and the machine's own argmax is a newline. So this is the
+ * unfiltered argmax over the whole row, which is what a click on the last
+ * chip then shows instrument D reading through its own arithmetic.
+ *
+ * The last position is the only one a pass keeps a logits row for; earlier
+ * positions cost a second pass, and the map does not take one.
+ */
+export function topOfFinalLogits(run) {
+  const row = run?.lastLogits
+  if (!row || row.length === 0) return null
+  let best = 0
+  for (let id = 1; id < row.length; id++) if (row[id] > row[best]) best = id
+  return { id: best, token: tokenText(best) }
 }
 
 /** The wording of the head row, so the drawing never has to be guessed at. */
