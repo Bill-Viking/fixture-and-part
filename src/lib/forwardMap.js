@@ -335,18 +335,19 @@ export const HEAD_LEGEND_SHORT = 'head squares — attention leaving this token'
 // The check
 // ---------------------------------------------------------------------------
 
-// The map's two claims are that the brightness of a node is the norm of a
-// real vector and that a lit head square is a real share of a real attention
-// row. Both are worth being able to re-run rather than remember, so a dev
-// build puts the check on the console.
+// The map's three claims are that the brightness of a node is the norm of a
+// real vector, that every cell of the falling strip is a real number out of
+// the residual stream, and that a lit head square is a real share of a real
+// attention row. All three are worth being able to re-run rather than
+// remember, so a dev build puts the check on the console.
 //
 // `__mapCheck()` takes what the instrument currently has on screen — it
-// publishes it to `__mapState` on every render — and recomputes both from the
-// forward pass by a different route: the stop values against
-// `residualStops()`, which packs the seven depths for one position through
-// code the glass pass uses and this file does not, and the head values
-// against `run.attention` read directly. It returns the largest disagreement
-// it found. Production drops the whole block.
+// publishes it to `__mapState` on every render — and recomputes all of it from
+// the forward pass by a different route: the stop values and the strip's
+// 5,376 cells against `residualStops()`, which packs the seven depths for one
+// position through code the glass pass uses and this file does not, and the
+// head values against `run.attention` read directly. It returns the largest
+// disagreement it found. Production drops the whole block.
 if (import.meta.env.DEV) {
   globalThis.__mapCheck = async () => {
     const state = globalThis.__mapState
@@ -373,6 +374,22 @@ if (import.meta.env.DEV) {
       stops.push({ stop: s, onScreen: state.stops[s], truth, delta })
     }
 
+    // The strip claims something stronger than the node above it: not that a
+    // reduction of the vector is right, but that every one of the 768 numbers
+    // on screen is the number the pass produced. So it is checked value by
+    // value against the same packed block, not stop by stop.
+    let worstStrip = null
+    if (state.stripStops) {
+      worstStrip = 0
+      for (let s = 0; s < MAP_STOPS; s++) {
+        const onScreen = state.stripStops[s]
+        for (let d = 0; d < REAL_HIDDEN; d++) {
+          const delta = Math.abs(packed[s * REAL_HIDDEN + d] - onScreen[d])
+          if (delta > worstStrip) worstStrip = delta
+        }
+      }
+    }
+
     const n = run.n
     const q = state.index
     const data = run.attention[state.layer]
@@ -390,6 +407,8 @@ if (import.meta.env.DEV) {
       index: state.index,
       layer: state.layer,
       worstStopDelta: worstStop,
+      worstStripDelta: worstStrip,
+      stripCells: state.stripStops ? MAP_STOPS * REAL_HIDDEN : 0,
       worstHeadDelta: worstHead,
       stops,
       heads,

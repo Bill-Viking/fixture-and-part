@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   BANDS,
   HEAD_LEGEND,
@@ -13,8 +13,9 @@ import {
   tensorFacts,
   topOfFinalLogits,
 } from '../lib/forwardMap.js'
-import { REAL_HEADS, REAL_LAYERS } from '../lib/realModel.js'
-import { thumbnailUrl } from '../lib/tensorTexture.js'
+import { REAL_HEADS, REAL_HIDDEN, REAL_LAYERS } from '../lib/realModel.js'
+import { residualVector } from '../lib/toyModel.js'
+import { STRIP_CAP, stripUrl, thumbnailUrl } from '../lib/tensorTexture.js'
 import InfoTag from '../components/InfoTag.jsx'
 import LoadNote from '../components/LoadNote.jsx'
 import ReadingLine from '../components/ReadingLine.jsx'
@@ -74,18 +75,20 @@ function geometryFor(compact) {
     ? {
         W: 320, MX: 6, RIGHT: 314, TRACK: 38,
         chipY: 10, chipH: 17, chipMax: 34,
-        headerY: 40, tieY: 46, bandTop: 52, bandH: 40, bandGap: 4,
-        boxTop: 3, boxH: 22, nodeDY: 32, outH: 30, legendH: 26,
+        annY: 36, headerY: 50, tieY: 56, bandTop: 62, bandH: 46, bandGap: 4,
+        boxTop: 3, boxH: 22, nodeDY: 32, stripDY: 41, stripH: 6,
+        outH: 30, legendH: 48,
         gap: 4, pad: 4, tick: 3, tickGap: 1, mark: 12,
-        fs: { label: 9, part: 8.5, spec: 7, chip: 8, out: 9, legend: 8, header: 8 },
+        fs: { label: 9, part: 8.5, spec: 7, chip: 8, out: 9, legend: 8, key: 8.5, annot: 8, header: 8 },
       }
     : {
         W: 684, MX: 20, RIGHT: 664, TRACK: 84,
         chipY: 12, chipH: 20, chipMax: 54,
-        headerY: 46, tieY: 54, bandTop: 62, bandH: 40, bandGap: 4,
-        boxTop: 3, boxH: 24, nodeDY: 33, outH: 32, legendH: 18,
+        annY: 44, headerY: 58, tieY: 66, bandTop: 74, bandH: 48, bandGap: 4,
+        boxTop: 3, boxH: 24, nodeDY: 33, stripDY: 43, stripH: 7,
+        outH: 32, legendH: 42,
         gap: 6, pad: 6, tick: 6, tickGap: 1.5, mark: 13,
-        fs: { label: 9.5, part: 9, spec: 7.5, chip: 9, out: 10, legend: 9, header: 8.5 },
+        fs: { label: 9.5, part: 9, spec: 7.5, chip: 9, out: 10, legend: 9, key: 10, annot: 9, header: 8.5 },
       }
   const bandY = (i) => g.bandTop + i * (g.bandH + g.bandGap)
   const lastBottom = bandY(BANDS.length - 1) + g.bandH
@@ -96,6 +99,9 @@ function geometryFor(compact) {
     compact,
     bandY,
     nodeY: (i) => bandY(i) + g.nodeDY,
+    // The lane the falling strip parks in: under the node row, inside the
+    // band, clear of both the boxes above it and the next band below.
+    stripY: (i) => bandY(i) + g.stripDY,
     outY,
     legendY,
     H: legendY + g.legendH + 8,
@@ -105,6 +111,11 @@ function geometryFor(compact) {
 }
 
 const fits = (text, size, width) => text.length * size * CHAR <= width
+
+/** A depth of the stack, in plain words. */
+function stopName(stop) {
+  return stop === 0 ? 'at the embedding' : `after block ${stop - 1}`
+}
 
 /** As much of a token as the chip can hold; the rest lives in its tooltip. */
 function clip(text, size, width) {
@@ -192,6 +203,13 @@ export default function ForwardMap({
   const [thumbs, setThumbs] = useState(null)
   const [part, setPart] = useState(null)
   const [replay, setReplay] = useState(0)
+  // Where the reader has parked the falling strip, or null for "let it fall".
+  // A click on any node is the microscope: it stops the water at that depth
+  // and holds it there until the next pass.
+  const [park, setPark] = useState(null)
+  const [still, setStill] = useState(false)
+  const stripRef = useRef(null)
+  const stripImgRef = useRef(null)
 
   // One media query, read before the first paint and then only on a change of
   // breakpoint, so the drawing is never laid out at the wrong scale and then
@@ -231,10 +249,29 @@ export default function ForwardMap({
   const n = sequence.length
   const runKey = run?.key ?? null
 
-  // A new pass, or a new token appended, replays the drawing.
+  // Reduced motion, read the same way the breakpoint is: once, before the
+  // first paint, and then only when it changes.
   useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return undefined
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const onChange = (e) => setStill(e.matches)
+    mq.addEventListener('change', onChange)
+    setStill(mq.matches)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+
+  // A new pass, or a new token appended, replays the drawing — and lets the
+  // water fall again from the top, because it is a new pass and the reader's
+  // old parking place belonged to the previous one.
+  useEffect(() => {
+    setPark(null)
     setReplay((r) => r + 1)
   }, [runKey, stepTick, n])
+
+  const runAgain = useCallback(() => {
+    setPark(null)
+    setReplay((r) => r + 1)
+  }, [])
 
   // Three states, not two. With a finished pass the field is that pass's own
   // norms. With no model it is the deterministic stand-in instrument D
@@ -257,6 +294,52 @@ export default function ForwardMap({
     [real, run, layer, lensIndex],
   )
 
+  /**
+   * The falling strip: one token's running vector at each of the seven
+   * depths, 768 cells wide, one cell per number.
+   *
+   * Nothing is downsampled and nothing is picked out. The raster is exactly as
+   * wide as the vector is long, so what the reader sees is the vector and not
+   * a summary of it — which is the whole difference between this and the node
+   * beside it, which is the same 768 numbers reduced to their length.
+   *
+   * A cell's brightness is |value| against the largest magnitude at that
+   * depth, so the shape of the vector stays legible all the way down. How much
+   * vector there is — the thing that runs from about 5 to about 1,800 over six
+   * blocks — is carried by the brightness of the strip as a whole, which is the
+   * same log scale the nodes use and the legend states. Two normalisations,
+   * because they are answering two questions, and both are named on screen.
+   *
+   * The values are the pass's own residual stream, read at the same offsets
+   * instrument D sends to the lens. In illustrative mode they are the same
+   * deterministic stand-in D prints, taken 768 wide instead of six.
+   */
+  const strip = useMemo(() => {
+    if (n === 0) return null
+    if (real && run?.residuals?.length && lensIndex < run.n) {
+      const values = []
+      const urls = []
+      for (let s = 0; s < MAP_STOPS; s++) {
+        const base = lensIndex * REAL_HIDDEN
+        const row = run.residuals[s].subarray(base, base + REAL_HIDDEN)
+        values.push(row)
+        urls.push(stripUrl(row, '--moving', `s|${run.key}|${lensIndex}|${s}`))
+      }
+      return { real: true, values, urls }
+    }
+    if (armed) return null
+    const token = sequence[lensIndex]
+    if (token === undefined) return null
+    const values = []
+    const urls = []
+    for (let s = 0; s < MAP_STOPS; s++) {
+      const row = Float32Array.from(residualVector(token, s, REAL_HIDDEN))
+      values.push(row)
+      urls.push(stripUrl(row, '--moving', `i|${token}|${s}`))
+    }
+    return { real: false, values, urls }
+  }, [real, armed, run, lensIndex, sequence, n])
+
   // What the instrument has on screen, for the console check. Dev only; the
   // bundler drops the branch in a production build.
   useEffect(() => {
@@ -271,9 +354,11 @@ export default function ForwardMap({
             layer,
             stops: Array.from(field.rows[lensIndex] ?? []),
             heads: Array.from(heads ?? []),
+            // The strip's own cells, exactly as they were rastered.
+            stripStops: strip?.real ? strip.values : null,
           }
         : { real: false }
-  }, [real, run, field, heads, lensIndex, layer])
+  }, [real, run, field, heads, lensIndex, layer, strip])
 
   const columns = useMemo(() => {
     if (n === 0) return []
@@ -405,9 +490,70 @@ export default function ForwardMap({
     } → ${field ? field.hi.toFixed(1) : '—'}`
   }
 
-  const nodeBands = bands
-    .map(({ band }, i) => ({ band, i }))
-    .filter(({ band }) => band.stop !== null)
+  // Memoised, not derived inline: the replay timeline below depends on it,
+  // and a fresh array every render would restart the fall on every render.
+  const nodeBands = useMemo(
+    () =>
+      bands
+        .map(({ band }, i) => ({ band, i }))
+        .filter(({ band }) => band.stop !== null),
+    [bands],
+  )
+
+  /**
+   * The fall, as a timeline rather than as a render.
+   *
+   * Seven updates of one element group, spaced one cadence apart: the href of
+   * a single image, a translateY, and an opacity. Nothing here is laid out by
+   * the animation and React is not asked to render a frame of it, so the
+   * water can fall the whole way down without moving a pixel of the page.
+   *
+   * Three ways it can end. Parked, because the reader clicked a node: the
+   * strip jumps to that depth and stays. Reduced motion: it is drawn at the
+   * bottom of the fall immediately, which is where a replay would have left
+   * it. Otherwise it falls.
+   */
+  useEffect(() => {
+    const node = stripRef.current
+    const image = stripImgRef.current
+    if (!node || !image) return undefined
+    if (!strip) {
+      node.style.opacity = '0'
+      return undefined
+    }
+    const last = MAP_STOPS - 1
+    const put = (s, lit) => {
+      image.setAttribute('href', strip.urls[s] ?? '')
+      node.style.transform = `translateY(${g.stripY(nodeBands[s].i)}px)`
+      const t = value(lensIndex, s)
+      node.style.opacity = lit && t != null ? String(0.34 + 0.66 * t) : '0'
+    }
+    if (park != null || still) {
+      node.style.transition = 'none'
+      put(Math.min(park ?? last, last), true)
+      // Read a geometry back so the jump is committed before transitions are
+      // handed back; without it the next fall starts from the wrong place.
+      void node.getBoundingClientRect()
+      node.style.transition = ''
+      return undefined
+    }
+    node.style.transition = 'none'
+    put(0, false)
+    void node.getBoundingClientRect()
+    node.style.transition = ''
+    const timers = []
+    for (let s = 0; s <= last; s++) {
+      timers.push(
+        setTimeout(() => put(s, true), PASS_LEAD_MS + s * PASS_STEP_MS),
+      )
+    }
+    return () => {
+      for (const timer of timers) clearTimeout(timer)
+    }
+    // `value` is a closure over these; it is a plain function so that the
+    // nodes and the strip cannot read the field through two different ramps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [replay, park, still, strip, g, nodeBands, field, lensIndex, armed, n])
 
   /**
    * The output row's two ends, which share one line.
@@ -440,6 +586,19 @@ export default function ForwardMap({
   })()
   const outRoom =
     outRightX - nextText.length * g.fs.out * CHAR - g.gap - outLeftX
+
+  // The legend baselines. The key line and the cell rule each take a line of
+  // their own at both widths — they are the two that have to be read. Wide
+  // then shares the third line: the replay note at the left end, the head
+  // legend at the right, 201 and 357 units of the 644 the row has. Compact
+  // has room for neither beside the other, so it stacks all four.
+  const keyY = g.legendY + g.fs.key + 2
+  const cellY = keyY + g.fs.legend + 4
+  const tailY = cellY + g.fs.legend + 3
+  const headY = tailY
+  const replayY = compact ? tailY + g.fs.legend + 3 : tailY
+  const lo = field ? field.lo.toFixed(1) : '—'
+  const hi = field ? field.hi.toFixed(1) : '—'
 
   return (
     <figure className="instrument" id="inst-forward-figure">
@@ -492,7 +651,7 @@ export default function ForwardMap({
           <button
             type="button"
             className="btn map-run-btn"
-            onClick={() => setReplay((r) => r + 1)}
+            onClick={runAgain}
           >
             RUN THE PASS
           </button>
@@ -736,6 +895,14 @@ export default function ForwardMap({
                       const t = value(col.i, s)
                       if (t == null) return null
                       const prev = s > 0 ? value(col.i, s - 1) : null
+                      const length = field?.rows?.[col.i]?.[s]
+                      const readout =
+                        `the ${col.token} vector ${stopName(s)}` +
+                        (length == null
+                          ? ''
+                          : ` — length ${length.toFixed(1)}${
+                              field?.real ? '' : ', illustrative'
+                            }`)
                       return (
                         <g key={band.key}>
                           {prev == null ? null : (
@@ -749,16 +916,51 @@ export default function ForwardMap({
                               y2={g.nodeY(i)}
                             />
                           )}
-                          <circle
-                            className="map-node map-lit"
-                            style={{
-                              '--d': `${col.i * 34 + s * 108}ms`,
-                              fillOpacity: 0.3 + 0.7 * t,
+                          {/* Every node is a button: it parks the falling
+                              strip at that depth, and on another token's
+                              column it moves the reading there first. Only the
+                              selected column's seven are in the tab order —
+                              twenty tokens would otherwise put a hundred and
+                              forty stops between this drawing and the next
+                              control. The other columns are reached by their
+                              chip, which is already a tab stop, and their
+                              nodes then become these. */}
+                          <g
+                            className="map-dot"
+                            role="button"
+                            tabIndex={on ? 0 : -1}
+                            aria-label={`park the strip on ${readout}`}
+                            aria-pressed={on && park === s}
+                            onClick={() => {
+                              if (!on) onSelect(col.i)
+                              setPark(s)
                             }}
-                            cx={col.cx}
-                            cy={g.nodeY(i)}
-                            r={1.8 + 2.6 * t}
-                          />
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault()
+                                if (!on) onSelect(col.i)
+                                setPark(s)
+                              }
+                            }}
+                          >
+                            <title>{readout}</title>
+                            <circle
+                              className="map-node map-lit"
+                              style={{
+                                '--d': `${col.i * 34 + s * 108}ms`,
+                                fillOpacity: 0.3 + 0.7 * t,
+                              }}
+                              cx={col.cx}
+                              cy={g.nodeY(i)}
+                              r={1.8 + 2.6 * t}
+                            />
+                            <circle
+                              className="map-dot-hit"
+                              cx={col.cx}
+                              cy={g.nodeY(i)}
+                              r={Math.max(6, 1.8 + 2.6 * t)}
+                            />
+                          </g>
                         </g>
                       )
                     })}
@@ -790,6 +992,37 @@ export default function ForwardMap({
                     )
                   })
                 : null}
+            </g>
+
+            {/* --- the water itself: one token's 768 numbers, falling ---
+
+                A reserved lane in every band, one element, moved by transform
+                and lit by opacity. It is a replay: ONNX hands back the
+                intermediate tensors only once the pass has finished, so what
+                falls here has already happened. The legend says so. */}
+            <g
+              ref={stripRef}
+              className={`map-strip${park != null ? ' is-parked' : ''}`}
+              style={{ '--travel': `${PASS_STEP_MS}ms`, opacity: 0 }}
+              aria-hidden="true"
+            >
+              <rect
+                className="map-strip-bed"
+                x={g.TRACK}
+                y={-g.stripH / 2 - 1}
+                width={g.trackW}
+                height={g.stripH + 2}
+                rx="1"
+              />
+              <image
+                ref={stripImgRef}
+                className="map-strip-cells"
+                x={g.TRACK}
+                y={-g.stripH / 2}
+                width={g.trackW}
+                height={g.stripH}
+                preserveAspectRatio="none"
+              />
             </g>
 
             {/* --- what falls out --- */}
@@ -840,24 +1073,35 @@ export default function ForwardMap({
               onOpen={() => onOpenInstrument('glass')}
             />
 
-            {/* --- legend: what the two lit things mean --- */}
-            <text className="map-legend" x={g.MX} y={g.legendY + g.fs.legend + 2}>
+            {/* --- legend: what the lit things mean ---
+
+                The first line is not fine print. It is the one sentence that
+                turns the drawing into a reading — what the strip is and what
+                its brightness measures — so it is set at the size of the
+                readouts and in the screen's own text colour, and the smaller
+                second line carries the two honesty notes under it. */}
+            <text className="map-legend is-key" x={g.MX} y={keyY}>
               {real
-                ? `node = ‖residual‖ ${
-                    field ? field.lo.toFixed(1) : '—'
-                  } → ${field ? field.hi.toFixed(1) : '—'}, log scale`
+                ? compact
+                  ? `strip = 768 numbers · ‖residual‖ ${lo} → ${hi}, log`
+                  : `strip = this token’s 768 numbers · brightness = ‖residual‖ ${lo} → ${hi}, log scale`
                 : waiting
-                  ? 'node = ‖residual‖ — waiting on this pass'
-                  : 'node brightness — illustrative stand-in, not a measurement'}
+                  ? compact
+                    ? '‖residual‖ — waiting on this pass'
+                    : 'strip and nodes = ‖residual‖ — waiting on this pass'
+                  : compact
+                    ? 'strip = 768 numbers — illustrative stand-in'
+                    : 'strip = this token’s 768 numbers — illustrative stand-in, not a measurement'}
+            </text>
+            <text className="map-legend" x={g.MX} y={cellY}>
+              {compact
+                ? `cell = |value| vs ${STRIP_CAP}× the middle value there`
+                : `cell = |value| against ${STRIP_CAP}× the middle value at that depth`}
             </text>
             <text
               className="map-legend"
               x={compact ? g.MX : g.RIGHT}
-              y={
-                compact
-                  ? g.legendY + g.fs.legend * 2 + 6
-                  : g.legendY + g.fs.legend + 2
-              }
+              y={headY}
               textAnchor={compact ? 'start' : 'end'}
             >
               {real || waiting
@@ -865,6 +1109,9 @@ export default function ForwardMap({
                   ? HEAD_LEGEND_SHORT
                   : HEAD_LEGEND
                 : 'no heads to light — load the real model'}
+            </text>
+            <text className="map-legend" x={g.MX} y={replayY}>
+              a replay — this pass has already run
             </text>
           </svg>
         </div>

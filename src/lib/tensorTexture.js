@@ -19,7 +19,10 @@
 // the caller draws no texture at all, because a texture in the wrong colour
 // would say something false.
 
-const CACHE_LIMIT = 48
+// Twenty-eight steel boxes hold two rasters each, and the falling strip adds
+// seven per position read. The limit is well clear of both so that neither
+// evicts the other.
+const CACHE_LIMIT = 200
 /** @type {Map<string, string|null>} */
 const cache = new Map()
 /** @type {HTMLCanvasElement|null} */
@@ -140,15 +143,34 @@ export function thumbnailUrl(thumb, property, key) {
 }
 
 /**
+ * How many times the middle value at a depth saturates a cell.
+ *
+ * The middle value, and not the largest, and not the average either. Both of
+ * those were tried against the real stream and both drew a black strip. A
+ * GPT-2 residual stream carries a handful of outlier dimensions whose
+ * magnitude runs a few hundred times everything else — a real and well
+ * documented property of the architecture — and by the last block those few
+ * numbers are most of the vector's length. So the maximum is one of them, the
+ * root mean square is dominated by them, and a ramp against either paints 760
+ * of the 768 cells black: a true statement about the outliers and a useless
+ * drawing of the vector.
+ *
+ * The median is not moved by them. Against four times the median, the
+ * ordinary dimensions are legible, the outliers saturate, and the strip shows
+ * what the vector is actually shaped like at that depth. Named in the legend.
+ */
+export const STRIP_CAP = 4
+
+/**
  * One token's running vector at one depth, as a data URL one pixel wide per
  * value. 768 values, 768 pixels — the strip is not a summary of the vector,
  * it is the vector, and the browser is the only thing that ever resamples it.
  *
- * A cell's alpha is |value| against the largest magnitude at this depth, so
- * the shape of the vector is legible at every depth; how much vector there is
- * — the thing that grows by two and a half orders of magnitude down the stack
- * — is carried by the brightness of the strip as a whole, which the caller
- * sets and the legend states.
+ * A cell's alpha is |value| against `STRIP_CAP` times the middle magnitude at
+ * this depth, so the shape of the vector is legible at every depth whatever
+ * the scale. How much vector there is, the thing that grows by two and a half
+ * orders of magnitude down the stack, is carried by the brightness of the
+ * strip as a whole, which the caller sets and the legend states.
  *
  * @param {Float32Array|number[]} values
  * @param {string} property
@@ -159,12 +181,9 @@ export function stripUrl(values, property, key) {
   if (hit !== undefined) return hit
   const rgb = channelsOf(property)
   if (!rgb || !values || values.length === 0) return remember(key, null)
-  let peak = 0
-  for (let i = 0; i < values.length; i++) {
-    const v = Math.abs(values[i])
-    if (v > peak) peak = v
-  }
-  if (!(peak > 0)) peak = 1
+  const magnitudes = Float64Array.from(values, Math.abs).sort()
+  const middle = magnitudes[magnitudes.length >> 1]
+  const full = STRIP_CAP * (middle > 0 ? middle : 1)
   const canvas = canvasOf(values.length, 1)
   if (!canvas) return remember(key, null)
   const ctx = canvas.getContext('2d')
@@ -175,7 +194,9 @@ export function stripUrl(values, property, key) {
     image.data[at] = rgb[0]
     image.data[at + 1] = rgb[1]
     image.data[at + 2] = rgb[2]
-    image.data[at + 3] = Math.round((Math.abs(values[i]) / peak) * 255)
+    image.data[at + 3] = Math.round(
+      Math.min(1, Math.abs(values[i]) / full) * 255,
+    )
   }
   ctx.putImageData(image, 0, 0)
   return remember(key, canvas.toDataURL('image/png'))

@@ -593,6 +593,10 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
   font-family:var(--mono);font-size:9px;letter-spacing:0.02em;
   fill:var(--screen-muted);
 }
+/* The line that says what the strip is and what its brightness measures. It
+   is the sentence that turns the drawing into a reading, so it is not set at
+   fine-print weight. */
+.map-legend.is-key{font-size:10px;fill:var(--screen-text);}
 .map-out{
   font-family:var(--mono);font-size:10px;letter-spacing:0.02em;
   fill:var(--screen-text);
@@ -700,6 +704,34 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 .map-col.is-on .map-seg{stroke-width:3.4;}
 .map-node{fill:var(--moving);}
 .map-col.is-on .map-node{stroke:var(--moving);stroke-width:.8;}
+
+/* Every node is a button — it parks the falling strip at that depth — so it
+   gets a hit target a finger can find rather than the two-pixel circle the
+   value happens to draw. The target is invisible and carries the pointer. */
+.map-dot{cursor:pointer;}
+.map-dot-hit{fill:#000;fill-opacity:0;}
+.map-dot:hover .map-node{stroke:var(--moving);stroke-width:1.4;}
+
+/* --- the water ---------------------------------------------------------
+
+   One token's running vector at one depth: 768 cells, one per number, in a
+   lane of its own in every band — below the node row, clear of the boxes, so
+   it never covers a reading. It falls by transform and lights by opacity,
+   which is why a pass can run without moving a pixel of the page. */
+.map-strip{
+  transition:transform var(--travel,150ms) linear,
+             opacity var(--travel,150ms) linear;
+  pointer-events:none;
+}
+.map-strip-bed{
+  fill:var(--screen);stroke:var(--moving);stroke-width:.6;stroke-opacity:.5;
+}
+/* Parked by a click on a node: the reader is holding it still to look at it,
+   so the bed's edge firms up and says the fall has been stopped. */
+.map-strip.is-parked .map-strip-bed{stroke-opacity:1;stroke-width:1;}
+/* Smoothed, not pixelated: there are more values here than there are pixels
+   to put them in, so every one of them should reach the screen. */
+.map-strip-cells{image-rendering:auto;}
 
 /* Attention, in the selected layer, for the selected token: one thread per
    token it reads, drawn over the machinery it is reading through. */
@@ -1839,6 +1871,10 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
      thing — all delay — so it is turned off rather than shortened, and the
      box simply keeps its frozen texture. */
   .map-glint{animation:none;opacity:0;}
+  /* The water does not fall. The instrument puts the strip at the bottom of
+     the stack — where a replay would have left it — the moment it has
+     numbers, and a click on a node still moves it there instantly. */
+  .map-strip{transition:none;}
   /* New in this pass: the candidate rows and the info popover appear at
      their final state instead of animating in. */
   .cand,.cand.is-winner,.info-pop,.kv-stack{animation:none;}
