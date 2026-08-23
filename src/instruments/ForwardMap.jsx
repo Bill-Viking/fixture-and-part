@@ -11,6 +11,7 @@ import {
   partReadout,
   residualField,
   tensorFacts,
+  topOfFinalLogits,
 } from '../lib/forwardMap.js'
 import { REAL_HEADS, REAL_LAYERS } from '../lib/realModel.js'
 import InfoTag from '../components/InfoTag.jsx'
@@ -155,6 +156,7 @@ export default function ForwardMap({
   onSelect,
   layer,
   onLayerChange,
+  armed,
   real,
   run,
   reading,
@@ -215,10 +217,18 @@ export default function ForwardMap({
     setReplay((r) => r + 1)
   }, [runKey, stepTick, n])
 
-  const field = useMemo(
-    () => (real && run ? residualField(run) : illustrativeField(sequence)),
-    [real, run, sequence],
-  )
+  // Three states, not two. With a finished pass the field is that pass's own
+  // norms. With no model it is the deterministic stand-in instrument D
+  // prints, labelled as such. In between — the model is loaded and a pass is
+  // in flight — there is no field at all: the stream is drawn flat and the
+  // legend says the pass is running. Falling back to the stand-ins here would
+  // put illustrative numbers on screen under a real-model heading for the
+  // third of a second a pass takes, which is the one thing this page does
+  // not do.
+  const field = useMemo(() => {
+    if (real && run) return residualField(run)
+    return armed ? null : illustrativeField(sequence)
+  }, [real, run, armed, sequence])
   const arcs = useMemo(
     () => (real && run ? headAverageRow(run, layer, lensIndex) : null),
     [real, run, layer, lensIndex],
@@ -273,6 +283,34 @@ export default function ForwardMap({
   const partFacts = part ? factsFor(part.tensor) : null
   const selectedToken = sequence[lensIndex]
 
+  // The pass keeps its last position's logits whole, so the top of them is
+  // one scan of an array the map already has — no second pass, no shortlist.
+  const finalTop = useMemo(
+    () => (real && run ? topOfFinalLogits(run) : null),
+    [real, run],
+  )
+
+  /**
+   * What the stack settles on at the selected position.
+   *
+   * At the last position that is free, and it is the machine's own answer:
+   * the argmax of the logits this pass produced there. So the bottom row
+   * prints a real prediction the moment the model has run, with nothing
+   * clicked — and it agrees with what a click then shows, which the
+   * shortlist beside it would not have (B skips whitespace tokens; the
+   * machine does not).
+   *
+   * Earlier positions have no logits row of their own in this pass. Reading
+   * one means pushing that position's last residual through ln_f and the
+   * embedding table backwards, which is precisely the last row of instrument
+   * D's reading — so a click on a chip takes that reading and this line
+   * prints its winner when it lands, rather than the map computing a second
+   * one of its own.
+   */
+  const settled = real
+    ? (reading?.winner ?? (lensIndex === n - 1 ? (finalTop?.token ?? null) : null))
+    : null
+
   /**
    * Where one stop's norm sits in the run's own range, 0 to 1.
    *
@@ -287,7 +325,9 @@ export default function ForwardMap({
    */
   const value = (i, s) => {
     const row = field?.rows?.[i]
-    if (!row) return null
+    // A pass is in flight: every stop the same low value, so the stream is
+    // visibly there and visibly carrying nothing anyone has measured yet.
+    if (!row) return field == null && armed && n > 0 ? 0.16 : null
     const lo = Math.log(Math.max(field.lo, 1e-6))
     const hi = Math.log(Math.max(field.hi, 1e-6))
     const span = hi - lo
@@ -306,9 +346,11 @@ export default function ForwardMap({
   // needs the door.
   const headBand = layer + 1
 
+  const waiting = armed && !real
+
   const note = () => {
     if (n === 0) return 'no input — type something into instrument A'
-    if (pending) return 'running distilgpt2…'
+    if (pending || waiting) return 'running distilgpt2…'
     if (!real) return 'illustrative — the shape of the pass'
     return `real residual stream · ‖residual‖ ${
       field ? field.lo.toFixed(1) : '—'
@@ -319,6 +361,38 @@ export default function ForwardMap({
     .map(({ band }, i) => ({ band, i }))
     .filter(({ band }) => band.stop !== null)
 
+  /**
+   * The output row's two ends, which share one line.
+   *
+   * At 390 they met in the middle: "␣roared — the stack settles on ␣through"
+   * against "next: ␣The" left forty characters of overlapping glyphs where
+   * two readings should have been. The right-hand end is short and is what
+   * instrument B is about to do, so it is measured first and the left end is
+   * clipped to whatever room is left. Its full wording stays in the tooltip.
+   */
+  const outLeftX = g.MX + g.mark + 5
+  const outRightX = g.RIGHT - g.mark - 5
+  const nextText = waiting
+    ? 'next — running…'
+    : nextToken
+      ? `next: ${nextToken}`
+      : 'no next token'
+  const outText = (() => {
+    if (selectedToken === undefined) return 'nothing to read'
+    if (waiting) return `${selectedToken} — running distilgpt2…`
+    if (!real) return `${selectedToken} — illustrative`
+    if (!settled) {
+      return compact
+        ? `${selectedToken} — click a chip`
+        : `${selectedToken} — click a chip to read the stack here`
+    }
+    return compact
+      ? `${selectedToken} → ${settled}`
+      : `${selectedToken} — the stack settles on ${settled}`
+  })()
+  const outRoom =
+    outRightX - nextText.length * g.fs.out * CHAR - g.gap - outLeftX
+
   return (
     <figure className="instrument" id="inst-forward-figure">
       <InstrumentHead
@@ -328,7 +402,7 @@ export default function ForwardMap({
         note={
           <LoadNote
             label={
-              real
+              armed
                 ? architectureNote(manifest)
                 : 'illustrative — the shape of the pass, not its numbers'
             }
@@ -344,23 +418,29 @@ export default function ForwardMap({
         <ReadingLine text={text} />
 
         <div className="map-controls">
-          {real ? (
-            <label className="attn-sel">
-              <span>layer</span>
-              <select
-                value={layer}
-                onChange={(e) => onLayerChange(Number(e.target.value))}
-              >
-                {Array.from({ length: REAL_LAYERS }, (_, l) => (
-                  <option key={l} value={l}>
-                    {l}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : (
-            <span className="map-sel-ghost">layer — real model only</span>
-          )}
+          {/* One slot, one width, whichever of the two is in it. The selector
+              answers to `armed` rather than to `real`, so a STEP — which
+              takes a pass out of date for a third of a second — does not
+              swap the control out and move the button beside it. */}
+          <div className="map-sel-slot">
+            {armed ? (
+              <label className="attn-sel">
+                <span>layer</span>
+                <select
+                  value={layer}
+                  onChange={(e) => onLayerChange(Number(e.target.value))}
+                >
+                  {Array.from({ length: REAL_LAYERS }, (_, l) => (
+                    <option key={l} value={l}>
+                      {l}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : (
+              <span className="map-sel-ghost">layer — real only</span>
+            )}
+          </div>
           <button
             type="button"
             className="btn map-run-btn"
@@ -368,7 +448,7 @@ export default function ForwardMap({
           >
             RUN THE PASS
           </button>
-          <InfoTag topic={real ? 'mapReal' : 'map'} />
+          <InfoTag topic={armed ? 'mapReal' : 'map'} />
           <span className="map-ctl-note">{note()}</span>
         </div>
 
@@ -515,7 +595,14 @@ export default function ForwardMap({
                               const hy = y + g.boxTop + g.boxH - tw - 4
                               return (
                                 <rect
-                                  key={h}
+                                  // Keyed on the replay counter as well as on
+                                  // the head, so RUN THE PASS remounts these
+                                  // and their arrival animation runs again.
+                                  // The columns and threads get this for free
+                                  // from the keyed group they live in; the
+                                  // head squares are drawn inside the
+                                  // machinery, which is not remounted.
+                                  key={`${h}-${replay}`}
                                   className={`map-head${share == null ? '' : ' is-lit map-lit'}`}
                                   style={
                                     share == null
@@ -625,22 +712,17 @@ export default function ForwardMap({
             </g>
 
             {/* --- what falls out --- */}
-            <text className="map-out" x={g.MX + g.mark + 5} y={g.outY + g.fs.out + 4}>
-              {selectedToken === undefined
-                ? 'nothing to read'
-                : real
-                  ? reading?.winner
-                    ? `${selectedToken} — the stack settles on ${reading.winner}`
-                    : `${selectedToken} — click a chip to read the stack here`
-                  : `${selectedToken} — illustrative`}
+            <text className="map-out" x={outLeftX} y={g.outY + g.fs.out + 4}>
+              <title>{outText}</title>
+              {clip(outText, g.fs.out, outRoom)}
             </text>
             <text
               className="map-out is-next"
-              x={g.RIGHT - g.mark - 5}
+              x={outRightX}
               y={g.outY + g.fs.out + 4}
               textAnchor="end"
             >
-              {nextToken ? `next: ${nextToken}` : 'no next token'}
+              {nextText}
             </text>
             <Window
               letter="B"
@@ -683,7 +765,9 @@ export default function ForwardMap({
                 ? `node = ‖residual‖ ${
                     field ? field.lo.toFixed(1) : '—'
                   } → ${field ? field.hi.toFixed(1) : '—'}, log scale`
-                : 'node brightness — illustrative stand-in, not a measurement'}
+                : waiting
+                  ? 'node = ‖residual‖ — waiting on this pass'
+                  : 'node brightness — illustrative stand-in, not a measurement'}
             </text>
             <text
               className="map-legend"
@@ -695,7 +779,7 @@ export default function ForwardMap({
               }
               textAnchor={compact ? 'start' : 'end'}
             >
-              {real
+              {real || waiting
                 ? compact
                   ? HEAD_LEGEND_SHORT
                   : HEAD_LEGEND
@@ -718,7 +802,7 @@ export default function ForwardMap({
 
         <TeachPair
           className="teach dim"
-          show={real ? 'b' : 'a'}
+          show={armed ? 'b' : 'a'}
           a="the machinery is drawn from the file's own manifest, so every shape and byte count here is real. the columns are not: no model is running, so they are the same deterministic stand-ins instrument D prints, and they are labelled as such."
           b="one drawing, five readings. the shapes and byte counts come from the file, the columns are the norm of this token's running vector at each depth, the threads are the selected layer's attention averaged over its twelve heads, and the line at the bottom is the token instrument B appends next."
         />

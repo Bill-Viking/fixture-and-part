@@ -592,6 +592,19 @@ export default function App() {
         onSelect={handleLensSelect}
         layer={layer}
         onLayerChange={setLayer}
+        // Two different questions, and instrument F asks both.
+        //
+        // `armed` is "the real model is in hand and this instrument is in
+        // real mode". It is what the controls, the head note and the
+        // teaching line answer to, and it does not flicker: appending a
+        // token does not un-load the model.
+        //
+        // `real` is "a finished pass over the text in the box now, and this
+        // is it". It is what every NUMBER on the drawing answers to, and it
+        // goes false for the third of a second a pass takes — during which
+        // the map draws its stream flat and says the pass is running,
+        // rather than claiming numbers it does not yet have.
+        armed={isReal}
         real={isReal && Boolean(ranKey)}
         run={isReal && runReady ? realRun : null}
         reading={lensStale ? null : lensReading}
