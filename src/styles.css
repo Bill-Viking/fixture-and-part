@@ -662,8 +662,13 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 /* The selected box carries the most text and now carries a texture under it,
    so its spec line goes to the screen's own text colour rather than to the
    muted one — 5.3:1 against the selected fill before, and the texture only
-   took from that. */
+   took from that. The name line needs the same lift for the same reason: the
+   selected plate is the brightest fill a box ever takes, and the resting blue
+   measured 4.41:1 on it once the texture was under it — under AA across
+   effectively the whole glyph. --frozen-lit is the blue meant for exactly
+   this, so the colour law holds and the reading goes to 9.9:1. */
 .map-part.is-on .map-part-spec{fill:var(--screen-text);}
+.map-part.is-on .map-part-name{fill:var(--frozen-lit);}
 
 /* Twelve heads. Outlined in every block, filled only in the selected one —
    the same machinery six times, one of them instrumented. What they are
