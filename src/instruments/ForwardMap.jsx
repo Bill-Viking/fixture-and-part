@@ -357,8 +357,11 @@ export default function ForwardMap({
    * a summary of it — which is the whole difference between this and the node
    * beside it, which is the same 768 numbers reduced to their length.
    *
-   * A cell's brightness is |value| against the largest magnitude at that
-   * depth, so the shape of the vector stays legible all the way down. How much
+   * A cell's brightness is |value| against STRIP_CAP times the middle
+   * magnitude at that depth — the middle and not the largest, for the reason
+   * tensorTexture.js sets out: a few outlier dimensions would otherwise leave
+   * 760 of the 768 cells black. The legend on screen names the same rule, so
+   * the shape of the vector stays legible all the way down. How much
    * vector there is — the thing that runs from about 5 to about 1,800 over six
    * blocks — is carried by the brightness of the strip as a whole, which is the
    * same log scale the nodes use and the legend states. Two normalisations,
@@ -867,6 +870,14 @@ export default function ForwardMap({
                     const tex = textureFor(box.tensor)
                     const label = compact ? (box.short ?? box.label) : box.label
                     const spec = compact ? '' : specFor(facts, g.fs.spec, box.w - 12)
+                    // The unembedding is the word table read the other way
+                    // round, so it and the embedding box name the same tensor.
+                    // Saying the tensor's name twice would hide the tie rather
+                    // than say it, so the tied box gets its own sentence.
+                    const named = facts ? facts.display : box.label
+                    const spoken = box.tie
+                      ? `read the word table back out of the file — the same ${named} the embedding uses, tied, and turned on its side`
+                      : `read ${named} out of the file`
                     const on = part && part.id === box.id && part.tensor === box.tensor
                     return (
                       <g
@@ -874,7 +885,7 @@ export default function ForwardMap({
                         className={`map-part${on ? ' is-on' : ''}`}
                         role="button"
                         tabIndex={0}
-                        aria-label={`read ${facts ? facts.display : box.label} out of the file`}
+                        aria-label={spoken}
                         aria-pressed={Boolean(on)}
                         onClick={() => handlePart(box)}
                         onKeyDown={(e) => {
@@ -1341,8 +1352,8 @@ export default function ForwardMap({
         <TeachPair
           className="teach dim"
           show={armed ? 'b' : 'a'}
-          a="the machinery is drawn from the file's own manifest, so every shape and byte count here is real, and the texture inside each box is that tensor's own bytes read out of the file. the water is not: no model is running, so the strip and the columns are the same deterministic stand-ins instrument D prints, and they are labelled as such."
-          b="one drawing, six readings. the shapes and byte counts come from the file and the texture in each box is that tensor's own bytes; the strip is this token's 768 numbers at one depth; the columns are the length of that vector at each depth; the threads are the selected layer's attention averaged over its twelve heads; and the line at the bottom is the token instrument B appends next."
+          a="the machinery is drawn from the file's own manifest, so every shape and byte count here is real, and the texture inside each box is that tensor's own bytes read out of the file. the water is not: no model is running, so the strip and the columns are the same deterministic stand-ins instrument D prints, and they are labelled as such. each texture is stretched to its own tensor's range, so a tensor with a narrow range shows faint grain from the rounding in the file, and one whose blocks all read alike is drawn as an even wash rather than as nothing."
+          b="one drawing, six readings. the shapes and byte counts come from the file and the texture in each box is that tensor's own bytes; the strip is this token's 768 numbers at one depth; the columns are the length of that vector at each depth; the threads are the selected layer's attention averaged over its twelve heads; and the line at the bottom is the token instrument B appends next. each texture is stretched to its own tensor's range, so a tensor with a narrow range shows faint grain from the rounding in the file, and one whose blocks all read alike is drawn as an even wash rather than as nothing."
         />
       </div>
 

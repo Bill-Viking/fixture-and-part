@@ -405,9 +405,29 @@ if (import.meta.env.DEV) {
     if (!state) return { error: 'instrument F has not published a state yet' }
     if (!state.real) return { error: 'the map is showing illustrative columns' }
     const model = await import('./realModel.js')
+
+    // The pass is memoised one deep, so asking for the sequence that is
+    // already on screen hands back the very object the instrument is drawing
+    // and the strip check below compares a buffer against itself — a check
+    // that cannot fail is not a check. Running one token first evicts that
+    // memo, so the second call runs the model again and the numbers on screen
+    // are compared against a pass they had no part in. Whether that worked is
+    // reported rather than assumed: `freshPass` is false if any stop still
+    // shares a buffer with the strip.
+    await model.realForward(
+      state.ids.length === 1 ? [state.ids[0], state.ids[0]] : [state.ids[0]],
+    )
     const run = await model.realForward(state.ids)
     if (run.key !== state.key) {
       return { error: `the run moved: ${run.key} vs ${state.key}` }
+    }
+    let freshPass = true
+    if (state.stripStops) {
+      for (let s = 0; s < MAP_STOPS; s++) {
+        if (state.stripStops[s].buffer === run.residuals[s].buffer) {
+          freshPass = false
+        }
+      }
     }
 
     const packed = model.residualStops(run, state.index)
@@ -457,6 +477,7 @@ if (import.meta.env.DEV) {
       key: state.key,
       index: state.index,
       layer: state.layer,
+      freshPass,
       worstStopDelta: worstStop,
       worstStripDelta: worstStrip,
       stripCells: state.stripStops ? MAP_STOPS * REAL_HIDDEN : 0,
