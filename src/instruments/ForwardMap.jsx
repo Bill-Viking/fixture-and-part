@@ -605,7 +605,7 @@ export default function ForwardMap({
       <InstrumentHead
         eyebrow="INSTRUMENT F"
         title="The forward pass, live"
-        purpose="The whole machine, drawn once — and your sentence moving through it, token by token, layer by layer."
+        purpose="The whole machine, drawn once — cut rock the pass never touches, and your sentence falling through it like water, picking up meaning as it goes."
         note={
           <LoadNote
             label={
@@ -1174,15 +1174,16 @@ export default function ForwardMap({
         <TeachPair
           className="teach dim"
           show={armed ? 'b' : 'a'}
-          a="the machinery is drawn from the file's own manifest, so every shape and byte count here is real. the columns are not: no model is running, so they are the same deterministic stand-ins instrument D prints, and they are labelled as such."
-          b="one drawing, five readings. the shapes and byte counts come from the file, the columns are the norm of this token's running vector at each depth, the threads are the selected layer's attention averaged over its twelve heads, and the line at the bottom is the token instrument B appends next."
+          a="the machinery is drawn from the file's own manifest, so every shape and byte count here is real, and the texture inside each box is that tensor's own bytes read out of the file. the water is not: no model is running, so the strip and the columns are the same deterministic stand-ins instrument D prints, and they are labelled as such."
+          b="one drawing, six readings. the shapes and byte counts come from the file and the texture in each box is that tensor's own bytes; the strip is this token's 768 numbers at one depth; the columns are the length of that vector at each depth; the threads are the selected layer's attention averaged over its twelve heads; and the line at the bottom is the token instrument B appends next."
         />
       </div>
 
       <figcaption>
-        FIG.3 — distilgpt2, drawn once, with the sentence in it. Depth runs
-        down; the sequence runs across; a node is one token&rsquo;s running
-        vector at one depth.
+        FIG.3 — distilgpt2, drawn once, with the sentence falling through it.
+        Depth runs down; the sequence runs across. The boxes are cut rock:
+        training shaped them and a pass does not touch them. The strip is the
+        water — one token&rsquo;s vector, picking up meaning as it goes.
       </figcaption>
     </figure>
   )
