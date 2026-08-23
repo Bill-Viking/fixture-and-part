@@ -98,6 +98,22 @@ function decode(base64) {
 }
 
 /**
+ * The widest range that still counts as no range at all. One byte: a block
+ * average that differs from its neighbours by a single step of the 0–255 grid
+ * the thumbnail is written on is at the resolution of the grid rather than
+ * above it, and stretching that one step to the full ramp would draw a
+ * hundred-per-cent contrast picture of the last bit of a rounding.
+ */
+const FLAT_SPAN = 1
+
+/**
+ * The alpha of a flat tensor's wash, 0–255. A quarter of full: visible as a
+ * tint on the steel, and well under the mean alpha of the thumbnails that do
+ * have a range to stretch, which runs from about 19 to about 158.
+ */
+const FLAT_ALPHA = 64
+
+/**
  * A thumbnail as a data URL in one role colour.
  *
  * The cells are contrast-stretched across the tensor's own range before they
@@ -107,6 +123,21 @@ function decode(base64) {
  * the same flat grey. The stretch is per tensor and it is stated on the page.
  * The bytes themselves are untouched — `lo` and `hi` in the shipped reading
  * still say what a cell is worth.
+ *
+ * A stretch needs a range to stretch, and seven of the twenty-eight tensors
+ * the map draws have at most one byte of it — three of them none at all, every
+ * one of their 576 block averages the same number. Both ends of that were
+ * wrong on screen. A span of zero divided each cell down to fully transparent,
+ * so three boxes wore nothing and a reader could only read that as the file
+ * having nothing there; a span of one turned a single rounding step into full
+ * black against full colour, which is a bold picture of nothing. So a tensor
+ * whose whole range is `FLAT_SPAN` or narrower is drawn flat: one even wash
+ * over the box at `FLAT_ALPHA`, dimmer than the textures that do vary, so a
+ * featureless tensor is neither invisible nor mistakable for a strong one. No
+ * structure is invented and none is hidden — the wash is what the bytes say,
+ * which is that at 48×12 every block of this tensor reads alike. Tensors with
+ * two bytes of range and up are stretched as before, and the page says so,
+ * because at that width the grain is the file's own rounding amplified.
  *
  * @param {{base64:string,rows:number,cols:number}} thumb
  * @param {string} property the custom property naming the colour
@@ -125,7 +156,8 @@ export function thumbnailUrl(thumb, property, key) {
     if (c < lo) lo = c
     if (c > hi) hi = c
   }
-  const span = hi - lo || 1
+  const span = hi - lo
+  const flat = span <= FLAT_SPAN
   const canvas = canvasOf(thumb.cols, thumb.rows)
   if (!canvas) return remember(key, null)
   const ctx = canvas.getContext('2d')
@@ -136,7 +168,9 @@ export function thumbnailUrl(thumb, property, key) {
     image.data[at] = rgb[0]
     image.data[at + 1] = rgb[1]
     image.data[at + 2] = rgb[2]
-    image.data[at + 3] = Math.round(((cells[i] - lo) / span) * 255)
+    image.data[at + 3] = flat
+      ? FLAT_ALPHA
+      : Math.round(((cells[i] - lo) / span) * 255)
   }
   ctx.putImageData(image, 0, 0)
   return remember(key, canvas.toDataURL('image/png'))
