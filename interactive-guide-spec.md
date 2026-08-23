@@ -1,6 +1,6 @@
 # SPEC — "The Fixture and the Part" Interactive Guide
 
-Audience for this spec: a Claude Code session (Sonnet) building in a fresh repo.
+Audience for this spec: a coding-agent session building in a fresh repo.
 Companion file: `the-fixture-and-the-part.html` (the static essay — source of all prose and of the two reference figures). Reuse its prose verbatim unless noted. Its palette is superseded twice over: see §3.
 
 ## 1. Goal
@@ -164,7 +164,7 @@ softmax weight). Respect `prefers-reduced-motion`.
 
 ### Instrument head hierarchy
 
-Every instrument head (A–E) carries the same four lines, in descending order
+Every instrument head (A–F) carries the same four lines, in descending order
 of loudness, so a first-time reader is told what he is looking at before he is
 told where its numbers came from:
 
@@ -185,6 +185,20 @@ The reading line under the head (B, C, D) follows the same rule: the label
 14px `--ink` in the body face, because the sentence is what the reader has to
 recognise as his own.
 
+### Figure numbers
+
+The figures are numbered in reading order down the page, not in the order the
+instruments were built. Adding an instrument renumbers the ones below it.
+
+| FIG | instrument | section |
+|---|---|---|
+| 1 | E — the file | 01 |
+| 2 | A — tokenizer strip | 02 |
+| 3 | F — the forward pass, live | 02 |
+| 4 | B — forward-pass stepper + KV rack | 03 |
+| 5 | C — attention inspector | 04 |
+| 6 | D — the glass pass | 04 |
+
 Single scrolling page, sections 01–10 mirroring the essay. Prose imported from the HTML. Three sections get live instruments replacing their static figures:
 
 ### Instrument A — Tokenizer strip (Section 02)
@@ -198,6 +212,49 @@ Single scrolling page, sections 01–10 mirroring the essay. Prose imported from
 - Right: the KV rack — one row per processed token showing a K chip (keys) and V chip (moving part). On each step, exactly one new row appends with a brief settle animation; existing rows must visibly NOT change (this is the append-only lesson — consider a subtle "bolt" icon on rows once racked).
 - Counter: "cache entries: N × L layers" and a note that new tokens scan the whole rack (render a quick sweep line over all rows on each step).
 - Phase 1 generation: canned continuation for the default sentence; for arbitrary input, loop a placeholder ("…"). Phase 2: real distilgpt2 next-token sampling.
+- Decoding control (real mode only): greedy or sampled, sampled by default. Greedy on a six-block model loops within a few tokens — a true fact about greedy decoding and a poor advertisement for the machine — so the reader gets a seeded top-k draw with a repetition penalty, and the control says which rule is picking. Illustrative mode is pinned to greedy: the toy numbers are hand-tuned, and drawing from a hand-tuned distribution would be theatre. The greedy path is unchanged from the build before the sampler and must stay byte-identical.
+
+### Instrument F — The forward pass, live (Section 02, after A)
+
+The answer to "the neural net is static — I thought we'd see the weight
+activations as we ran it". Everything else on the page is one reading through
+one window; F is the whole machine drawn once with the reader's own sentence
+visibly inside it.
+
+- One fixed-viewBox SVG on a full-width dark screen. Its height is a function
+  of its width and of nothing else — never of how many tokens are in the
+  sequence — so the drawing can never move the page.
+- Depth runs down: an embed band (wte, wpe), six block bands (ln_1 ·
+  attention with twelve head squares · ln_2 · MLP 768→3072→768), then ln_f and
+  the embedding table used backwards, with a drawn tie back to wte because
+  there is no second copy of it in the file.
+- Every steel box is a button carrying that tensor's real shape, dtype and
+  byte count, read out of `fileFacts.json` — the same reading instrument E
+  draws, not a second copy typed out by hand. Clicking one prints the full
+  readout (`h.3.attn.c_attn.weight [768×2304] i8 · scale … · zero point 0 ·
+  1,769,472 bytes`) and offers to open that row in instrument E.
+- The sequence runs across the top as amber chips; the selected chip is the
+  shared `lensIndex`, so F and D always read the same position. Each token is
+  an amber column down the drawing with a node at each of the seven residual
+  stops, sized and brightened by the real ‖residual‖ at that stop, normalised
+  across the run on a log scale that the legend states.
+- In the selected layer — the same `layer` instrument C uses — the selected
+  token's attention is drawn as threads back to the tokens it reads, opacity
+  proportional to the head-averaged weight, and the twelve head squares light
+  by the share of that token's attention each head spends anywhere but on
+  itself. The legend names that scalar rather than leaving a lit square to be
+  guessed at.
+- Lettered markers A–E are windows: each scrolls to the instrument the part
+  under it belongs to.
+- Three states, not two. A finished pass draws its own norms. No model draws
+  the deterministic stand-ins instrument D prints, labelled as such. A pass in
+  flight draws the stream flat and says the pass is running — the illustrative
+  numbers are never shown under a real-model heading.
+- RUN THE PASS replays the drawing token by token and stop by stop over about
+  two seconds, in opacity alone; a STEP replays it too. Reduced motion draws
+  the final state instantly.
+- `__mapCheck()` in a dev build recomputes both moving claims by a second
+  route and returns the largest disagreement.
 
 ### Instrument C — Attention inspector (Section 04, the centerpiece)
 - Uses the current sequence from Instrument B. Reader clicks any token → it becomes the querying token (moving-part ground, bold).
@@ -232,7 +289,7 @@ Sentence case. Plain verbs. Labels label ("STEP", "RESET", "cache entries"), nev
 
 ```
 /index.html  /src/main.jsx  /src/App.jsx
-/src/instruments/{Tokenizer,Stepper,AttentionInspector}.jsx
+/src/instruments/{Tokenizer,Stepper,AttentionInspector,GlassPass,FileView,ForwardMap}.jsx
 /src/content/essay.js   (prose extracted from the HTML, per section)
 /src/lib/{toyModel.js,realModel.js}   (Phase1 heuristics / Phase2 transformers.js)
 /src/styles.css

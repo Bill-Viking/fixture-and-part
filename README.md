@@ -2,17 +2,23 @@
 
 An engineering-drawing-styled walkthrough of transformer internals, built from
 the static essay in `the-fixture-and-the-part.html`. The prose is reused
-verbatim; three of the figures are live instruments.
+verbatim; six of the figures are live instruments.
 
 Spec: `interactive-guide-spec.md`.
 
 ## Status
 
-Phases 1, 2, 3A and instrument E are merged and deployed: the illustrative
-build, real `distilgpt2` running in the browser behind a load button, the glass
-pass (instrument D), and the file itself (instrument E). The light-theme pass —
-the white page ground, the role-named tokens and the plain-words rewrite — is
-on the `paper` branch.
+Phases 1, 2, 3A, instrument E and the light-theme pass are merged and
+deployed: the illustrative build, real `distilgpt2` running in the browser
+behind a load button, the glass pass (instrument D), the file itself
+(instrument E), and the white page ground with its role-named tokens and
+plain-words copy.
+
+On the `forward-pass` branch: a decoding control in instrument B — greedy or a
+seeded sampled draw, sampled by default, because greedy on a six-block model
+loops within a few tokens — and instrument F, "the forward pass, live", a
+drawing of the whole model in section 02 with the reader's own sentence
+running down through it.
 
 The page works with no model loaded; in that state every number outside
 instrument E is an illustrative heuristic from `src/lib/toyModel.js` and is
@@ -48,12 +54,18 @@ src/App.jsx                        section shell + shared instrument state
 src/content/essay.js               all prose, per section, verbatim
 src/content/explainers.js          the copy behind the "?" badges
 src/content/fileFacts.json         the model file, read ahead of time
-src/instruments/FileView.jsx       E — the file                     (section 01)
-src/instruments/Tokenizer.jsx      A — tokenizer strip              (section 02)
-src/instruments/Stepper.jsx        B — forward pass + KV rack       (section 03)
+src/instruments/FileView.jsx       E — the file            FIG.1     (section 01)
+src/instruments/Tokenizer.jsx      A — tokenizer strip     FIG.2     (section 02)
+src/instruments/ForwardMap.jsx     F — the forward pass,
+                                       live                FIG.3     (section 02)
+src/instruments/Stepper.jsx        B — forward pass + KV rack
+                                                           FIG.4     (section 03)
 src/instruments/AttentionInspector.jsx
-                                   C — attention inspector          (section 04)
-src/instruments/GlassPass.jsx      D — residual stream + logit lens (section 04)
+                                   C — attention inspector FIG.5     (section 04)
+src/instruments/GlassPass.jsx      D — residual stream + logit lens
+                                                           FIG.6     (section 04)
+src/lib/forwardMap.js              F — the architecture, band by band, and the
+                                   three scalars per pass the drawing moves on
 src/components/                    LoadNote, ModeControl, InfoTag, TeachPair,
                                    KVInspector, ReadingLine
 src/lib/toyModel.js                Phase 1 heuristics
@@ -72,12 +84,25 @@ scripts/read-model-file.mjs        writes src/content/fileFacts.json
 src/styles.css                     design tokens + all styling
 ```
 
-Instruments A, B, C and D share one sequence, lifted into `App.jsx`: text
+Instruments A, B, C, D and F share one sequence, lifted into `App.jsx`: text
 typed into A is tokenized, B appends generated tokens to it, C queries
 whatever that sequence currently is, and D reads the stack at one position of
-it. B, C and D each say which sentence they are reading, in one reserved line
-at the top of the instrument, because A's input box is two or three sections
-above them by the time they are on screen.
+it. B, C, D and F each say which sentence they are reading, in one reserved
+line at the top of the instrument, because A's input box is two or three
+sections above them by the time they are on screen.
+
+F shares more than the sequence, because it is a drawing of what the other
+five are each looking at one piece of. It reads the same selected position as
+D and the same selected layer as C, so moving either in one instrument moves
+it in the other; its steel boxes select a row in E; and the token it names at
+the bottom is the token B is about to append. Its lettered markers scroll to
+whichever instrument the part under them belongs to.
+
+Nothing on F is a second implementation of anything. The columns are norms of
+the residual stream D reads, the threads are the attention matrix C tabulates,
+the shapes and byte counts are the manifest E lists, and `__mapCheck()` in a
+dev build recomputes the two moving claims by a second route and prints the
+largest disagreement it found.
 
 E shares none of that sequence. It reads the file the other four run on. What
 it takes from the page is whether the model has arrived in the browser yet, and
