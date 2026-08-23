@@ -14,6 +14,7 @@ import {
   topOfFinalLogits,
 } from '../lib/forwardMap.js'
 import { REAL_HEADS, REAL_LAYERS } from '../lib/realModel.js'
+import { thumbnailUrl } from '../lib/tensorTexture.js'
 import InfoTag from '../components/InfoTag.jsx'
 import LoadNote from '../components/LoadNote.jsx'
 import ReadingLine from '../components/ReadingLine.jsx'
@@ -49,6 +50,18 @@ import InstrumentHead from '../components/InstrumentHead.jsx'
 
 const CHIP_GAP = 2
 const CHAR = 0.6
+
+/**
+ * The cadence of a replay: how long the water takes to fall from one stop to
+ * the next. Everything that happens on a replay is timed off this — the strip
+ * travelling down the drawing, and the glint a steel box gives as the strip
+ * crosses it — so the two cannot drift apart.
+ */
+const PASS_STEP_MS = 150
+/** The pause before the first stop, so a replay is visibly a beginning. */
+const PASS_LEAD_MS = 60
+/** How far ahead of a stop the box under it starts to glint. */
+const GLINT_LEAD_MS = 90
 
 /**
  * Two sets of geometry, one per breakpoint. The viewBox and the box's aspect
@@ -176,6 +189,7 @@ export default function ForwardMap({
       window.matchMedia('(max-width: 640px)').matches,
   )
   const [manifest, setManifest] = useState(null)
+  const [thumbs, setThumbs] = useState(null)
   const [part, setPart] = useState(null)
   const [replay, setReplay] = useState(0)
 
@@ -198,7 +212,12 @@ export default function ForwardMap({
     let cancelled = false
     import('../content/fileFacts.json')
       .then((module) => {
-        if (!cancelled) setManifest(module.default.manifest)
+        if (cancelled) return
+        setManifest(module.default.manifest)
+        // The whole of each tensor at twelve by forty-eight, read out of the
+        // real file at build time. It is what every steel box is textured
+        // with, in both modes, and before anything has been downloaded.
+        setThumbs(module.default.thumbnails ?? null)
       })
       .catch((error) => {
         console.error('[fixture-and-part] the shipped file reading is missing:', error)
@@ -274,6 +293,35 @@ export default function ForwardMap({
   const factsFor = useCallback(
     (name) => tensorFacts(manifest, name),
     [manifest],
+  )
+
+  /**
+   * The two rasters a steel box wears: its own tensor's bytes in the frozen
+   * blue, and the same bytes again in the moving amber for the moment the
+   * water crosses it. One PNG each, cached by tensor and by role, so a replay
+   * is an opacity change on an image that already exists rather than any
+   * drawing work. Both are real in both modes — the grid was read out of the
+   * file at build time, so it owes nothing to whether the model has loaded.
+   */
+  const textureFor = useCallback(
+    (name) => {
+      const thumb = thumbs?.[name]
+      if (!thumb) return null
+      const frozen = thumbnailUrl(thumb, '--frozen-on-screen', `${name}|frozen`)
+      if (!frozen) return null
+      return { frozen, moving: thumbnailUrl(thumb, '--moving', `${name}|moving`) }
+    },
+    [thumbs],
+  )
+
+  /**
+   * When the box in band `bi` glints: a little before the water reaches the
+   * stop below it, because the strip crosses the box on its way there rather
+   * than at the moment it arrives.
+   */
+  const glintAt = useCallback(
+    (bi) => Math.max(0, PASS_LEAD_MS + bi * PASS_STEP_MS - GLINT_LEAD_MS),
+    [],
   )
 
   const handlePart = useCallback((box) => {
@@ -539,6 +587,7 @@ export default function ForwardMap({
                   </text>
                   {boxes.map((box) => {
                     const facts = factsFor(box.tensor)
+                    const tex = textureFor(box.tensor)
                     const label = compact ? (box.short ?? box.label) : box.label
                     const spec = compact ? '' : specFor(facts, g.fs.spec, box.w - 12)
                     const on = part && part.id === box.id && part.tensor === box.tensor
@@ -566,6 +615,38 @@ export default function ForwardMap({
                           height={g.boxH}
                           rx="2"
                         />
+                        {/* The tensor itself, faintly, inside the box that
+                            names it: twelve by forty-eight block averages of
+                            its real bytes. Inset by a hair so the box's own
+                            stroke stays the edge of the box. */}
+                        {tex ? (
+                          <image
+                            className="map-tex"
+                            href={tex.frozen}
+                            x={box.x + 0.8}
+                            y={y + g.boxTop + 0.8}
+                            width={Math.max(0, box.w - 1.6)}
+                            height={g.boxH - 1.6}
+                            preserveAspectRatio="none"
+                          />
+                        ) : null}
+                        {tex?.moving ? (
+                          <image
+                            // Keyed on the replay counter for the same reason
+                            // the head squares are: the machinery is not
+                            // remounted, so without this the glint would run
+                            // once and never again.
+                            key={`glint-${replay}`}
+                            className="map-tex map-glint"
+                            href={tex.moving}
+                            style={{ '--d': `${glintAt(bi)}ms` }}
+                            x={box.x + 0.8}
+                            y={y + g.boxTop + 0.8}
+                            width={Math.max(0, box.w - 1.6)}
+                            height={g.boxH - 1.6}
+                            preserveAspectRatio="none"
+                          />
+                        ) : null}
                         <text
                           className="map-part-name"
                           x={box.x + g.pad}
