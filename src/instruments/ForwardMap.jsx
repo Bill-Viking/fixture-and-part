@@ -11,6 +11,7 @@ import {
   partReadout,
   residualField,
   tensorFacts,
+  finalSplash,
   topOfFinalLogits,
 } from '../lib/forwardMap.js'
 import { REAL_HEADS, REAL_HIDDEN, REAL_LAYERS } from '../lib/realModel.js'
@@ -77,32 +78,45 @@ function geometryFor(compact) {
         chipY: 10, chipH: 17, chipMax: 34,
         annY: 36, headerY: 50, tieY: 56, bandTop: 62, bandH: 46, bandGap: 4,
         boxTop: 3, boxH: 22, nodeDY: 32, stripDY: 41, stripH: 6,
-        outH: 30, legendH: 48,
+        outH: 44, splashH: 10, splashW: 5, splashGap: 1.5, splashN: 6, legendH: 48,
         gap: 4, pad: 4, tick: 3, tickGap: 1, mark: 12,
-        fs: { label: 9, part: 8.5, spec: 7, chip: 8, out: 9, legend: 8, key: 8.5, annot: 8, header: 8 },
+        fs: { label: 9, part: 8.5, spec: 7, chip: 8, out: 9, legend: 8, key: 8.5, annot: 8, header: 8, whisper: 10 },
       }
     : {
         W: 684, MX: 20, RIGHT: 664, TRACK: 84,
         chipY: 12, chipH: 20, chipMax: 54,
         annY: 44, headerY: 58, tieY: 66, bandTop: 74, bandH: 48, bandGap: 4,
         boxTop: 3, boxH: 24, nodeDY: 33, stripDY: 43, stripH: 7,
-        outH: 32, legendH: 42,
+        outH: 49, splashH: 13, splashW: 7, splashGap: 2, splashN: 8, legendH: 42,
         gap: 6, pad: 6, tick: 6, tickGap: 1.5, mark: 13,
-        fs: { label: 9.5, part: 9, spec: 7.5, chip: 9, out: 10, legend: 9, key: 10, annot: 9, header: 8.5 },
+        fs: { label: 9.5, part: 9, spec: 7.5, chip: 9, out: 10, legend: 9, key: 10, annot: 9, header: 8.5, whisper: 10 },
       }
   const bandY = (i) => g.bandTop + i * (g.bandH + g.bandGap)
   const lastBottom = bandY(BANDS.length - 1) + g.bandH
   const outY = lastBottom + 8
-  const legendY = outY + g.outH + 6
+  // The whisper's line is reserved whatever mode the instrument is in, so the
+  // drawing is the same height before a pass, during one and after it. It is
+  // the one thing on the map whose text changes seven times a second, and a
+  // line that had to appear for it would move everything below the figure
+  // every time the water fell.
+  // The splash sits inside the output row, under the words, so the row that
+  // says what the machine settles on also shows how sure it was.
+  const splashTop = outY + g.fs.out + 9
+  const splashBase = splashTop + g.splashH
+  const whisperY = outY + g.outH + 4 + g.fs.whisper
+  const legendY = whisperY + 8
   return {
     ...g,
     compact,
     bandY,
+    whisperY,
     nodeY: (i) => bandY(i) + g.nodeDY,
     // The lane the falling strip parks in: under the node row, inside the
     // band, clear of both the boxes above it and the next band below.
     stripY: (i) => bandY(i) + g.stripDY,
     outY,
+    splashTop,
+    splashBase,
     legendY,
     H: legendY + g.legendH + 8,
     trackW: g.RIGHT - g.TRACK,
@@ -115,6 +129,37 @@ const fits = (text, size, width) => text.length * size * CHAR <= width
 /** A depth of the stack, in plain words. */
 function stopName(stop) {
   return stop === 0 ? 'at the embedding' : `after block ${stop - 1}`
+}
+
+/**
+ * What the lens hears at one depth, in one line.
+ *
+ * This is instrument D's reading, not a second implementation of it: the same
+ * worker, the same final LayerNorm and the same unembedding, asked at an
+ * intermediate depth. So the honest word is "leaning" rather than "predicts" —
+ * the model does not make a prediction after block 2; the lens is what it
+ * *would* say if the stack stopped there, and the tooltip says so in full.
+ *
+ * Illustrative mode gets no reading at all rather than a stand-in one. Every
+ * other number on this drawing has a labelled illustrative twin, but the lens
+ * does not: it is the unembedding matrix applied to a real residual, and there
+ * is nothing to apply it to until the model is in hand.
+ */
+function whisperText(stop, reading, { real, lensIndex, compact }) {
+  if (!real) {
+    return compact
+      ? 'the lens — load the real model'
+      : 'the lens reads the real model only — load it to hear each depth'
+  }
+  if (reading && reading.index === lensIndex && reading.status === 'error') {
+    return `${stopName(stop)} — the lens could not be read`
+  }
+  const fresh = reading && reading.index === lensIndex ? reading : null
+  const token = fresh?.stops?.[stop]?.[0]?.token
+  if (token == null) return `${stopName(stop)} — reading…`
+  return compact
+    ? `${stopName(stop)} — ${token}`
+    : `the lens, ${stopName(stop)} — leaning ${token}`
 }
 
 /** As much of a token as the chip can hold; the rest lives in its tooltip. */
@@ -210,6 +255,15 @@ export default function ForwardMap({
   const [still, setStill] = useState(false)
   const stripRef = useRef(null)
   const stripImgRef = useRef(null)
+  const whisperRef = useRef(null)
+  // The whisper is written to the DOM rather than rendered, for the same
+  // reason the strip's transform is: it changes seven times in a second as the
+  // water passes each stop, and seven React renders of the whole map would be
+  // seven chances to move the page. Its <text> is rendered with no children,
+  // so React has nothing to reconcile there and never overwrites what the
+  // timeline put in it.
+  const whisperShown = useRef(MAP_STOPS - 1)
+  const whisperData = useRef({ reading: null, real: false, lensIndex: 0, compact: false })
 
   // One media query, read before the first paint and then only on a change of
   // breakpoint, so the drawing is never laid out at the wrong scale and then
@@ -409,6 +463,25 @@ export default function ForwardMap({
     [],
   )
 
+  // Stable: it reads everything it needs out of refs, so the timeline effect
+  // can depend on it without the fall restarting whenever a depth lands.
+  whisperData.current = { reading, real, lensIndex, compact }
+  const writeWhisper = useCallback((stop) => {
+    whisperShown.current = stop
+    const node = whisperRef.current
+    if (!node) return
+    node.textContent = whisperText(stop, whisperData.current.reading, whisperData.current)
+  }, [])
+
+  // The seven depths land one at a time, each about 155 ms of worker
+  // arithmetic, and the water is usually past a stop before that stop's word
+  // arrives. So whenever the reading changes, whatever depth is currently on
+  // screen is written again — a stop that said "reading…" while the strip
+  // crossed it fills in a moment later, in place.
+  useEffect(() => {
+    writeWhisper(whisperShown.current)
+  }, [reading, real, lensIndex, compact, writeWhisper])
+
   const handlePart = useCallback((box) => {
     setPart((prev) => (prev && prev.tensor === box.tensor && prev.id === box.id ? null : box))
   }, [])
@@ -422,6 +495,22 @@ export default function ForwardMap({
     () => (real && run ? topOfFinalLogits(run) : null),
     [real, run],
   )
+
+  /**
+   * Where the water lands.
+   *
+   * The last stream reaches the unembedding and spreads across the whole
+   * vocabulary; these are the tallest few of those 50,257 splashes, and their
+   * heights are the probabilities the sampler is about to draw from. It is the
+   * end of the fall, so it is drawn at the bottom of the drawing and nowhere
+   * else — and only for the last position, because the next-word distribution
+   * belongs to the end of the sentence and to no other point in it.
+   */
+  const splash = useMemo(
+    () => (real && run ? finalSplash(run, g.splashN) : null),
+    [real, run, g.splashN],
+  )
+  const splashIsHere = splash != null && lensIndex === n - 1
 
   /**
    * What the stack settles on at the selected position.
@@ -527,6 +616,9 @@ export default function ForwardMap({
       node.style.transform = `translateY(${g.stripY(nodeBands[s].i)}px)`
       const t = value(lensIndex, s)
       node.style.opacity = lit && t != null ? String(0.34 + 0.66 * t) : '0'
+      // The whisper travels with the water: whatever depth the strip is at is
+      // the depth the lens line is reading.
+      if (lit) writeWhisper(s)
     }
     if (park != null || still) {
       node.style.transition = 'none'
@@ -553,7 +645,7 @@ export default function ForwardMap({
     // `value` is a closure over these; it is a plain function so that the
     // nodes and the strip cannot read the field through two different ramps.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [replay, park, still, strip, g, nodeBands, field, lensIndex, armed, n])
+  }, [replay, park, still, strip, g, nodeBands, field, lensIndex, armed, n, writeWhisper])
 
   /**
    * The output row's two ends, which share one line.
@@ -1081,6 +1173,51 @@ export default function ForwardMap({
             >
               {nextText}
             </text>
+
+            {/* --- the landing ---
+
+                The water reaches the bottom and splashes across the whole
+                vocabulary. One bar per candidate, its height that candidate's
+                probability, drawn under the last token's own column because
+                that is the stream this distribution belongs to. The bar the
+                sampler actually took is in the moving amber; the rest stay
+                frozen blue, because they are roads not taken.
+
+                Heights are the probabilities themselves, scaled to the tallest
+                one — so the picture is of how peaked this distribution is,
+                which is the thing worth seeing, and the tooltip gives every
+                bar its real percentage rather than making anyone read it off
+                a height. */}
+            {splashIsHere ? (
+              <g className="map-splash">
+                <title>
+                  {`the last vector against the whole vocabulary — ${splash
+                    .map((c) => `${c.token} ${(c.p * 100).toFixed(1)}%`)
+                    .join(' · ')}. These are the machine's own probabilities, before instrument B skips whitespace pieces, so ␣ and ⏎ appear here and not there.`}
+                </title>
+                {splash.map((cand, i) => {
+                  const total = g.splashN * (g.splashW + g.splashGap) - g.splashGap
+                  const left = Math.min(
+                    Math.max(g.TRACK, (columns[n - 1]?.cx ?? g.TRACK + total / 2) - total / 2),
+                    g.RIGHT - total,
+                  )
+                  const h = Math.max(0.6, (cand.p / splash[0].p) * g.splashH)
+                  const took = nextToken != null && cand.token === nextToken
+                  return (
+                    <rect
+                      key={cand.id}
+                      className={`map-splash-bar${took ? ' is-took' : ''}`}
+                      x={left + i * (g.splashW + g.splashGap)}
+                      y={g.splashBase - h}
+                      width={g.splashW}
+                      height={h}
+                      rx="0.5"
+                    />
+                  )
+                })}
+              </g>
+            ) : null}
+
             <Window
               letter="B"
               x={g.RIGHT - g.mark}
@@ -1115,6 +1252,36 @@ export default function ForwardMap({
               label="open instrument D, the glass pass on this token"
               onOpen={() => onOpenInstrument('glass')}
             />
+
+            {/* --- the lens, whispered as the water passes ---
+
+                The words go in the tspan, which is rendered with no children
+                so React has nothing to reconcile inside it and never
+                overwrites what the timeline wrote. The title is a sibling of
+                that tspan rather than the thing being written, for the same
+                reason. The line is reserved in the geometry whether or not
+                there is anything to say in it, so nothing below the figure
+                moves when there is.
+
+                Not announced live: it changes seven times in a second, and a
+                screen reader reading every depth aloud as the water fell would
+                be noise. Instrument D presents the same seven readings as a
+                table, which is where they can actually be read. */}
+            <text
+              className="map-whisper"
+              x={g.MX}
+              y={g.whisperY}
+              style={{ fontSize: g.fs.whisper }}
+            >
+              <title>
+                the logit lens: this token’s running vector at that depth, put
+                through the model’s own final LayerNorm and unembedding. It is
+                what the machine would say if the stack stopped there — not a
+                prediction it makes at that depth. The same reading instrument
+                D prints, from the same worker.
+              </title>
+              <tspan ref={whisperRef} />
+            </text>
 
             {/* --- legend: what the lit things mean ---
 

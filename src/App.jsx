@@ -322,9 +322,8 @@ export default function App() {
    * appearing at once; a click during a reading cancels the one in flight
    * rather than queueing behind it.
    */
-  const handleLensSelect = useCallback(
+  const readLensAt = useCallback(
     (index) => {
-      setLensIndex(index)
       if (!isReal || !runReady) return
       const stops = residualStops(realRun, index)
       if (!stops) return
@@ -366,6 +365,18 @@ export default function App() {
     },
     [isReal, runReady, realRun],
   )
+
+  /**
+   * Moves the window, and in real mode reads through it.
+   */
+  const handleLensSelect = useCallback(
+    (index) => {
+      setLensIndex(index)
+      readLensAt(index)
+    },
+    [readLensAt],
+  )
+
 
   const openInstrument = useCallback((name) => scrollToInstrument(name), [])
 
@@ -498,6 +509,23 @@ export default function App() {
 
   const safeQuery = Math.min(queryIndex, Math.max(0, sequence.length - 1))
   const safeLens = Math.min(lensIndex, Math.max(0, sequence.length - 1))
+
+  // Instrument F whispers the lens at each depth as the water passes it, and
+  // the water starts falling the moment a pass lands — so the reading has to
+  // already be in flight by then, rather than waiting for someone to click a
+  // token. A finished pass therefore reads the lens at whatever position is
+  // selected.
+  //
+  // Keyed on the run alone, deliberately. Selecting a token calls
+  // `handleLensSelect`, which reads it; if the selected index were a
+  // dependency here as well, every click would start the same reading twice
+  // and the second would cancel the first at its next depth.
+  const lensLatest = useRef(null)
+  lensLatest.current = { readLensAt, index: safeLens }
+  useEffect(() => {
+    if (!isReal || !runReady) return
+    lensLatest.current.readLensAt(lensLatest.current.index)
+  }, [isReal, runReady, runKey])
   const realRows = useMemo(
     () => (isReal && runReady ? attentionRows(realRun, layer, head, safeQuery) : null),
     [isReal, runReady, realRun, layer, head, safeQuery],
