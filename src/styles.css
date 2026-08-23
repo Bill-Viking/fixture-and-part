@@ -596,12 +596,33 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 /* The line that says what the strip is and what its brightness measures. It
    is the sentence that turns the drawing into a reading, so it is not set at
    fine-print weight. */
+/* The lens, whispered. It is a reading rather than a legend, so it takes the
+   readout size — but it is the water's commentary and not the water, so it
+   stays in the frozen blue family rather than taking the moving amber, which
+   is reserved for the activations themselves.
+
+   Its size comes from the geometry rather than from here, so the line the
+   geometry reserves for it and the line it actually draws are the same one. */
+.map-whisper{
+  font-family:var(--mono);fill:var(--frozen-lit);letter-spacing:0.01em;
+}
 .map-legend.is-key{font-size:10px;fill:var(--screen-text);}
 .map-out{
   font-family:var(--mono);font-size:10px;letter-spacing:0.02em;
   fill:var(--screen-text);
 }
 .map-out.is-next{fill:var(--moving);}
+
+/* Where the water lands: the last vector against the whole vocabulary, as the
+   tallest few of 50,257 splashes. Frozen blue for the candidates the machine
+   weighed, moving amber for the one the sampler took — the colour law says
+   which of them is a thing that happened. */
+.map-splash-bar{
+  fill:var(--frozen-on-screen);fill-opacity:.42;
+}
+.map-splash-bar.is-took{
+  fill:var(--moving);fill-opacity:1;
+}
 
 /* The machinery. A band is a recess in the screen; the selected layer's band
    is lifted out of it, because that is the one whose threads and head squares

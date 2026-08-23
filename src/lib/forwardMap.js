@@ -325,6 +325,57 @@ export function topOfFinalLogits(run) {
   return { id: best, token: tokenText(best) }
 }
 
+/**
+ * The splash: where the last stream lands.
+ *
+ * The final vector meets the unembedding and becomes one number per token in
+ * the vocabulary — 50,257 of them. Softmaxed, those are the probabilities the
+ * sampler actually draws from, and the top few of them are the whole of what
+ * the machine has to say. This returns them, largest first.
+ *
+ * Read off `run.lastLogits`, which the pass already keeps whole for the
+ * sampler, so this is a scan of an array the map is holding rather than any
+ * second arithmetic. The softmax is max-shifted, because the raw logits reach
+ * far enough for a plain exp to overflow.
+ *
+ * @param {object} run
+ * @param {number} count how many of the top candidates to return
+ */
+export function finalSplash(run, count = 8) {
+  const row = run?.lastLogits
+  if (!row || row.length === 0) return null
+
+  let max = -Infinity
+  for (let id = 0; id < row.length; id++) if (row[id] > max) max = row[id]
+
+  let total = 0
+  for (let id = 0; id < row.length; id++) total += Math.exp(row[id] - max)
+
+  // Top `count` by logit, which is the same order as by probability.
+  const top = []
+  for (let id = 0; id < row.length; id++) {
+    const v = row[id]
+    if (top.length < count) {
+      top.push(id)
+      if (top.length === count) top.sort((a, b) => row[b] - row[a])
+    } else if (v > row[top[count - 1]]) {
+      top[count - 1] = id
+      let i = count - 1
+      while (i > 0 && row[top[i]] > row[top[i - 1]]) {
+        const t = top[i]
+        top[i] = top[i - 1]
+        top[i - 1] = t
+        i--
+      }
+    }
+  }
+  return top.map((id) => ({
+    id,
+    token: tokenText(id),
+    p: Math.exp(row[id] - max) / total,
+  }))
+}
+
 /** The wording of the head row, so the drawing never has to be guessed at. */
 export const HEAD_LEGEND =
   'head squares — share of this token’s attention that leaves itself'
