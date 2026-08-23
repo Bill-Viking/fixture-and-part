@@ -733,6 +733,16 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
    to put them in, so every one of them should reach the screen. */
 .map-strip-cells{image-rendering:auto;}
 
+/* Which way the column goes. Only on the column being read, so the drawing
+   says "down" once rather than n times. */
+.map-arrow{fill:var(--moving);fill-opacity:.6;}
+
+/* The sentence that names the columns, set beside them rather than in the
+   legend under the drawing. */
+.map-annot{
+  font-family:var(--mono);letter-spacing:0.02em;fill:var(--moving);
+}
+
 /* Attention, in the selected layer, for the selected token: one thread per
    token it reads, drawn over the machinery it is reading through. */
 .map-arc{fill:none;stroke:var(--moving);stroke-width:1.4;}

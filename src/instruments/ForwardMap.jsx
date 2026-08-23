@@ -706,6 +706,32 @@ export default function ForwardMap({
               )
             })}
 
+            {/* --- what the columns are, said on the drawing ---
+
+                The complaint this answers is that the columns were the one
+                thing on the map nobody could name. They are not decoration
+                and they are not a chart of anything: each is one token's
+                vector on its way down, and the bright one is the token being
+                read. Said here, next to them, rather than in the legend. */}
+            <text
+              className="map-annot"
+              x={g.TRACK}
+              y={g.annY}
+              style={{ fontSize: g.fs.annot }}
+            >
+              {clip(
+                compact
+                  ? '↓ one token’s vector, falling'
+                  : `↓ each column is one token’s vector falling through the machine${
+                      selectedToken === undefined
+                        ? ''
+                        : ` — the bright one is ${selectedToken}`
+                    }`,
+                g.fs.annot,
+                g.RIGHT - g.TRACK,
+              )}
+            </text>
+
             {/* --- the two headings --- */}
             <text className="map-header" x={g.MX + g.mark + 5} y={g.headerY}>
               {compact ? 'the file' : 'the machinery — click any box'}
@@ -891,6 +917,23 @@ export default function ForwardMap({
                       x2={col.cx}
                       y2={g.outY}
                     />
+                    {/* Which way it goes. A column of dots on a page has no
+                        direction in it, and depth running downwards is the
+                        one thing this drawing asks the reader to take on
+                        trust. One arrowhead in the gap under every band of
+                        the column being read. */}
+                    {on
+                      ? nodeBands.slice(0, -1).map(({ band, i }) => {
+                          const y = g.bandY(i) + g.bandH + 0.5
+                          return (
+                            <path
+                              key={`arrow-${band.key}`}
+                              className="map-arrow"
+                              d={`M ${col.cx - 2.4} ${y} L ${col.cx + 2.4} ${y} L ${col.cx} ${y + 3.4} Z`}
+                            />
+                          )
+                        })
+                      : null}
                     {nodeBands.map(({ band, i }, s) => {
                       const t = value(col.i, s)
                       if (t == null) return null
