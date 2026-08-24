@@ -1360,7 +1360,12 @@ export default function ForwardMap({
                   if (!reg || reg.kept.length > 0 || !draw) return null
                   const label = `no transfer · self ${reg.selfWeight.toFixed(2)}`
                   const room = label.length * g.fs.quiet * 0.6
-                  const x = draw.xs[hero] - draw.hw[hero][reg.layer + 1] - 14
+                  // Beside the hero, on whichever side the words fit: with an
+                  // early token as the hero there is no room to its left.
+                  const left = draw.xs[hero] - draw.hw[hero][reg.layer + 1] - 14 - room > 8
+                  const x = left
+                    ? draw.xs[hero] - draw.hw[hero][reg.layer + 1] - 14
+                    : draw.xs[hero] + draw.hw[hero][reg.layer + 1] + 14
                   const y = g.bandMid[reg.layer] + 3
                   return (
                     <g key={reg.layer}>
@@ -1368,7 +1373,7 @@ export default function ForwardMap({
                           behind a callout, so no byte is read as light and
                           the words stay words. */}
                       <rect
-                        x={x - room - 5}
+                        x={left ? x - room - 5 : x - 5}
                         y={y - g.fs.quiet}
                         width={room + 10}
                         height={g.fs.quiet * 1.45}
@@ -1379,7 +1384,7 @@ export default function ForwardMap({
                         className="mr-quiet"
                         x={x}
                         y={y}
-                        textAnchor="end"
+                        textAnchor={left ? 'end' : 'start'}
                         style={{ fontSize: g.fs.quiet }}
                       >
                         {label}
