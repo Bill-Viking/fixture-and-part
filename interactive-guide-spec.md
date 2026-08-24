@@ -80,8 +80,13 @@ stylesheet is right and this table is wrong.
      --moving fill, which on a light ground is the ink and on a dark one would
      not be. It is a token rather than a hard-coded --ink so that repainting
      the page stays a swap of this table and nothing else. */
+  /* --moving-lit is the top of the moving ramp on a dark screen, the way
+     --frozen-lit is the top of the frozen one: it marks the hero stream,
+     the carriers and the bar the sampler took. It is a lit amber, not a
+     white — nothing on a screen in this page is allowed to be white but
+     the words. */
   --moving:#F2B705; --moving-ink:#7A5900; --moving-tint:#FCF3D8;
-  --moving-on:#14161A;
+  --moving-on:#14161A; --moving-lit:#FFD13A;
   /* keys */
   --keys:#2C7539; --keys-tint:#E1ECE3;
   --keys-on-screen:#63B36F;
@@ -209,92 +214,103 @@ Single scrolling page, sections 01–10 mirroring the essay. Prose imported from
 ### Instrument F — The forward pass, live (Section 02, after A)
 
 The answer to "the neural net is static — I thought we'd see the weight
-activations as we ran it". Everything else on the page is one reading through
-one window; F is the whole machine drawn once with the reader's own sentence
-visibly inside it.
+activations as we ran it", drawn as a memory room: six frozen walls of the
+file's own weight bytes, with the reader's sentence falling through all six as
+granular light. Redrawn in arc 4 from comp-a3; the data layer is unchanged.
 
-- One fixed-viewBox SVG on a full-width dark screen. Its height is a function
-  of its width and of nothing else — never of how many tokens are in the
-  sequence — so the drawing can never move the page.
-- Depth runs down: an embed band (wte, wpe), six block bands (ln_1 ·
-  attention with twelve head squares · ln_2 · MLP 768→3072→768), then ln_f and
-  the embedding table used backwards, with a drawn tie back to wte because
-  there is no second copy of it in the file.
-- Every steel box is a button carrying that tensor's real shape, dtype and
-  byte count, read out of `fileFacts.json` — the same reading instrument E
-  draws, not a second copy typed out by hand. Clicking one prints the full
-  readout (`h.3.attn.c_attn.weight [768×2304] i8 · scale … · zero point 0 ·
-  1,769,472 bytes`) and offers to open that row in instrument E.
-- The sequence runs across the top as amber chips; the selected chip is the
-  shared `lensIndex`, so F and D always read the same position. Each token is
-  an amber column down the drawing with a node at each of the seven residual
-  stops, sized and brightened by the real ‖residual‖ at that stop, normalised
-  across the run on a log scale that the legend states.
-- In the selected layer — the same `layer` instrument C uses — the selected
-  token's attention is drawn as threads back to the tokens it reads, opacity
-  proportional to the head-averaged weight, and the twelve head squares light
-  by the share of that token's attention each head spends anywhere but on
-  itself. The legend names that scalar rather than leaving a lit square to be
-  guessed at.
-- Lettered markers A–E are windows: each scrolls to the instrument the part
-  under it belongs to.
-- Three states, not two. A finished pass draws its own norms. No model draws
-  the deterministic stand-ins instrument D prints, labelled as such. A pass in
-  flight draws the stream flat and says the pass is running — the illustrative
-  numbers are never shown under a real-model heading.
-- Every steel box also wears its own tensor: a whole-tensor thumbnail — 48×12
-  block averages of the real bytes, contrast-stretched, read at build time into
-  `fileFacts.json` — drawn faintly inside the box in the frozen blue. It is
-  real in BOTH modes, because it was read out of the file rather than out of a
-  pass, and it is the grain of the steel rather than a decoration. The stretch
-  is per tensor and it is said on the page, because it is a drawing decision:
-  a tensor with a narrow range shows the grain of its own rounding, and one
-  whose 576 blocks all read alike to within a byte is drawn as an even wash at
-  a low alpha — neither invisible, which is what a span of zero used to draw,
-  nor bold, which is what one rounding step stretched to full contrast drew.
-  As the water crosses a box the same bytes glint in the moving amber, by
-  opacity alone.
-- The water: the selected token's running vector as a 768-cell amber strip, one
-  cell per number, nothing downsampled and nothing picked out — so what the
-  reader sees is the vector and not a summary of it. On RUN THE PASS it appears
-  at the embedding and travels down, its cells morphing at each of the seven
-  stops to that stop's real values. Two normalisations, both named on screen: a
-  cell's brightness is |value| against four times the middle magnitude at that
-  depth — the largest was tried and rejected, because a GPT-2 stream carries a
-  few outlier dimensions hundreds of times everything else and a ramp against
-  the maximum paints 760 of the 768 cells black — and the strip's overall
-  brightness is log ‖residual‖ across the run. Clicking any
-  node parks the strip at that depth — the microscope — until the next pass.
-  Reduced motion puts it at the bottom of the fall immediately.
-- The columns are named on the drawing rather than under it: a line beside the
-  sequence says what a column is, an arrowhead below each band of the selected
-  column says which way depth runs, and every node answers to a hover and to a
-  screen reader in plain words ("the ␣bird vector after block 2 — length 54.4").
-  The legend's first line is set at readout size, not fine print: it is the
-  sentence that turns the drawing into a reading.
-- The lens, whispered. As the strip passes each stop, a reserved line says what
-  the logit lens hears at that depth ("the lens, after block 2 — leaning
-  ␣wings"). It is instrument D's reading through the same worker, not a second
-  implementation, and it is verified against D's own table depth by depth. The
-  word is "leaning" because the model makes no prediction at block 2 — the lens
-  is what it would say if the stack stopped there. Illustrative mode gets no
-  reading at all rather than a stand-in one. Written to the DOM, not rendered,
-  so seven updates a second cost no React renders; not announced live, because
-  D presents the same seven readings as a table.
-- The landing. The last stream reaches the unembedding and splashes across
-  50,257 words; the tallest few are drawn under the last token's own column,
-  heights proportional to the real probabilities, with the bar the sampler
-  actually took in the moving amber and the rest in frozen blue. The sampler
-  skips whitespace, so the amber bar is often not the tallest one, and the
-  drawing shows that rather than marking the argmax.
-- Both the whisper's line and the landing's row are reserved in the geometry
-  whether or not there is anything to put in them, so the figure is the same
-  height before a pass, during one and after it.
-- RUN THE PASS replays the drawing token by token and stop by stop over about
-  two seconds, in opacity alone; a STEP replays it too. Reduced motion draws
-  the final state instantly.
-- `__mapCheck()` in a dev build recomputes both moving claims by a second
-  route and returns the largest disagreement.
+- One fixed-viewBox SVG on a full-width dark screen, 1166 units wide at both
+  breakpoints. Its height is a function of the breakpoint and of nothing else —
+  never of how many tokens are in the sequence, never of which register is
+  open, never of whether the model has loaded — so the drawing can never move
+  the page. The two breakpoints differ in type size, in the coarseness of the
+  grain and in how much the legend says, not in the law.
+- **The walls.** Six full-width fields, one per block. Every cell is one real
+  i8 byte of that block's `attn.c_attn.weight` as the file stores it — the
+  24 × 64 window `fileFacts.json` keeps, 1,536 cells a wall, drawn in the
+  window's own shape because reshaping it would put bytes side by side that
+  are not side by side in the tensor. A byte's brightness is its own value
+  stretched across the middle 96% of that window, so a handful of extremes
+  cannot black the wall out; a window whose bytes are all but identical gets
+  arc 3's even wash instead of a black panel. The walls are real in both
+  modes, because they were read out of the file rather than out of a pass.
+  Cells are grouped by byte value and drawn one path per value — nothing is
+  quantised on the way to the screen, and a wall costs tens of elements
+  rather than fifteen hundred.
+- **The fall.** One stream per token. Width, light and grain density are all
+  the real L2 length of that token's 768-number running vector at each of the
+  seven depths, on one log law shared by every stream, which the legend states
+  along with the range it spans. Inside a stream the 768 dimensions are drawn
+  as filaments — 64 of 12 dimensions up to twelve tokens, 32 of 24 up to
+  twenty-four, 16 of 48 beyond — and a filament's grain is the mean |value| of
+  its own dimensions at that depth, scaled against the brightest filament in
+  that same stream at that same depth. Two normalisations answering two
+  questions, both named on screen. The grains are dashed paths, so one element
+  carries a whole column of particles and the ink density per unit of area
+  stays even whatever the stream's width.
+- **The hero.** The last token by default; clicking any token makes it the
+  hero. Its stream is the lit one, it is the only stream that reaches the
+  landing, and every transfer is aimed at it.
+- **The transfers.** Per block, from the head that sends the most attention
+  away from the first token and away from itself — averaged over the queries
+  that have somewhere else to look — the hero's own sources at or above 0.15,
+  at most two. Self-attention is never a transfer: it is the stream
+  continuing, and it is already drawn as the stream. Each transfer is a green
+  key tick at the source (green = the key that matched), a `source · weight`
+  callout beside it in the dark air, an amber carrier whose width and light
+  are that real weight, and a bloom where the hero absorbs it — below which
+  the hero runs brighter, and that brightness is the weight too. A block that
+  draws nothing says so in place, with the weight it sent to itself, and the
+  legend gives the best other source that fell under the floor. Carriers keep
+  to the dark air above the walls, drop into the hero down one dimmed lane,
+  and are masked out of every other stream they cross, so no line ever crosses
+  the water.
+- **The landing.** The last position's alone, always: `LAST POSITION →
+  50,257 WORDS · TOP 8`, the pass's own softmax over the whole vocabulary,
+  drawn as dot-grid bars whose row count is the probability. The machine's own
+  argmax is blue; the bar the shipped sampler took carries the amber mark, and
+  the key line under the bars names both along with the decoding settings.
+  With an earlier token as the hero the landing stays anchored to the last
+  position, stands back, and says so — a landing is never drawn from a
+  non-final position's vector.
+- **Nothing is drawn over the picture without standing the picture back.**
+  Cells dim to 55% under a stream and to 10% under a carrier or a label, by a
+  scrim painted in the screen's own background gradient — the same colour a
+  per-cell alpha would compose to, and it keeps the walls out of every
+  re-render.
+- Controls: BLOCK chips (ALL, then 0–5) open one register — its wall lifts, the
+  other five stand back, and its twelve head squares light by the share of the
+  hero's attention each head spends anywhere but on itself. HEAD chips
+  overrule the head rule for the open register and are unavailable until one is
+  open. The open register is the same `layer` instrument C uses. OPEN A·B·C·D·E
+  are real buttons that scroll to the instrument each reading came from. RUN
+  THE PASS replays the fall; reduced motion draws the finished still.
+- Every wall is a button carrying that tensor's real shape, dtype, scale, zero
+  point and byte count out of `fileFacts.json`, and so is the unembedding
+  aperture; clicking one prints the readout under the drawing and offers to
+  open that row in instrument E.
+- Three states, not two. A finished pass over the text in the box draws its own
+  numbers. With no model the streams are the schematic — one width, one light,
+  no transfers, no landing — with the grain inside them the deterministic
+  stand-in instrument D prints, labelled as a stand-in and never given a width
+  that claims a magnitude. A pass in flight is the same schematic with the note
+  saying the pass is running; illustrative numbers are never shown under a
+  real-model heading.
+- The legend lives inside the screen and states every rule the drawing uses:
+  the byte window and its stretch, the dimming, the filament binning, the log
+  law, the head-choice rule with the heads it picked, the floor under a
+  transfer and the near-miss numbers when a block draws nothing, the landing's
+  conventions, and the closing line that nothing in the picture is a stand-in —
+  the only marks carrying no number are the aperture outline and the bloom
+  around the light. Its four entries have reserved line counts, because the
+  numbers in it change with the sentence and a legend that reflowed would move
+  the page.
+- The lens whisper of arc 3 is not part of this drawing. Instrument D presents
+  the same seven depths as a table, which is where they can be read.
+- `__mapCheck()` in a dev build re-runs the model and recomputes all four
+  moving claims by another route — every stream's norms, every filament bin,
+  every transfer weight against the attention matrix, and every landing
+  probability against a softmax written out separately — and reports whether
+  the pass it compared against was a fresh one.
 
 ### Instrument B — Forward-pass stepper + KV rack (Section 03)
 - Controls: STEP (advance one generated token), RUN (auto-step ~800ms), RESET.
