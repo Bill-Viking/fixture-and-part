@@ -59,8 +59,13 @@
      --moving fill, which on a light ground is the ink and on a dark one would
      not be. It is a token rather than a hard-coded --ink so that repainting
      the page stays a swap of this table and nothing else. */
+  /* --moving-lit is the top of the moving ramp on a dark screen, the way
+     --frozen-lit is the top of the frozen one: it marks the hero stream,
+     the carriers and the bar the sampler took. It is a lit amber, not a
+     white — nothing on a screen in this page is allowed to be white but
+     the words. */
   --moving:#F2B705; --moving-ink:#7A5900; --moving-tint:#FCF3D8;
-  --moving-on:#14161A;
+  --moving-on:#14161A; --moving-lit:#FFD13A;
   /* keys */
   --keys:#2C7539; --keys-tint:#E1ECE3;
   --keys-on-screen:#63B36F;
@@ -527,48 +532,64 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 
 /* --- instrument F: the forward pass, live --------------------------------- */
 
-/* The one drawing on the page that is a drawing rather than a table, so it
-   takes the whole width of the instrument body and is the biggest screen
-   here. Every colour in it is one of three: the machinery is the on-screen
-   blue, everything that moves is the yellow, and the words are the screen's
-   own two greys. Nothing else is allowed in.
+/* The memory room. Six frozen walls of the file's own weight bytes, and the
+   reader's sentence falling through them as granular light.
+
+   Every colour in it is one of three: the machinery is the on-screen blue,
+   everything that moves is the yellow, and a key that matched is the green.
+   Nothing else is allowed in — no white marks, no red.
 
    The height is an aspect ratio rather than a number. The viewBox and the
    ratio come from the same constants in ForwardMap.jsx, so the drawing scales
    uniformly to whatever width it is given and its height follows from that
    width and from nothing else — not from how many tokens are in the sequence,
-   not from which layer is selected, not from whether the model has loaded. */
+   not from which register is open, not from whether the model has loaded. */
+
+/* Three reserved rows: the registers and the replay, the heads and the
+   windows onto the other instruments, and the line that says where the
+   numbers came from. Fixed height, so nothing in it can move the drawing. */
 .map-controls{
-  display:flex;align-items:center;flex-wrap:wrap;gap:10px;
-  height:30px;overflow:hidden;margin-bottom:12px;
+  display:flex;flex-direction:column;align-items:stretch;gap:6px;
+  height:110px;overflow:hidden;margin-bottom:12px;
 }
-/* One box for the layer control, the same width whether the selector is in it
-   or the line that says why it is not. Without the fixed width the swap
-   between them moved RUN THE PASS and the note beside it — measured at 0.0007
-   of layout shift at 1280 and 0.011 at 390, on every mode change. */
-.map-sel-slot{
-  flex:none;width:126px;height:24px;
-  display:flex;align-items:center;overflow:hidden;
+.mr-chiprow{
+  display:flex;align-items:center;gap:3px;height:24px;overflow:hidden;
 }
-.map-controls .attn-sel{flex:none;}
-.map-sel-ghost{
-  flex:none;font-family:var(--mono);font-size:10.5px;letter-spacing:0.1em;
-  color:var(--muted);white-space:nowrap;
+.mr-sel-label{
+  flex:none;font-family:var(--mono);font-size:10px;letter-spacing:0.16em;
+  color:var(--muted);margin-right:5px;
 }
-.map-run-btn{flex:none;padding:5px 12px;font-size:10.5px;letter-spacing:0.12em;}
+.mr-chip{
+  flex:none;font-family:var(--mono);font-size:10px;letter-spacing:0.06em;
+  color:var(--frozen);background:var(--card);border:1px solid var(--rule);
+  border-radius:2px;height:22px;min-width:22px;padding:0 5px;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;
+  transition:background-color .15s ease,color .15s ease;
+}
+.mr-chip:hover:not(:disabled){background:var(--frozen-tint);}
+.mr-chip.is-on{background:var(--frozen);border-color:var(--frozen);color:#FFFFFF;}
+/* A head chip has nothing to overrule until a register is open, and says so
+   by being unavailable rather than by silently doing nothing. */
+.mr-chip:disabled{opacity:.45;cursor:default;}
+.map-run-btn{flex:none;margin-left:12px;padding:4px 10px;font-size:10px;letter-spacing:0.12em;}
+.mr-openrow{justify-content:flex-end;}
+.mr-opens{
+  display:flex;align-items:center;gap:3px;flex:none;
+  font-family:var(--mono);font-size:10px;letter-spacing:0.14em;color:var(--muted);
+}
+.mr-open{
+  font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:0;
+  color:var(--frozen);background:var(--card);border:1px solid var(--rule);
+  border-radius:2px;height:22px;min-width:22px;padding:0 4px;cursor:pointer;
+  transition:background-color .15s ease,color .15s ease;
+}
+.mr-open:hover{background:var(--frozen);border-color:var(--frozen);color:#FFFFFF;}
 .map-ctl-note{
-  /* Basis zero, not auto: with an auto basis the note's own content width is
-     what the row wraps against, and at 1280 the illustrative wording came to
-     within six pixels of the row and wrapped onto a second line the row's
-     fixed height then hid. It takes whatever is left and ellipsizes. */
-  flex:1 1 0;min-width:0;
-  /* Left, not right, for the same reason instrument B's .controls-note is
-     left-aligned inside a box pushed to the right: the box's left edge is
-     pinned by the flex basis, but right-aligned text hangs off the right
-     edge, so every wording of a different length walks every glyph in the
-     line sideways. Measured at 0.0005 of layout shift on each STEP, which is
-     the pass going out of date and coming back. Aligned left, the first
-     glyph never moves and the line simply gets longer or shorter. */
+  /* Basis zero, not auto: the note takes whatever the row has left and
+     ellipsizes, so no wording of it can wrap the row and move the drawing. */
+  flex:1 1 0;min-width:0;height:20px;
+  /* Left, not right: right-aligned text walks every glyph in the line
+     sideways whenever the wording changes length. */
   text-align:left;
   font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.04em;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
@@ -580,235 +601,163 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 }
 .map-svg{display:block;width:100%;height:100%;}
 
-/* Words on the screen. */
-.map-label{
-  font-family:var(--mono);font-size:9.5px;letter-spacing:0.06em;
-  fill:var(--screen-muted);
+/* --- the walls ----------------------------------------------------------
+   One path per distinct byte value, at that byte's own brightness. The pass
+   never changes one of them, so they are the frozen blue and they are the
+   only thing on the screen that a keystroke does not redraw. */
+.mr-cell{fill:var(--frozen-on-screen);}
+.mr-reg-frame{fill:none;stroke:none;}
+/* An open register is lifted out of the wall by a lit edge; the other five
+   stand back behind a scrim rather than changing colour. */
+.mr-reg.is-open .mr-reg-frame{
+  stroke:var(--frozen-on-screen);stroke-width:1;stroke-opacity:.55;
 }
-.map-header{
-  font-family:var(--mono);font-size:8.5px;letter-spacing:0.14em;
-  fill:var(--frozen-on-screen);text-transform:uppercase;
+.mr-label{
+  font-family:var(--mono);letter-spacing:0.11em;fill:var(--frozen-on-screen);
+  opacity:.85;
 }
-.map-legend{
-  font-family:var(--mono);font-size:9px;letter-spacing:0.02em;
-  fill:var(--screen-muted);
+/* The four recessive labels are held above 5:1 measured off the raster
+   rather than at the opacity that looked right on the ground they were
+   designed against: they sit over a field of lit byte cells, and the
+   stylesheet cannot see that. */
+.mr-label.is-dim{opacity:.82;}
+.mr-tensor{
+  font-family:var(--mono);letter-spacing:0.1em;fill:var(--frozen-on-screen);
+  opacity:.85;
 }
-/* The line that says what the strip is and what its brightness measures. It
-   is the sentence that turns the drawing into a reading, so it is not set at
-   fine-print weight. */
-/* The lens, whispered. It is a reading rather than a legend, so it takes the
-   readout size — but it is the water's commentary and not the water, so it
-   stays in the frozen blue family rather than taking the moving amber, which
-   is reserved for the activations themselves.
+.mr-tensor.is-fine{opacity:.72;}
 
-   Its size comes from the geometry rather than from here, so the line the
-   geometry reserves for it and the line it actually draws are the same one. */
-.map-whisper{
-  font-family:var(--mono);fill:var(--frozen-lit);letter-spacing:0.01em;
+/* Every wall is a button: it prints its own row of the file underneath and
+   offers to open it in instrument E. */
+.mr-plate{cursor:pointer;}
+.mr-plate-hit{fill:#000;fill-opacity:0;}
+.mr-plate:hover .mr-tensor,.mr-plate.is-on .mr-tensor{opacity:1;}
+.mr-reg .mr-plate:hover ~ .mr-reg-frame{stroke-opacity:1;}
+.mr-plate.is-on .mr-plate-hit{
+  fill:var(--frozen-on-screen);fill-opacity:.07;
+  stroke:var(--frozen-on-screen);stroke-opacity:.7;stroke-width:1;
 }
-.map-legend.is-key{font-size:10px;fill:var(--screen-text);}
-.map-out{
-  font-family:var(--mono);font-size:10px;letter-spacing:0.02em;
-  fill:var(--screen-text);
-}
-.map-out.is-next{fill:var(--moving);}
+.mr-plate:hover .mr-plate-hit{fill:var(--frozen-on-screen);fill-opacity:.04;}
 
-/* Where the water lands: the last vector against the whole vocabulary, as the
-   tallest few of 50,257 splashes. Frozen blue for the candidates the machine
-   weighed, moving amber for the one the sampler took — the colour law says
-   which of them is a thing that happened. */
-.map-splash-bar{
-  fill:var(--frozen-on-screen);fill-opacity:.42;
-}
-.map-splash-bar.is-took{
-  fill:var(--moving);fill-opacity:1;
-}
-
-/* The machinery. A band is a recess in the screen; the selected layer's band
-   is lifted out of it, because that is the one whose threads and head squares
-   are live. */
-.map-band-bg{
-  fill:var(--screen-sunk);stroke:none;
-}
-.map-band.is-on .map-band-bg{
-  fill:color-mix(in srgb,var(--frozen-on-screen) 9%,var(--screen-sunk));
-  stroke:var(--frozen-on-screen);stroke-width:1;stroke-opacity:.5;
-}
-
-/* Every steel box is a button: it opens its own row of the file. */
-.map-part{cursor:pointer;}
-.map-part rect{
-  fill:var(--screen);stroke:var(--frozen-on-screen);stroke-width:1;
-  stroke-opacity:.6;
-  transition:fill .15s ease,stroke-opacity .15s ease;
-}
-.map-part:hover rect{
-  fill:color-mix(in srgb,var(--frozen-on-screen) 14%,var(--screen));
-  stroke-opacity:1;
-}
-.map-part.is-on rect{
-  fill:color-mix(in srgb,var(--frozen-on-screen) 20%,var(--screen));
-  stroke-opacity:1;stroke-width:1.4;
-}
-/* The tensor's own bytes, inside the box that names it. Twelve by forty-eight
-   block averages, read out of the real file at build time and contrast-
-   stretched so a matrix whose averages sit inside eight bytes of 256 is
-   visible at all. Faint on purpose: it is the grain of the steel, and the
-   name and spec have to stay readable on top of it. `pixelated` because each
-   cell is a real block of the tensor and a smoothed one would imply detail
-   the grid does not have. */
-.map-tex{
-  opacity:.16;image-rendering:pixelated;pointer-events:none;
-}
-.map-part:hover .map-tex,.map-part.is-on .map-tex{opacity:.24;}
-/* The water crossing the box: the same bytes again, in the moving amber,
-   at zero opacity until the strip passes. Opacity only. */
-.map-glint{
-  opacity:0;
-  animation:map-glint .34s ease-out both;animation-delay:var(--d,0ms);
-}
-.map-part:hover .map-glint,.map-part.is-on .map-glint{opacity:0;}
-@keyframes map-glint{
-  0%{opacity:0;}
-  40%{opacity:.5;}
-  100%{opacity:0;}
-}
-
-.map-part-name{
-  font-family:var(--mono);letter-spacing:0.02em;fill:var(--frozen-on-screen);
-}
-.map-part-spec{
-  font-family:var(--mono);letter-spacing:0;fill:var(--screen-muted);
-}
-/* The selected box carries the most text and now carries a texture under it,
-   so its spec line goes to the screen's own text colour rather than to the
-   muted one — 5.3:1 against the selected fill before, and the texture only
-   took from that. The name line needs the same lift for the same reason: the
-   selected plate is the brightest fill a box ever takes, and the resting blue
-   measured 4.41:1 on it once the texture was under it — under AA across
-   effectively the whole glyph. --frozen-lit is the blue meant for exactly
-   this, so the colour law holds and the reading goes to 9.9:1. */
-.map-part.is-on .map-part-spec{fill:var(--screen-text);}
-.map-part.is-on .map-part-name{fill:var(--frozen-lit);}
-
-/* Twelve heads. Outlined in every block, filled only in the selected one —
-   the same machinery six times, one of them instrumented. What they are
-   filled by is named in the legend under the drawing. */
-.map-head{
+/* Twelve heads, outlined in every register and filled only in the open one,
+   by the share of the hero's attention each head spends anywhere but on
+   itself. The legend names that scalar rather than leaving it to be guessed. */
+.mr-head{
   fill:var(--moving);fill-opacity:0;
-  stroke:var(--frozen-on-screen);stroke-width:.8;stroke-opacity:.4;
+  stroke:var(--frozen-on-screen);stroke-width:.7;stroke-opacity:.4;
 }
-.map-head.is-lit{stroke:var(--moving);stroke-opacity:.7;}
+.mr-head.is-lit{stroke:var(--moving);stroke-opacity:.7;}
 
-/* The embedding table, used backwards at the end: one drawn tie from the
-   unembedding back up to wte, because there is no second copy of it in the
-   file and the drawing should not imply there is. */
-.map-tie{
-  fill:none;stroke:var(--frozen-on-screen);stroke-width:1;
-  stroke-dasharray:3 3;stroke-opacity:.55;
+/* --- the fall -----------------------------------------------------------
+   Each stream is a halo and a field of grains; the grains are dashed paths,
+   so one element carries a whole column of particles. */
+.mr-halo path{fill:var(--moving);stroke:none;}
+.mr-stream.is-hero .mr-halo path{fill:var(--moving-lit);}
+.mr-grain path{
+  fill:none;stroke:var(--moving);stroke-width:1.75;stroke-linecap:round;
 }
+.mr-stream.is-hero .mr-grain path{stroke:var(--moving-lit);stroke-width:2;}
 
-/* The sequence. These chips are tokens in flight, so they are the yellow —
-   on ink, where the yellow carries at 10:1 and needs no dark variant. */
-.map-chip{cursor:pointer;}
-.map-chip rect{
-  fill:color-mix(in srgb,var(--moving) 14%,var(--screen));
-  stroke:var(--moving);stroke-width:1;stroke-opacity:.65;
-  transition:fill .15s ease;
+/* --- the transfers ------------------------------------------------------ */
+.mr-carrier path{
+  fill:none;stroke:var(--moving-lit);stroke-linecap:round;
 }
-.map-chip text{font-family:var(--mono);fill:var(--moving);letter-spacing:0;}
-.map-chip:hover rect{fill:color-mix(in srgb,var(--moving) 28%,var(--screen));}
-.map-chip.is-on rect{fill:var(--moving);stroke-opacity:1;}
-.map-chip.is-on text{fill:var(--moving-on);font-weight:600;}
-
-/* The moving part itself. The line is the stream, drawn faintly all the way
-   down so a column reads as continuous; the nodes are the seven readings, and
-   their brightness and radius are the norm of the vector at that depth. */
-.map-col-line{stroke:var(--moving);stroke-width:1;stroke-opacity:.1;}
-.map-col.is-on .map-col-line{stroke-width:1.6;stroke-opacity:.28;}
-.map-seg{stroke:var(--moving);stroke-width:2;}
-.map-col.is-on .map-seg{stroke-width:3.4;}
-.map-node{fill:var(--moving);}
-.map-col.is-on .map-node{stroke:var(--moving);stroke-width:.8;}
-
-/* Every node is a button — it parks the falling strip at that depth — so it
-   gets a hit target a finger can find rather than the two-pixel circle the
-   value happens to draw. The target is invisible and carries the pointer. */
-.map-dot{cursor:pointer;}
-.map-dot-hit{fill:#000;fill-opacity:0;}
-.map-dot:hover .map-node{stroke:var(--moving);stroke-width:1.4;}
-
-/* --- the water ---------------------------------------------------------
-
-   One token's running vector at one depth: 768 cells, one per number, in a
-   lane of its own in every band — below the node row, clear of the boxes, so
-   it never covers a reading. It falls by transform and lights by opacity,
-   which is why a pass can run without moving a pixel of the page. */
-.map-strip{
-  transition:transform var(--travel,150ms) linear,
-             opacity var(--travel,150ms) linear;
-  pointer-events:none;
+.mr-key rect{fill:var(--keys-on-screen);}
+.mr-callout{
+  font-family:var(--mono);letter-spacing:0.02em;fill:var(--moving-lit);
 }
-.map-strip-bed{
-  fill:var(--screen);stroke:var(--moving);stroke-width:.6;stroke-opacity:.5;
+.mr-callout.is-key{fill:var(--keys-on-screen);letter-spacing:0.1em;opacity:.9;}
+.mr-absorb circle{fill:var(--moving-lit);}
+/* With one register open the other five keep their transfers, at half light:
+   the reading is still true, it is simply not the one being read. */
+.mr-event.is-back{opacity:.45;}
+.mr-quiet{
+  font-family:var(--mono);letter-spacing:0.06em;fill:var(--screen-muted);
 }
-/* Parked by a click on a node: the reader is holding it still to look at it,
-   so the bed's edge firms up and says the fall has been stopped. */
-.map-strip.is-parked .map-strip-bed{stroke-opacity:1;stroke-width:1;}
-/* Smoothed, not pixelated: there are more values here than there are pixels
-   to put them in, so every one of them should reach the screen. */
-.map-strip-cells{image-rendering:auto;}
-
-/* Which way the column goes. Only on the column being read, so the drawing
-   says "down" once rather than n times. */
-.map-arrow{fill:var(--moving);fill-opacity:.6;}
-
-/* The sentence that names the columns, set beside them rather than in the
-   legend under the drawing. */
-.map-annot{
-  font-family:var(--mono);letter-spacing:0.02em;fill:var(--moving);
+.mr-note{
+  font-family:var(--mono);letter-spacing:0.13em;fill:var(--screen-muted);
 }
 
-/* Attention, in the selected layer, for the selected token: one thread per
-   token it reads, drawn over the machinery it is reading through. */
-.map-arc{fill:none;stroke:var(--moving);stroke-width:1.4;}
-
-/* The lettered markers. Chrome, not data: the on-screen blue, and they open
-   the instrument the part belongs to. */
-.map-window{cursor:pointer;}
-.map-window rect{
-  fill:var(--screen);stroke:var(--frozen-on-screen);stroke-width:1;
-  transition:fill .15s ease;
+/* --- the sentence ------------------------------------------------------- */
+.mr-tok{cursor:pointer;}
+.mr-tok rect{
+  fill:var(--moving);fill-opacity:.12;
+  stroke:var(--moving);stroke-width:1;stroke-opacity:.55;
+  transition:fill-opacity .15s ease;
 }
-.map-window:hover rect{fill:var(--frozen-on-screen);}
-.map-window text{
-  font-family:var(--mono);font-size:8.5px;letter-spacing:0;
-  fill:var(--frozen-on-screen);font-weight:600;
-}
-.map-window:hover text{fill:var(--screen);}
+.mr-tok text{font-family:var(--mono);fill:var(--moving);letter-spacing:0;}
+.mr-tok:hover rect{fill-opacity:.28;}
+.mr-tok.is-hero rect{fill-opacity:1;stroke-opacity:1;}
+.mr-tok.is-hero text{fill:var(--moving-on);font-weight:600;}
 
-/* The replay. Opacity only — nothing here is laid out by the animation, so a
-   pass can run without moving a pixel of the page. The delay is written per
-   element so the light travels token by token and stop by stop; the group is
-   keyed on a counter, so re-running it is a remount rather than a timer. */
-.map-lit{animation:map-arrive .42s ease-out both;animation-delay:var(--d,0ms);}
-@keyframes map-arrive{
+/* --- the landing -------------------------------------------------------- */
+.mr-aperture{fill:none;stroke:var(--frozen-on-screen);stroke-width:1.1;opacity:.75;}
+.mr-aperture-note{
+  font-family:var(--mono);letter-spacing:0.11em;fill:var(--frozen-on-screen);
+  opacity:.8;
+}
+.mr-aperture-plate:hover .mr-aperture,.mr-aperture-plate.is-on .mr-aperture{opacity:1;}
+.mr-thread{
+  fill:none;stroke:var(--moving);stroke-width:1;stroke-opacity:.3;
+  stroke-dasharray:.8 4;
+}
+.mr-bar path:not(.mr-thread){fill:var(--moving);}
+.mr-bar.is-pick path:not(.mr-thread){fill:var(--moving-lit);}
+/* The machine's own top is the frozen blue — it is what the machinery scored
+   highest, not what the sampler did — and the sampler's pick carries the
+   amber. Both are named in the key line under the bars. */
+.mr-bar.is-argmax path:not(.mr-thread){fill:var(--frozen-on-screen);}
+.mr-base-line{stroke:var(--moving);stroke-opacity:.22;stroke-width:1;}
+.mr-prob{font-family:var(--mono);fill:var(--screen-muted);}
+.mr-prob.is-argmax{fill:var(--frozen-lit);}
+.mr-prob.is-pick{fill:var(--moving-lit);}
+.mr-prob.is-p{fill:var(--screen-muted);}
+.mr-pick-mark{fill:var(--moving-lit);}
+/* An earlier token as the hero does not move the landing or redraw it from a
+   vector it does not belong to: it stays where it is and stands back, and the
+   line beside it says so. */
+.mr-landing.is-away{opacity:.34;}
+.mr-key-line{
+  font-family:var(--mono);letter-spacing:0.08em;fill:var(--screen-muted);
+}
+.k-blue{fill:var(--frozen-on-screen);}
+.k-amber{fill:var(--moving-lit);}
+
+/* --- the legend --------------------------------------------------------- */
+.mr-leg-rule{stroke:var(--frozen-on-screen);stroke-opacity:.35;stroke-width:1;}
+/* The four key words are the only near-white marks on the screen, and they
+   are words rather than data — the audit that finds no white in the picture
+   allows exactly these. */
+.mr-leg-key{
+  font-family:var(--mono);letter-spacing:0.12em;fill:var(--screen-text);
+}
+.mr-leg{font-family:var(--mono);letter-spacing:0.01em;fill:var(--screen-muted);}
+.mr-leg-fine{font-family:var(--mono);letter-spacing:0.01em;fill:var(--screen-muted);opacity:.82;}
+
+/* --- the replay ---------------------------------------------------------
+   Opacity only, one delay per depth: the light arrives at the rim, then at
+   each of the six registers, and the carriers arrive with the register that
+   made them. Nothing here is laid out by the animation, so a replay cannot
+   move a pixel of the page. */
+.mr-fall{animation:mr-arrive .5s ease-out both;animation-delay:var(--d,0ms);}
+.mr-landing{animation:mr-arrive .5s ease-out both;animation-delay:1180ms;}
+@keyframes mr-arrive{
   from{opacity:0;}
   to{opacity:1;}
 }
 
-/* What the selected steel box is, read out of the file's own manifest, and
-   the button that opens it there. One reserved line, one fixed button. */
+/* What the selected wall is, read out of the file's own manifest, and the
+   button that opens it there. One reserved box, one fixed button. */
 .map-readout-row{
   display:flex;align-items:center;gap:10px;height:44px;margin-top:10px;
 }
 /* Two reserved lines, always. The longest readout the map can produce —
-   `h.5.mlp.c_proj.weight [3072×768] i8 · scale … · zero point 0 · 2,359,296
-   bytes` — measures 567px against the 502px this row leaves beside the
-   button at 1280, so on one line it ellipsized away the byte count, which is
-   half of what the readout is for. Two lines hold every wording at every
-   width; the box is the height of both of them whether one is used or two,
-   so a readout that grows does not move the button under it. */
+   `h.5.attn.c_attn.weight [768×2304] i8 · scale … · zero point 0 · 1,769,472
+   bytes` — does not fit the room this row leaves beside the button at 1280,
+   so on one line it ellipsized away the byte count, which is half of what the
+   readout is for. Two lines hold every wording at every width; the box is the
+   height of both of them whether one is used or two, so a readout that grows
+   does not move the button under it. */
 .map-readout{
   flex:1 1 auto;min-width:0;
   display:flex;align-items:center;
@@ -1699,18 +1648,25 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
 
 @media(max-width:640px){
   body{font-size:16px;}
-  /* Instrument F: the selector and the button on one line, the note on the
-     two it needs below them. Reserved in both modes, so the mode swap moves
-     nothing. The drawing itself needs no rule here — it is switched to its
-     own compact geometry by the same 640px query, read in JavaScript, and
-     its height has always been a function of its width. */
-  .map-controls{height:74px;align-content:center;}
+  /* Instrument F: the same three reserved rows, with the chips small enough
+     that twelve heads and the five windows fit the width. Reserved in both
+     modes, so the mode swap moves nothing. The drawing itself needs no rule
+     here — it is switched to its own compact geometry by the same 640px
+     query, read in JavaScript, and its height has always been a function of
+     its width. */
+  .map-controls{height:127px;gap:5px;}
+  .mr-chip,.mr-open{font-size:9px;min-width:18px;padding:0 2px;height:21px;}
+  .mr-sel-label{font-size:9px;letter-spacing:0.1em;margin-right:3px;}
+  .mr-chiprow{gap:2px;height:22px;}
+  .map-run-btn{margin-left:6px;padding:4px 6px;font-size:9px;}
+  .mr-openrow{justify-content:flex-start;}
+  .mr-opens{font-size:9px;letter-spacing:0.06em;}
   .map-ctl-note{
     flex:1 1 100%;text-align:left;
     white-space:normal;overflow:hidden;text-overflow:clip;line-height:14px;
-    /* Two lines, reserved. The row centres its contents, so a note that grew
-       from one line to two would move itself and the row above it even
-       though the row's own height never changed. */
+    /* Two lines, reserved. A note that grew from one line to two would move
+       itself and the row above it even though the row's own height never
+       changed. */
     height:28px;
   }
   /* The readout is a whole tensor name plus its numbers and cannot share a
@@ -1899,18 +1855,10 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
   .sweep{display:none;}
   /* Instrument F's replay. The blanket rule above shortens the duration but
      leaves the delay, and the delay is the whole animation here — so the
-     light travelling down the columns is turned off outright and every node,
-     segment, thread and head square is drawn at its final opacity the moment
-     RUN THE PASS is pressed. */
-  .map-lit{animation:none;}
-  /* The glint a steel box gives as the water crosses it is the same kind of
-     thing — all delay — so it is turned off rather than shortened, and the
-     box simply keeps its frozen texture. */
-  .map-glint{animation:none;opacity:0;}
-  /* The water does not fall. The instrument puts the strip at the bottom of
-     the stack — where a replay would have left it — the moment it has
-     numbers, and a click on a node still moves it there instantly. */
-  .map-strip{transition:none;}
+     fall is turned off outright and the finished still is drawn the moment
+     RUN THE PASS is pressed: every stream, carrier and bar at its own final
+     light. */
+  .mr-fall,.mr-landing{animation:none;}
   /* New in this pass: the candidate rows and the info popover appear at
      their final state instead of animating in. */
   .cand,.cand.is-winner,.info-pop,.kv-stack{animation:none;}

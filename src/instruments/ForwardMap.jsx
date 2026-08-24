@@ -1,22 +1,29 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  BANDS,
-  HEAD_LEGEND,
-  HEAD_LEGEND_SHORT,
   MAP_STOPS,
+  TRANSFER_FLOOR,
   architectureNote,
-  headAverageRow,
+  blockHead,
+  blockTransfers,
+  filamentField,
+  filamentPlan,
+  finalSplash,
   headOutwardShares,
-  illustrativeField,
   partReadout,
   residualField,
+  residualRow,
   tensorFacts,
-  finalSplash,
   topOfFinalLogits,
+  wallTensor,
+  wallWindow,
 } from '../lib/forwardMap.js'
-import { REAL_HEADS, REAL_HIDDEN, REAL_LAYERS } from '../lib/realModel.js'
+import {
+  DECODING,
+  REAL_HEADS,
+  REAL_HIDDEN,
+  REAL_LAYERS,
+} from '../lib/realModel.js'
 import { residualVector } from '../lib/toyModel.js'
-import { STRIP_CAP, stripUrl, thumbnailUrl } from '../lib/tensorTexture.js'
 import InfoTag from '../components/InfoTag.jsx'
 import LoadNote from '../components/LoadNote.jsx'
 import ReadingLine from '../components/ReadingLine.jsx'
@@ -24,199 +31,455 @@ import TeachPair from '../components/TeachPair.jsx'
 import InstrumentHead from '../components/InstrumentHead.jsx'
 
 /**
- * Instrument F — the forward pass, live.
+ * Instrument F — the forward pass, live. The memory room.
  *
- * The complaint this answers was one sentence long: "the neural net is
- * static". Everything on the page was true and nothing on it moved. A reader
- * could step the model, read one head's lookup, and read one position's stack,
- * but there was no drawing of the machine as a whole with his own sentence
- * visibly inside it.
+ * Six full-width walls, one per block, every cell of them one real byte of
+ * that block's own attention weights as the file stores them. The reader's
+ * sentence falls through all six as granular streams of light, one per token,
+ * and inside a stream the 768 dimensions are drawn as filaments so the texture
+ * says which dimensions are carrying the vector at each depth. One token is
+ * the hero — the last by default, any of them on a click — and the hero
+ * gathers the pass's real attention transfers: a green key at the source, an
+ * amber carrier whose width is the weight, and a brighter stream below the
+ * absorption. It ends at the landing, where the last position's vector meets
+ * all 50,257 words.
  *
- * So: the whole of distilgpt2 on one screen, drawn once — the embedding
- * tables, six blocks of ln → attention → ln → MLP with their real shapes and
- * byte counts, the final norm, and the embedding table used backwards at the
- * end. Down the right of every band runs the sentence itself, one amber column
- * per token, and each column carries a node at each of the seven depths whose
- * brightness is the size of that token's running vector there. In the selected
- * layer the selected token's attention is drawn as threads back to the tokens
- * it reads, and the twelve head squares in that block light by how much of the
- * token's attention each head spends looking anywhere but at itself.
+ * The frame around all of that is unchanged from the drawing this replaces:
+ * the numbers are the ones instruments B, C, D and E already read, the shapes
+ * and bytes come from the file's own manifest, the lettered windows open the
+ * instrument each reading came from, and a pass in flight draws no numbers at
+ * all rather than falling back to the stand-ins.
  *
- * Nothing here is a second implementation of anything. The columns are norms
- * of the residual stream instrument D reads; the threads are the attention
- * matrix instrument C tabulates; the shapes and byte counts are the manifest
- * instrument E lists; the last row is the token instrument B is about to
- * append. The map's job is to put those five readings in one frame, and the
- * lettered markers on it open the instrument each one came from.
+ * Nothing in the picture is a stand-in. The only marks carrying no number are
+ * the aperture outline and the bloom around the light.
  */
 
-const CHIP_GAP = 2
-const CHAR = 0.6
+/** The drawing is this many units wide at every screen width. */
+const SW = 1166
 
-/**
- * The cadence of a replay: how long the water takes to fall from one stop to
- * the next. Everything that happens on a replay is timed off this — the strip
- * travelling down the drawing, and the glint a steel box gives as the strip
- * crosses it — so the two cannot drift apart.
- */
+/** The cadence of a replay: how long the light takes to reach the next depth. */
 const PASS_STEP_MS = 150
-/** The pause before the first stop, so a replay is visibly a beginning. */
-const PASS_LEAD_MS = 60
-/** How far ahead of a stop the box under it starts to glint. */
-const GLINT_LEAD_MS = 90
+/** The pause before the first depth, so a replay is visibly a beginning. */
+const PASS_LEAD_MS = 80
+
+/** Deterministic pseudo-random in [0,1) — the comp's generator, unchanged. */
+function h01(...args) {
+  let n = 0
+  for (const a of args) n = (n * 131 + Math.trunc(a * 97)) >>> 0
+  n ^= n >>> 13
+  n = Math.imul(n, 1274126177) >>> 0
+  return ((n >>> 8) & 0xffff) / 65535
+}
+
+const f2 = (x) => Math.round(x * 100) / 100
 
 /**
- * Two sets of geometry, one per breakpoint. The viewBox and the box's aspect
- * ratio come from the same constants, so the drawing scales uniformly and the
- * screen's height is a function of its width and of nothing else — never of
- * how many tokens are in the sequence.
+ * Where everything sits, in drawing units.
+ *
+ * One law, two settings of it. The drawing is 1,166 units wide at both
+ * breakpoints, so a unit is about 0.58 px at 1280 and 0.26 px at 390 — which
+ * is why the compact type sizes are roughly twice the wide ones, and why the
+ * grain of the walls and the streams is coarser there. The height is a
+ * function of the setting and of nothing else: not of how many tokens are in
+ * the sequence, not of which block is open, not of whether a model has
+ * loaded. That is what lets the sentence change without moving the page.
  */
 function geometryFor(compact) {
-  const g = compact
+  const fs = compact
     ? {
-        W: 320, MX: 6, RIGHT: 314, TRACK: 38,
-        chipY: 10, chipH: 17, chipMax: 34,
-        annY: 36, headerY: 50, tieY: 56, bandTop: 62, bandH: 46, bandGap: 4,
-        boxTop: 3, boxH: 22, nodeDY: 32, stripDY: 41, stripH: 6,
-        outH: 44, splashH: 10, splashW: 5, splashGap: 1.5, splashN: 6, legendH: 48,
-        gap: 4, pad: 4, tick: 3, tickGap: 1, mark: 12,
-        fs: { label: 9, part: 8.5, spec: 7, chip: 8, out: 9, legend: 8, key: 8.5, annot: 8, header: 8, whisper: 10 },
+        note: 29, reg: 27, tensor: 24, chip: 30, callout: 29, fine: 24,
+        quiet: 27, land: 28, aperture: 24, prob: 29, probp: 25, key: 25,
+        legKey: 27, leg: 29, legFine: 25,
       }
     : {
-        W: 684, MX: 20, RIGHT: 664, TRACK: 84,
-        chipY: 12, chipH: 20, chipMax: 54,
-        annY: 44, headerY: 58, tieY: 66, bandTop: 74, bandH: 48, bandGap: 4,
-        boxTop: 3, boxH: 24, nodeDY: 33, stripDY: 43, stripH: 7,
-        outH: 49, splashH: 13, splashW: 7, splashGap: 2, splashN: 8, legendH: 42,
-        gap: 6, pad: 6, tick: 6, tickGap: 1.5, mark: 13,
-        fs: { label: 9.5, part: 9, spec: 7.5, chip: 9, out: 10, legend: 9, key: 10, annot: 9, header: 8.5, whisper: 10 },
+        note: 16, reg: 15, tensor: 14, chip: 19, callout: 17, fine: 13.5,
+        quiet: 16, land: 16, aperture: 13.5, prob: 17, probp: 15, key: 15,
+        legKey: 16, leg: 16.5, legFine: 14.5,
       }
-  const bandY = (i) => g.bandTop + i * (g.bandH + g.bandGap)
-  const lastBottom = bandY(BANDS.length - 1) + g.bandH
-  const outY = lastBottom + 8
-  // The whisper's line is reserved whatever mode the instrument is in, so the
-  // drawing is the same height before a pass, during one and after it. It is
-  // the one thing on the map whose text changes seven times a second, and a
-  // line that had to appear for it would move everything below the figure
-  // every time the water fell.
-  // The splash sits inside the output row, under the words, so the row that
-  // says what the machine settles on also shows how sure it was.
-  const splashTop = outY + g.fs.out + 9
-  const splashBase = splashTop + g.splashH
-  const whisperY = outY + g.outH + 4 + g.fs.whisper
-  const legendY = whisperY + 8
+
+  const bandX = 62
+  const bandW = SW - 2 * bandX
+  const cols = 64
+  const rows = 24
+  const pitchX = bandW / cols
+  const cellW = 9.4
+  const pitchY = compact ? 9 : 5.5
+  const cellH = compact ? 6.2 : 3.5
+  const bandH = rows * pitchY - (pitchY - cellH)
+  // The dark air above each wall, where the carriers sweep and the callouts
+  // sit. It is set by the type: two lines of callout plus room to breathe.
+  const air = compact ? 150 : 94
+  const blockPitch = bandH + air
+
+  const chipY = compact ? 46 : 38
+  const chipH = compact ? 46 : 30
+  const fallTop = chipY + chipH + 6
+  const rimY = fallTop + (compact ? 74 : 46)
+  const bandTop = Array.from(
+    { length: REAL_LAYERS },
+    (_, i) => rimY + air + i * blockPitch,
+  )
+  const bandMid = bandTop.map((t) => t + bandH / 2)
+  const bandBot = bandTop.map((t) => t + bandH)
+  const stopY = [rimY, ...bandMid]
+  const lastBot = bandBot[REAL_LAYERS - 1]
+
+  const mistY = lastBot + (compact ? 52 : 34)
+  const apertureY0 = lastBot + (compact ? 76 : 50)
+  const apertureH = compact ? 44 : 32
+  const landTitleY = apertureY0 + (compact ? 60 : 42)
+  const splashN = compact ? 6 : 8
+  const barBase = apertureY0 + (compact ? 340 : 240)
+  const barMaxH = compact ? 170 : 132
+  const barPitch = (SW - 160) / splashN
+  const barX0 = 80 + barPitch / 2
+  const barW = barPitch * 0.46
+  const dotCols = 6
+  const dotPitchX = barW / dotCols
+  const dotW = dotPitchX * 0.78
+  const dotPitchY = compact ? 12 : 9.4
+  const dotH = dotPitchY * 0.62
+
+  const keyY = barBase + (compact ? 112 : 78)
+  const keyY2 = keyY + (compact ? 34 : 0)
+  const legRuleY = keyY2 + (compact ? 40 : 26)
+  const legTop = legRuleY + (compact ? 44 : 28)
+  const legLine = fs.leg * 1.4
+  const legX = compact ? 8 : 196
+  const legGap = compact ? 14 : 10
+  const legCols = Math.floor((SW - legX - 10) / (fs.leg * 0.6))
+  // Reserved, not measured: the legend prints live numbers, so its wording
+  // changes with the sentence. A block whose height followed its own text
+  // would move everything below the figure on every keystroke.
+  const legLines = compact ? [8, 9, 14, 7] : [9, 10, 13, 8]
+  const legKeyLine = compact ? fs.legKey * 1.5 : 0
+  const legHeight =
+    legLines.reduce((sum, l) => sum + l * legLine + legKeyLine + legGap, 0)
+  const fineTop = legTop + legHeight + (compact ? 6 : 4)
+  const fineLines = compact ? 4 : 3
+  const H = fineTop + fineLines * (fs.legFine * 1.35) + (compact ? 20 : 14)
+
   return {
-    ...g,
-    compact,
-    bandY,
-    whisperY,
-    nodeY: (i) => bandY(i) + g.nodeDY,
-    // The lane the falling strip parks in: under the node row, inside the
-    // band, clear of both the boxes above it and the next band below.
-    stripY: (i) => bandY(i) + g.stripDY,
-    outY,
-    splashTop,
-    splashBase,
-    legendY,
-    H: legendY + g.legendH + 8,
-    trackW: g.RIGHT - g.TRACK,
-    tie: g.W - 6,
+    compact, fs,
+    bandX, bandW, cols, rows, pitchX, cellW, cellH, pitchY, bandH,
+    bandTop, bandMid, bandBot, stopY, lastBot, air,
+    chipY, chipH, fallTop, rimY, mistY, apertureY0, apertureH, landTitleY,
+    splashN, barBase, barMaxH, barPitch, barX0, barW,
+    dotCols, dotPitchX, dotW, dotPitchY, dotH,
+    keyY, keyY2, legRuleY, legTop, legLine, legX, legGap, legCols, legLines,
+    legKeyLine, fineTop, fineLines,
+    // Where the streams live: inside the walls, with the right-hand end left
+    // clear for the tensor each wall is cut from.
+    trackX: 70,
+    trackW: 936,
+    // The grain. A dash on a 1,166-unit drawing has to be sized in units, and
+    // the two breakpoints put very different numbers of pixels under a unit.
+    grain: compact ? 2.4 : 1.1,
+    grainWidth: compact ? 3.6 : 1.75,
+    H,
   }
 }
 
-const fits = (text, size, width) => text.length * size * CHAR <= width
+/** As much of a token as a chip can hold; the rest lives in its tooltip. */
+function clip(text, size, width) {
+  const room = Math.max(1, Math.floor(width / (size * 0.6)))
+  return text.length <= room ? text : text.slice(0, room)
+}
 
-/** A depth of the stack, in plain words. */
-function stopName(stop) {
-  return stop === 0 ? 'at the embedding' : `after block ${stop - 1}`
+/** Greedy wrap into at most `max` lines; the last one is clipped if it must be. */
+function wrapText(text, cols, max) {
+  const words = String(text).split(/\s+/).filter(Boolean)
+  const lines = []
+  let current = ''
+  for (const word of words) {
+    if (current && current.length + 1 + word.length > cols) {
+      lines.push(current)
+      current = word
+    } else {
+      current = current ? `${current} ${word}` : word
+    }
+  }
+  if (current) lines.push(current)
+  if (lines.length <= max) return lines
+  const kept = lines.slice(0, max)
+  kept[max - 1] = `${kept[max - 1].slice(0, Math.max(0, cols - 1))}…`
+  return kept
 }
 
 /**
- * What the lens hears at one depth, in one line.
+ * A wall: one block's 24 × 64 window of real weight bytes.
  *
- * This is instrument D's reading, not a second implementation of it: the same
- * worker, the same final LayerNorm and the same unembedding, asked at an
- * intermediate depth. So the honest word is "leaning" rather than "predicts" —
- * the model does not make a prediction after block 2; the lens is what it
- * *would* say if the stack stopped there, and the tooltip says so in full.
- *
- * Illustrative mode gets no reading at all rather than a stand-in one. Every
- * other number on this drawing has a labelled illustrative twin, but the lens
- * does not: it is the unembedding matrix applied to a real residual, and there
- * is nothing to apply it to until the model is in hand.
+ * Every cell of the same byte value is drawn by one path at that byte's own
+ * brightness, so a wall is a few dozen elements rather than fifteen hundred
+ * and nothing about the value is rounded on the way to the screen. The walls
+ * never change — not on a keystroke, not on a pass — so this is memoised on
+ * the geometry alone and a re-run does not rebuild a single cell.
  */
-function whisperText(stop, reading, { real, lensIndex, compact }) {
-  if (!real) {
-    return compact
-      ? 'the lens — load the real model'
-      : 'the lens reads the real model only — load it to hear each depth'
-  }
-  if (reading && reading.index === lensIndex && reading.status === 'error') {
-    return `${stopName(stop)} — the lens could not be read`
-  }
-  const fresh = reading && reading.index === lensIndex ? reading : null
-  const token = fresh?.stops?.[stop]?.[0]?.token
-  if (token == null) return `${stopName(stop)} — reading…`
-  return compact
-    ? `${stopName(stop)} — ${token}`
-    : `the lens, ${stopName(stop)} — leaning ${token}`
-}
-
-/** As much of a token as the chip can hold; the rest lives in its tooltip. */
-function clip(text, size, width) {
-  const room = Math.max(1, Math.floor(width / (size * CHAR)))
-  if (text.length <= room) return text
-  return text.slice(0, room)
-}
-
-/** The spec line inside a steel box, shortened until it fits the box. */
-function specFor(facts, size, width) {
-  if (!facts) return ''
-  const full = `${facts.shape} ${facts.dtype} · ${facts.size}`
-  if (fits(full, size, width)) return full
-  const short = `${facts.shape} ${facts.dtype}`
-  if (fits(short, size, width)) return short
-  return fits(facts.shape, size, width) ? facts.shape : ''
-}
-
-/** Where each part of a band sits, from the parts' relative widths. */
-function layoutParts(band, g) {
-  const widthOf = (p) => (g.compact ? (p.cwidth ?? p.width) : p.width)
-  const total = band.parts.reduce((sum, p) => sum + widthOf(p), 0)
-  const free = g.trackW - g.gap * (band.parts.length - 1)
-  let x = g.TRACK
-  return band.parts.map((part) => {
-    const w = (free * widthOf(part)) / total
-    const box = { ...part, x, w }
-    x += w + g.gap
-    return box
-  })
-}
-
-/** A lettered marker that scrolls to the instrument it names. */
-function Window({ letter, x, y, size, label, onOpen }) {
+const Walls = memo(function Walls({ g, windows }) {
+  if (!windows) return null
   return (
-    <g
-      className="map-window"
-      role="button"
-      tabIndex={0}
-      aria-label={label}
-      onClick={onOpen}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          onOpen()
-        }
-      }}
-    >
-      <title>{label}</title>
-      <rect x={x} y={y} width={size} height={size} rx="2" />
-      <text x={x + size / 2} y={y + size / 2 + size * 0.34} textAnchor="middle">
-        {letter}
-      </text>
+    <g className="mr-walls">
+      {Array.from({ length: REAL_LAYERS }, (_, layer) => {
+        const wall = wallWindow(windows, wallTensor(layer))
+        if (!wall) return null
+        const top = g.bandTop[layer]
+        return (
+          <g key={layer}>
+            {wall.groups.map((group) => {
+              let d = ''
+              for (const index of group.cells) {
+                const row = Math.floor(index / g.cols)
+                const col = index % g.cols
+                const x = f2(g.bandX + col * g.pitchX)
+                const y = f2(top + row * g.pitchY)
+                d += `M${x} ${y}h${f2(g.cellW)}v${f2(g.cellH)}h${f2(-g.cellW)}Z`
+              }
+              // Arc 3's rule for a window whose bytes are all but identical:
+              // an even wash rather than a black panel.
+              const alpha = wall.flat ? 0.2 : 0.1 + 0.62 * group.v
+              return (
+                <path
+                  key={group.value}
+                  className="mr-cell"
+                  d={d}
+                  opacity={f2(alpha)}
+                />
+              )
+            })}
+          </g>
+        )
+      })}
     </g>
   )
-}
+})
+
+/**
+ * The fall: one granular stream per token, its filaments drawn as dashed
+ * paths so that one element carries a whole column of grains.
+ *
+ * Ink density is held roughly even per unit of area — the dash period comes
+ * off the stream's own width — so a wide stream is not a solid bar and a thin
+ * one is not a dotted line.
+ */
+const Streams = memo(function Streams({ g, draw }) {
+  const { n, plan, segments } = draw
+  return (
+    <g className="mr-streams">
+      {segments.map((seg, si) => (
+        <g
+          key={seg.key}
+          className="mr-fall"
+          style={{ '--d': `${PASS_LEAD_MS + si * PASS_STEP_MS}ms` }}
+        >
+          {Array.from({ length: n }, (_, i) => {
+            const hero = i === draw.hero
+            const a0 = draw.alpha[i][seg.s0]
+            const a1 = draw.alpha[i][seg.s1]
+            const w0 = draw.hw[i][seg.s0]
+            const w1 = draw.hw[i][seg.s1]
+            const tail = seg.tail && !hero
+            const halo = []
+            const layers = hero
+              ? [[3.0, 0.038], [1.8, 0.055], [1.12, 0.068]]
+              : [[2.4, 0.011], [1.35, 0.018]]
+            for (const [mul, op] of layers) {
+              let alpha = (op * (a0 + a1)) / 2 / 0.5
+              if (tail) alpha *= 0.5
+              const left = []
+              const right = []
+              for (let q = 0; q <= 6; q++) {
+                const t = q / 6
+                const y = seg.y0 + (seg.y1 - seg.y0) * t
+                const cx = draw.centreX(i, y)
+                let hw = (w0 + (w1 - w0) * t) * mul
+                if (tail) hw *= 1 - 0.35 * t
+                left.push(`${f2(cx - hw)} ${f2(y)}`)
+                right.push(`${f2(cx + hw)} ${f2(y)}`)
+              }
+              halo.push(
+                `M ${left.join(' L ')} L ${right.reverse().join(' L ')} Z|${f2(alpha)}`,
+              )
+            }
+            const segAlpha = tail ? ((a0 + a1) / 2) * 0.42 : (a0 + a1) / 2
+            const segWidth = w0 + w1
+            let density = hero ? 0.30 + 0.18 * draw.t[i][seg.s0] : 0.24 + 0.20 * draw.t[i][seg.s0]
+            if (tail) density *= 0.75
+            const period = Math.max(
+              g.grain * 7,
+              (1.6 * plan.count * g.grain) / (density * Math.max(segWidth, 3)),
+            )
+            const grains = []
+            for (let fi = 0; fi < plan.count; fi++) {
+              const u = (fi + 0.5) / plan.count - 0.5
+              const r0 = draw.rel[i][seg.s0][fi]
+              const r1 = draw.rel[i][seg.s1][fi]
+              const alpha = segAlpha * (0.26 + 0.74 * ((r0 + r1) / 2) ** 0.75)
+              if (alpha < 0.035) continue
+              let d
+              if (hero) {
+                const points = []
+                for (let q = 0; q <= 4; q++) {
+                  const t = q / 4
+                  const y = seg.y0 + (seg.y1 - seg.y0) * t
+                  const w = w0 + (w1 - w0) * t
+                  points.push(`${f2(draw.centreX(i, y) + u * 2 * w)} ${f2(y)}`)
+                }
+                d = `M ${points.join(' L ')}`
+              } else {
+                d =
+                  `M ${f2(draw.xs[i] + u * 2 * w0)} ${f2(seg.y0)}` +
+                  ` L ${f2(draw.xs[i] + u * 2 * w1)} ${f2(seg.y1)}`
+              }
+              grains.push(
+                <path
+                  key={fi}
+                  d={d}
+                  strokeDasharray={`${f2(g.grain)} ${f2(period - g.grain)}`}
+                  strokeDashoffset={f2(h01(i, fi, seg.y0) * period)}
+                  opacity={f2(alpha)}
+                />,
+              )
+            }
+            return (
+              <g key={i} className={hero ? 'mr-stream is-hero' : 'mr-stream'}>
+                <g className="mr-halo">
+                  {halo.map((piece, hi) => {
+                    const [d, alpha] = piece.split('|')
+                    return <path key={hi} d={d} opacity={alpha} />
+                  })}
+                </g>
+                <g className="mr-grain">{grains}</g>
+              </g>
+            )
+          })}
+        </g>
+      ))}
+    </g>
+  )
+})
+
+/**
+ * The carriers: one amber sweep per transfer, grained the same way the
+ * streams are, and masked out of every stream it crosses so that no line ever
+ * crosses the water. The source's own stream and the hero's are not masked —
+ * the carrier leaves one and lands in the other.
+ */
+const Carriers = memo(function Carriers({ g, draw }) {
+  return (
+    <g className="mr-carriers">
+      <defs>
+        {draw.transfers.map((tr) => (
+          <mask
+            key={tr.id}
+            id={`mr-behind-${tr.id}`}
+            maskUnits="userSpaceOnUse"
+            x="0"
+            y="0"
+            width={SW}
+            height={g.H}
+          >
+            <rect x="0" y="0" width={SW} height={g.H} fill="#fff" />
+            {draw.footprints.map((d, i) =>
+              i === tr.src || i === draw.hero ? null : (
+                <path key={i} d={d} fill="#000" />
+              ),
+            )}
+          </mask>
+        ))}
+      </defs>
+      {draw.transfers.map((tr) => {
+        const filaments = 2 + Math.round(tr.w * 4)
+        const width = (1.2 + 4.4 * tr.w) * (g.compact ? 1.6 : 1)
+        const paths = []
+        for (let k = 0; k < filaments; k++) {
+          const v = ((k + 0.5) / filaments - 0.5) * 2 * width
+          let d = ''
+          for (const point of tr.points) {
+            const x = point.x + point.nx * v
+            const y = point.y + point.ny * v
+            d += d ? ` L ${f2(x)} ${f2(y)}` : `M ${f2(x)} ${f2(y)}`
+          }
+          const centred = 0.55 + 0.45 * (1 - Math.abs((k + 0.5) / filaments - 0.5) * 2)
+          paths.push(
+            <path
+              key={k}
+              d={d}
+              strokeDasharray={`${f2(g.grain)} ${f2(g.grain * 2.6)}`}
+              strokeDashoffset={f2(h01(tr.layer, k, 3) * g.grain * 3.6)}
+              opacity={f2((0.30 + 0.52 * tr.w) * centred * (tr.standBack ? 0.5 : 1))}
+            />,
+          )
+        }
+        return (
+          <g
+            key={tr.id}
+            className="mr-carrier mr-fall"
+            style={{ '--d': `${PASS_LEAD_MS + (tr.layer + 1) * PASS_STEP_MS}ms` }}
+            mask={`url(#mr-behind-${tr.id})`}
+          >
+            {paths}
+          </g>
+        )
+      })}
+    </g>
+  )
+})
+
+/** The landing bars: dot grids whose row count is the real probability. */
+const Landing = memo(function Landing({ g, draw }) {
+  const { landing } = draw
+  if (!landing) return null
+  return (
+    <g className={draw.landingHere ? 'mr-landing' : 'mr-landing is-away'}>
+      {landing.bars.map((bar, i) => {
+        const rows = Math.max(2, Math.round(bar.h / g.dotPitchY))
+        const groups = [[], [], [], []]
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < g.dotCols; c++) {
+            const x = bar.x - g.barW / 2 + (g.dotPitchX - g.dotW) / 2 + c * g.dotPitchX
+            const y = g.barBase - g.dotH - r * g.dotPitchY
+            if (y < bar.top) continue
+            // The scatter in a dot's light carries no number; the number is
+            // how many rows there are.
+            const jitter = Math.min(3, Math.floor(h01(i, r, c) * 3.999))
+            groups[r === rows - 1 ? 3 : jitter].push(
+              `M${f2(x)} ${f2(y)}h${f2(g.dotW)}v${f2(g.dotH)}h${f2(-g.dotW)}Z`,
+            )
+          }
+        }
+        const base = bar.argmax || bar.pick ? 0.8 : 0.42
+        return (
+          <g
+            key={bar.id}
+            className={
+              bar.argmax ? 'mr-bar is-argmax' : bar.pick ? 'mr-bar is-pick' : 'mr-bar'
+            }
+          >
+            <path
+              className="mr-thread"
+              d={`M ${f2(draw.apertureX)} ${f2(g.apertureY0 + g.apertureH)} Q ${f2(
+                (draw.apertureX + bar.x) / 2,
+              )} ${f2(g.apertureY0 + g.apertureH + 70)} ${f2(bar.x)} ${f2(bar.top - 8)}`}
+            />
+            {groups.map((d, gi) =>
+              d.length === 0 ? null : (
+                <path
+                  key={gi}
+                  d={d.join('')}
+                  opacity={f2(
+                    gi === 3
+                      ? Math.min(0.95, base * 1.25)
+                      : base * (0.8 + 0.067 * gi),
+                  )}
+                />
+              ),
+            )}
+          </g>
+        )
+      })}
+    </g>
+  )
+})
 
 export default function ForwardMap({
   text,
@@ -228,7 +491,6 @@ export default function ForwardMap({
   armed,
   real,
   run,
-  reading,
   nextToken,
   pending,
   stepTick,
@@ -244,30 +506,18 @@ export default function ForwardMap({
       typeof window.matchMedia === 'function' &&
       window.matchMedia('(max-width: 640px)').matches,
   )
-  const [manifest, setManifest] = useState(null)
-  const [thumbs, setThumbs] = useState(null)
+  const [facts, setFacts] = useState(null)
   const [part, setPart] = useState(null)
   const [replay, setReplay] = useState(0)
-  // Where the reader has parked the falling strip, or null for "let it fall".
-  // A click on any node is the microscope: it stops the water at that depth
-  // and holds it there until the next pass.
-  const [park, setPark] = useState(null)
-  const [still, setStill] = useState(false)
-  const stripRef = useRef(null)
-  const stripImgRef = useRef(null)
-  const whisperRef = useRef(null)
-  // The whisper is written to the DOM rather than rendered, for the same
-  // reason the strip's transform is: it changes seven times in a second as the
-  // water passes each stop, and seven React renders of the whole map would be
-  // seven chances to move the page. Its <text> is rendered with no children,
-  // so React has nothing to reconcile there and never overwrites what the
-  // timeline put in it.
-  const whisperShown = useRef(MAP_STOPS - 1)
-  const whisperData = useRef({ reading: null, real: false, lensIndex: 0, compact: false })
+  // Whether a register is open — which one is the layer instruments C and F
+  // share, so the two can never disagree about it — and which head that
+  // register's transfers are read from, or null for the rule.
+  const [blockOpen, setBlockOpen] = useState(false)
+  const [headPick, setHeadPick] = useState(null)
+  const block = blockOpen ? layer : null
 
   // One media query, read before the first paint and then only on a change of
-  // breakpoint, so the drawing is never laid out at the wrong scale and then
-  // corrected.
+  // breakpoint, so the drawing is never laid out at the wrong scale.
   useEffect(() => {
     if (typeof window.matchMedia !== 'function') return undefined
     const mq = window.matchMedia('(max-width: 640px)')
@@ -277,19 +527,14 @@ export default function ForwardMap({
     return () => mq.removeEventListener('change', onChange)
   }, [])
 
-  // The same shipped reading instrument E draws, so the shapes and byte
-  // counts on this map are the file's own rather than a second copy of them
-  // written out here. It is its own chunk and E has already asked for it.
+  // The same shipped reading instrument E draws: the manifest for the shapes
+  // and byte counts, and the byte windows the walls are cut from. Its own
+  // chunk, and E has already asked for it.
   useEffect(() => {
     let cancelled = false
     import('../content/fileFacts.json')
       .then((module) => {
-        if (cancelled) return
-        setManifest(module.default.manifest)
-        // The whole of each tensor at twelve by forty-eight, read out of the
-        // real file at build time. It is what every steel box is textured
-        // with, in both modes, and before anything has been downloaded.
-        setThumbs(module.default.thumbnails ?? null)
+        if (!cancelled) setFacts(module.default)
       })
       .catch((error) => {
         console.error('[fixture-and-part] the shipped file reading is missing:', error)
@@ -301,412 +546,466 @@ export default function ForwardMap({
 
   const g = useMemo(() => geometryFor(compact), [compact])
   const n = sequence.length
+  const hero = Math.min(Math.max(lensIndex, 0), Math.max(0, n - 1))
   const runKey = run?.key ?? null
+  const manifest = facts?.manifest ?? null
+  const windows = facts?.windows ?? null
 
-  // Reduced motion, read the same way the breakpoint is: once, before the
-  // first paint, and then only when it changes.
+  // A new pass, or a new token appended, replays the fall.
   useEffect(() => {
-    if (typeof window.matchMedia !== 'function') return undefined
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const onChange = (e) => setStill(e.matches)
-    mq.addEventListener('change', onChange)
-    setStill(mq.matches)
-    return () => mq.removeEventListener('change', onChange)
-  }, [])
-
-  // A new pass, or a new token appended, replays the drawing — and lets the
-  // water fall again from the top, because it is a new pass and the reader's
-  // old parking place belonged to the previous one.
-  useEffect(() => {
-    setPark(null)
     setReplay((r) => r + 1)
   }, [runKey, stepTick, n])
 
-  const runAgain = useCallback(() => {
-    setPark(null)
-    setReplay((r) => r + 1)
-  }, [])
+  const runAgain = useCallback(() => setReplay((r) => r + 1), [])
 
-  // Three states, not two. With a finished pass the field is that pass's own
-  // norms. With no model it is the deterministic stand-in instrument D
-  // prints, labelled as such. In between — the model is loaded and a pass is
-  // in flight — there is no field at all: the stream is drawn flat and the
-  // legend says the pass is running. Falling back to the stand-ins here would
-  // put illustrative numbers on screen under a real-model heading for the
-  // third of a second a pass takes, which is the one thing this page does
-  // not do.
-  const field = useMemo(() => {
-    if (real && run) return residualField(run)
-    return armed ? null : illustrativeField(sequence)
-  }, [real, run, armed, sequence])
-  const arcs = useMemo(
-    () => (real && run ? headAverageRow(run, layer, lensIndex) : null),
-    [real, run, layer, lensIndex],
-  )
-  const heads = useMemo(
-    () => (real && run ? headOutwardShares(run, layer, lensIndex) : null),
-    [real, run, layer, lensIndex],
-  )
+  // A register opened somewhere else — instrument C's own layer selector — is
+  // a different register, so the head this one was pinned to goes with it.
+  useEffect(() => {
+    setHeadPick(null)
+  }, [layer])
+
+  // Three states, not two. A finished pass over the text in the box draws its
+  // own numbers. With no model there are no numbers to draw and the streams
+  // are the schematic, at one width, labelled. In between — the model is in
+  // hand and a pass is in flight — it is the schematic too, and the note says
+  // the pass is running, rather than showing stand-ins under a real heading.
+  const live = Boolean(real && run && run.n === n && n > 0)
+  const waiting = armed && !live && n > 0
+
+  const field = useMemo(() => (live ? residualField(run) : null), [live, run])
+  const plan = useMemo(() => filamentPlan(n), [n])
 
   /**
-   * The falling strip: one token's running vector at each of the seven
-   * depths, 768 cells wide, one cell per number.
+   * The filaments: 768 dimensions binned into groups, one bin per filament.
    *
-   * Nothing is downsampled and nothing is picked out. The raster is exactly as
-   * wide as the vector is long, so what the reader sees is the vector and not
-   * a summary of it — which is the whole difference between this and the node
-   * beside it, which is the same 768 numbers reduced to their length.
-   *
-   * A cell's brightness is |value| against STRIP_CAP times the middle
-   * magnitude at that depth — the middle and not the largest, for the reason
-   * tensorTexture.js sets out: a few outlier dimensions would otherwise leave
-   * 760 of the 768 cells black. The legend on screen names the same rule, so
-   * the shape of the vector stays legible all the way down. How much
-   * vector there is — the thing that runs from about 5 to about 1,800 over six
-   * blocks — is carried by the brightness of the strip as a whole, which is the
-   * same log scale the nodes use and the legend states. Two normalisations,
-   * because they are answering two questions, and both are named on screen.
-   *
-   * The values are the pass's own residual stream, read at the same offsets
-   * instrument D sends to the lens. In illustrative mode they are the same
-   * deterministic stand-in D prints, taken 768 wide instead of six.
+   * Live, they are the pass's own residual stream. With no model they are the
+   * deterministic stand-in instrument D prints, taken 768 wide — texture so
+   * the drawing has something to be, labelled on screen as a stand-in and
+   * never given a width or a light that claims a magnitude.
    */
-  const strip = useMemo(() => {
+  const filaments = useMemo(() => {
     if (n === 0) return null
-    if (real && run?.residuals?.length && lensIndex < run.n) {
-      const values = []
-      const urls = []
+    if (live) {
+      return filamentField((i, s) => residualRow(run, i, s), n, plan.group)
+    }
+    return filamentField(
+      (i, s) => residualVector(sequence[i], s, REAL_HIDDEN),
+      n,
+      plan.group,
+    )
+  }, [live, run, sequence, n, plan])
+
+  const autoHeads = useMemo(
+    () =>
+      live
+        ? Array.from({ length: REAL_LAYERS }, (_, l) => blockHead(run, l))
+        : null,
+    [live, run],
+  )
+
+  const headFor = useCallback(
+    (l) => (block === l && headPick != null ? headPick : (autoHeads?.[l] ?? 0)),
+    [block, headPick, autoHeads],
+  )
+
+  const registers = useMemo(() => {
+    if (!live) return null
+    return Array.from({ length: REAL_LAYERS }, (_, l) =>
+      blockTransfers(run, l, hero, headFor(l)),
+    )
+  }, [live, run, hero, headFor])
+
+  const heads = useMemo(
+    () => (live && block != null ? headOutwardShares(run, block, hero) : null),
+    [live, run, block, hero],
+  )
+
+  const splash = useMemo(
+    () => (live ? finalSplash(run, g.splashN) : null),
+    [live, run, g.splashN],
+  )
+  const finalTop = useMemo(() => (live ? topOfFinalLogits(run) : null), [live, run])
+
+  /**
+   * Everything the drawing needs in one object: where each stream is, how wide
+   * and how bright it is at each depth, where the carriers run, and where the
+   * landing bars stand. Built once per pass rather than per element, so the
+   * memoised layers below can be handed one prop and skip their work when it
+   * has not changed.
+   */
+  const draw = useMemo(() => {
+    if (n === 0 || !filaments) return null
+    const slot = g.trackW / n
+    const xs = Array.from({ length: n }, (_, i) => g.trackX + slot * (i + 0.5))
+    const hwMax = Math.min(14.2, slot * 0.3)
+    const hwMin = Math.min(1.6, hwMax * 0.12)
+
+    // Where a stop's norm sits in this pass's own range, on the log law the
+    // legend states. Linearly, the first token's attention-sink norm would be
+    // one white slab and the rest threads.
+    const lo = field ? Math.log(Math.max(field.lo, 1e-6)) : 0
+    const hi = field ? Math.log(Math.max(field.hi, 1e-6)) : 1
+    const span = hi - lo
+    const t = []
+    for (let i = 0; i < n; i++) {
+      const row = []
       for (let s = 0; s < MAP_STOPS; s++) {
-        const base = lensIndex * REAL_HIDDEN
-        const row = run.residuals[s].subarray(base, base + REAL_HIDDEN)
-        values.push(row)
-        urls.push(stripUrl(row, '--moving', `s|${run.key}|${lensIndex}|${s}`))
+        if (!field || !(span > 0)) row.push(0.42)
+        else {
+          const value = Math.log(Math.max(field.rows[i][s], 1e-6))
+          row.push(Math.min(1, Math.max(0, (value - lo) / span)))
+        }
       }
-      return { real: true, values, urls }
+      t.push(row)
     }
-    if (armed) return null
-    const token = sequence[lensIndex]
-    if (token === undefined) return null
-    const values = []
-    const urls = []
-    for (let s = 0; s < MAP_STOPS; s++) {
-      const row = Float32Array.from(residualVector(token, s, REAL_HIDDEN))
-      values.push(row)
-      urls.push(stripUrl(row, '--moving', `i|${token}|${s}`))
+
+    const hw = t.map((row) => row.map((v) => hwMin + (hwMax - hwMin) * v))
+    const alpha = t.map((row, i) =>
+      row.map((v) =>
+        i === hero ? 0.54 + 0.36 * v : 0.26 + 0.32 * v,
+      ),
+    )
+
+    // The transfers, and what they do to the hero: it runs brighter below
+    // each absorption, and that brightness is the weight.
+    const transfers = []
+    const wobble = []
+    if (registers) {
+      for (const reg of registers) {
+        if (!reg || reg.kept.length === 0) continue
+        reg.kept.forEach((source, ki) => {
+          transfers.push({
+            id: `${reg.layer}-${ki}`,
+            layer: reg.layer,
+            head: reg.head,
+            src: source.src,
+            w: source.w,
+            lane: ki,
+            standBack: block != null && block !== reg.layer,
+          })
+        })
+        const w = reg.kept[0].w
+        const stop = reg.layer + 1
+        alpha[hero][stop] = Math.min(0.93, alpha[hero][stop] + 0.05 + 0.2 * w)
+        if (stop + 1 < MAP_STOPS) {
+          alpha[hero][stop + 1] = Math.min(
+            0.93,
+            alpha[hero][stop + 1] + 0.02 + 0.07 * w,
+          )
+        }
+        wobble.push([g.bandMid[reg.layer], 1.1 + 3.0 * w])
+      }
     }
-    return { real: false, values, urls }
-  }, [real, armed, run, lensIndex, sequence, n])
+
+    // The hero's centre line: plumb until the first absorption, then a
+    // decaying wobble below each one, so every disturbance has a cause.
+    const centreX = (i, y) => {
+      if (i !== hero) return xs[i]
+      let x = xs[i]
+      for (const [y0, amplitude] of wobble) {
+        if (y > y0) {
+          const d = y - y0
+          x += amplitude * Math.sin(d / 26) * Math.exp(-d / 150)
+        }
+      }
+      return x
+    }
+
+    const segments = [
+      { key: 'rim', y0: g.fallTop, y1: g.rimY, s0: 0, s1: 0, tail: false },
+    ]
+    for (let s = 0; s < MAP_STOPS - 1; s++) {
+      segments.push({
+        key: `s${s}`, y0: g.stopY[s], y1: g.stopY[s + 1], s0: s, s1: s + 1, tail: false,
+      })
+    }
+    segments.push({
+      key: 'tail', y0: g.stopY[MAP_STOPS - 1], y1: g.apertureY0, s0: MAP_STOPS - 1,
+      s1: MAP_STOPS - 1, tail: true,
+    })
+
+    // A stream's footprint, for the scrim that stands the wall bytes back
+    // under the water and for the mask that keeps carriers behind it.
+    const footprints = []
+    for (let i = 0; i < n; i++) {
+      const left = []
+      const right = []
+      const end = i === hero ? g.apertureY0 : g.mistY
+      const steps = 26
+      for (let q = 0; q <= steps; q++) {
+        const y = g.fallTop + ((end - g.fallTop) * q) / steps
+        let s = 0
+        while (s < MAP_STOPS - 1 && y > g.stopY[s + 1]) s++
+        const y0 = s === 0 && y < g.rimY ? g.fallTop : g.stopY[s]
+        const y1 = g.stopY[Math.min(s + 1, MAP_STOPS - 1)]
+        const k = y1 > y0 ? Math.min(1, Math.max(0, (y - y0) / (y1 - y0))) : 0
+        const s1 = Math.min(s + 1, MAP_STOPS - 1)
+        const w = (hw[i][s] + (hw[i][s1] - hw[i][s]) * k) * 2.6 + 2.6
+        const cx = centreX(i, y)
+        left.push(`${f2(cx - w)} ${f2(y)}`)
+        right.push(`${f2(cx + w)} ${f2(y)}`)
+      }
+      footprints.push(`M ${left.join(' L ')} L ${right.reverse().join(' L ')} Z`)
+    }
+
+    // Each carrier: out of the source stream into the dark air above the
+    // wall, across, then down one lane just outside the hero's own width and
+    // into it at that block's depth.
+    for (const tr of transfers) {
+      const top = g.bandTop[tr.layer]
+      const lift = top - (g.compact ? 32 : 20)
+      const lane =
+        xs[hero] - (hw[hero][tr.layer + 1] + (g.compact ? 18 : 11) + tr.lane * (g.compact ? 14 : 9))
+      const stop = g.bandMid[tr.layer]
+      const x0 = xs[tr.src]
+      const dx = lane - x0
+      const c1 = dx > 400
+        ? { x: x0 + dx * 0.34, y: lift - 46 }
+        : { x: x0 + dx * 0.45, y: lift - 13 }
+      const c2 = dx > 400
+        ? { x: lane - dx * 0.28, y: lift - 14 }
+        : { x: lane - dx * 0.30, y: lift + 12 }
+      const end = { x: lane, y: lift + 30 }
+      const raw = []
+      for (let k = 0; k <= 44; k++) {
+        const u = k / 44
+        const m = 1 - u
+        raw.push({
+          x: m * m * m * x0 + 3 * m * m * u * c1.x + 3 * m * u * u * c2.x + u * u * u * end.x,
+          y: m * m * m * lift + 3 * m * m * u * c1.y + 3 * m * u * u * c2.y + u * u * u * end.y,
+        })
+      }
+      for (let k = 1; k <= 10; k++) {
+        raw.push({ x: lane, y: end.y + ((stop - 22 - end.y) * k) / 10 })
+      }
+      for (let k = 1; k <= 12; k++) {
+        const u = k / 12
+        const m = 1 - u
+        raw.push({
+          x: m * m * lane + 2 * m * u * lane + u * u * xs[hero],
+          y: m * m * (stop - 22) + 2 * m * u * (stop - 3) + u * u * stop,
+        })
+      }
+      // The normal at each sample, so the carrier's internal filaments run
+      // alongside it rather than across it.
+      tr.points = raw.map((point, k) => {
+        const a = raw[Math.max(0, k - 1)]
+        const b = raw[Math.min(raw.length - 1, k + 1)]
+        const len = Math.hypot(b.x - a.x, b.y - a.y) || 1
+        return { x: point.x, y: point.y, nx: -(b.y - a.y) / len, ny: (b.x - a.x) / len }
+      })
+      tr.lift = lift
+      tr.stopY = stop
+      tr.laneX = lane
+    }
+
+    // The landing. It belongs to the last position and to no other, so it is
+    // always drawn from the last position's logits — dimmed, and said, when
+    // the reader has made an earlier token the hero.
+    let landing = null
+    if (splash) {
+      const max = splash[0].p
+      const bars = splash.map((candidate, i) => {
+        const h = 16 + g.barMaxH * (candidate.p / max)
+        return {
+          id: candidate.id,
+          token: candidate.token,
+          p: candidate.p,
+          x: g.barX0 + i * g.barPitch,
+          h,
+          top: g.barBase - h,
+          argmax: finalTop != null && candidate.id === finalTop.id,
+          pick: nextToken != null && candidate.token === nextToken,
+        }
+      })
+      landing = { bars }
+    }
+
+    return {
+      n, hero, xs, slot, hw, alpha, t, plan,
+      rel: filaments.rel, bins: filaments.bins,
+      centreX, segments, footprints, transfers, landing,
+      landingHere: hero === n - 1,
+      apertureX: xs[n - 1],
+    }
+  }, [
+    n, filaments, field, g, hero, registers, splash, finalTop, nextToken, plan, block,
+  ])
 
   // What the instrument has on screen, for the console check. Dev only; the
   // bundler drops the branch in a production build.
   useEffect(() => {
     if (!import.meta.env.DEV) return
     globalThis.__mapState =
-      real && run && field
+      live && draw && field
         ? {
             real: true,
             key: run.key,
             ids: run.ids,
-            index: lensIndex,
-            layer,
-            stops: Array.from(field.rows[lensIndex] ?? []),
-            heads: Array.from(heads ?? []),
-            // The strip's own cells, exactly as they were rastered.
-            stripStops: strip?.real ? strip.values : null,
+            hero,
+            block,
+            group: plan.group,
+            autoHeads,
+            buffers: run.residuals.map((r) => r.buffer),
+            norms: field.rows.map((row) => Array.from(row)),
+            filaments: draw.bins.map((rows) => rows.map((row) => Array.from(row))),
+            transfers: draw.transfers.map((tr) => ({
+              layer: tr.layer, head: tr.head, src: tr.src, w: tr.w,
+            })),
+            heads: heads ? Array.from(heads) : null,
+            landing: draw.landing ? draw.landing.bars.map((b) => ({ id: b.id, p: b.p })) : [],
           }
         : { real: false }
-  }, [real, run, field, heads, lensIndex, layer, strip])
+  }, [live, draw, field, run, hero, block, plan, autoHeads, heads])
 
-  const columns = useMemo(() => {
-    if (n === 0) return []
-    const slot = g.trackW / n
-    const w = Math.min(g.chipMax, slot - CHIP_GAP)
-    return sequence.map((token, i) => {
-      const x = g.TRACK + slot * i + (slot - w) / 2
-      return { i, token, x, w, cx: x + w / 2 }
-    })
-  }, [sequence, n, g])
-
-  const bands = useMemo(
-    () => BANDS.map((band) => ({ band, boxes: layoutParts(band, g) })),
-    [g],
-  )
-
-  const factsFor = useCallback(
-    (name) => tensorFacts(manifest, name),
-    [manifest],
-  )
-
-  /**
-   * The two rasters a steel box wears: its own tensor's bytes in the frozen
-   * blue, and the same bytes again in the moving amber for the moment the
-   * water crosses it. One PNG each, cached by tensor and by role, so a replay
-   * is an opacity change on an image that already exists rather than any
-   * drawing work. Both are real in both modes — the grid was read out of the
-   * file at build time, so it owes nothing to whether the model has loaded.
-   */
-  const textureFor = useCallback(
-    (name) => {
-      const thumb = thumbs?.[name]
-      if (!thumb) return null
-      const frozen = thumbnailUrl(thumb, '--frozen-on-screen', `${name}|frozen`)
-      if (!frozen) return null
-      return { frozen, moving: thumbnailUrl(thumb, '--moving', `${name}|moving`) }
-    },
-    [thumbs],
-  )
-
-  /**
-   * When the box in band `bi` glints: a little before the water reaches the
-   * stop below it, because the strip crosses the box on its way there rather
-   * than at the moment it arrives.
-   */
-  const glintAt = useCallback(
-    (bi) => Math.max(0, PASS_LEAD_MS + bi * PASS_STEP_MS - GLINT_LEAD_MS),
-    [],
-  )
-
-  // Stable: it reads everything it needs out of refs, so the timeline effect
-  // can depend on it without the fall restarting whenever a depth lands.
-  whisperData.current = { reading, real, lensIndex, compact }
-  const writeWhisper = useCallback((stop) => {
-    whisperShown.current = stop
-    const node = whisperRef.current
-    if (!node) return
-    node.textContent = whisperText(stop, whisperData.current.reading, whisperData.current)
+  const factsFor = useCallback((name) => tensorFacts(manifest, name), [manifest])
+  const partFacts = part ? factsFor(part) : null
+  const handlePart = useCallback((name) => {
+    setPart((prev) => (prev === name ? null : name))
   }, [])
 
-  // The seven depths land one at a time, each about 155 ms of worker
-  // arithmetic, and the water is usually past a stop before that stop's word
-  // arrives. So whenever the reading changes, whatever depth is currently on
-  // screen is written again — a stop that said "reading…" while the strip
-  // crossed it fills in a moment later, in place.
-  useEffect(() => {
-    writeWhisper(whisperShown.current)
-  }, [reading, real, lensIndex, compact, writeWhisper])
-
-  const handlePart = useCallback((box) => {
-    setPart((prev) => (prev && prev.tensor === box.tensor && prev.id === box.id ? null : box))
-  }, [])
-
-  const partFacts = part ? factsFor(part.tensor) : null
-  const selectedToken = sequence[lensIndex]
-
-  // The pass keeps its last position's logits whole, so the top of them is
-  // one scan of an array the map already has — no second pass, no shortlist.
-  const finalTop = useMemo(
-    () => (real && run ? topOfFinalLogits(run) : null),
-    [real, run],
-  )
-
-  /**
-   * Where the water lands.
-   *
-   * The last stream reaches the unembedding and spreads across the whole
-   * vocabulary; these are the tallest few of those 50,257 splashes, and their
-   * heights are the probabilities the sampler is about to draw from. It is the
-   * end of the fall, so it is drawn at the bottom of the drawing and nowhere
-   * else — and only for the last position, because the next-word distribution
-   * belongs to the end of the sentence and to no other point in it.
-   */
-  const splash = useMemo(
-    () => (real && run ? finalSplash(run, g.splashN) : null),
-    [real, run, g.splashN],
-  )
-  const splashIsHere = splash != null && lensIndex === n - 1
-
-  /**
-   * What the stack settles on at the selected position.
-   *
-   * At the last position that is free, and it is the machine's own answer:
-   * the argmax of the logits this pass produced there. So the bottom row
-   * prints a real prediction the moment the model has run, with nothing
-   * clicked — and it agrees with what a click then shows, which the
-   * shortlist beside it would not have (B skips whitespace tokens; the
-   * machine does not).
-   *
-   * Earlier positions have no logits row of their own in this pass. Reading
-   * one means pushing that position's last residual through ln_f and the
-   * embedding table backwards, which is precisely the last row of instrument
-   * D's reading — so a click on a chip takes that reading and this line
-   * prints its winner when it lands, rather than the map computing a second
-   * one of its own.
-   */
-  const settled = real
-    ? (reading?.winner ?? (lensIndex === n - 1 ? (finalTop?.token ?? null) : null))
-    : null
-
-  /**
-   * Where one stop's norm sits in the run's own range, 0 to 1.
-   *
-   * On a log scale, and the legend says so. Measured on the default sentence,
-   * the residual norm runs from about 5 at the embedding to about 1,800 by
-   * the last block — two and a half orders of magnitude, most of it spent in
-   * the first token, which is the attention sink every GPT-2 has. Mapped
-   * linearly, six of the seven stops on every column would be
-   * indistinguishable from black and the drawing would say the stream is
-   * empty until the very end, which is the opposite of true. The ratio is
-   * what carries the information here, so the ratio is what is drawn.
-   */
-  const value = (i, s) => {
-    const row = field?.rows?.[i]
-    // A pass is in flight: every stop the same low value, so the stream is
-    // visibly there and visibly carrying nothing anyone has measured yet.
-    if (!row) return field == null && armed && n > 0 ? 0.16 : null
-    const lo = Math.log(Math.max(field.lo, 1e-6))
-    const hi = Math.log(Math.max(field.hi, 1e-6))
-    const span = hi - lo
-    if (!(span > 0)) return 1
-    const t = (Math.log(Math.max(row[s], 1e-6)) - lo) / span
-    return Math.min(1, Math.max(0, t))
-  }
-
-  const arcMax = arcs ? arcs.reduce((m, v) => Math.max(m, v), 0) : 0
-  // The band the threads and the lit head squares belong to — only ever a
-  // real one, because there is no attention to draw without a run.
-  const arcBand = real ? layer + 1 : null
-  // The band the C marker sits in. It is the same band, but it is drawn in
-  // both modes: the window onto instrument C is part of the machinery, not
-  // part of the reading, and a reader who has not loaded the model still
-  // needs the door.
-  const headBand = layer + 1
-
-  const waiting = armed && !real
+  const heroToken = sequence[hero]
+  const silent = registers ? registers.find((reg) => reg && reg.kept.length === 0) : null
 
   const note = () => {
     if (n === 0) return 'no input — type something into instrument A'
     if (pending || waiting) return 'running distilgpt2…'
-    if (!real) return 'illustrative — the shape of the pass'
-    return `real residual stream · ‖residual‖ ${
-      field ? field.lo.toFixed(1) : '—'
-    } → ${field ? field.hi.toFixed(1) : '—'}`
+    if (!armed) return 'illustrative — the walls are real, the fall is a schematic'
+    if (!live) return 'the walls are real — the fall is waiting on a pass'
+    return `real pass · ‖residual‖ ${field.lo.toFixed(1)} → ${field.hi.toFixed(1)} · ${
+      plan.count
+    } filaments × ${plan.group} dims`
   }
 
-  // Memoised, not derived inline: the replay timeline below depends on it,
-  // and a fresh array every render would restart the fall on every render.
-  const nodeBands = useMemo(
+  // --- the legend: every rule in the drawing, stated ------------------------
+  const wall0 = windows ? wallWindow(windows, wallTensor(0)) : null
+  const tensor0 = factsFor(wallTensor(0))
+  const fileSize = facts?.provenance?.bytes
+    ? `${(facts.provenance.bytes / 1e6).toFixed(1)} MB`
+    : 'the'
+  const count = (v) => v.toLocaleString('en-US')
+
+  const legend = useMemo(() => {
+    // Which stream is the fat one is a fact about this sentence, so it is
+    // read off the field rather than asserted.
+    let widest = '—'
+    if (field) {
+      let best = -Infinity
+      for (let i = 0; i < field.rows.length; i++) {
+        for (let s = 0; s < MAP_STOPS; s++) {
+          if (field.rows[i][s] > best) {
+            best = field.rows[i][s]
+            widest = sequence[i]
+          }
+        }
+      }
+    }
+    const rows = wall0?.rows ?? 24
+    const cols = wall0?.cols ?? 64
+    const walls = compact
+      ? `Six fields, one a block. Every cell is one real i8 byte of that block’s attn.c_attn.weight — the ${rows} × ${cols} window the ${fileSize} file’s own reading keeps, ${count(rows * cols)} cells a wall, never reshaped. Brightness is the byte on the middle 96% of that window, so a few extremes cannot black it out. Frozen: a pass changes none of them. Cells stand back to 55% under a stream and to 10% under a carrier or a label.`
+      : `Six full-width fields, one for each block. Every cell is one real i8 byte of that block’s attn.c_attn.weight as the ${fileSize} file stores it — the ${rows} × ${cols} window this page’s own reading of the file keeps of a ${count(wall0?.totalRows ?? 768)} × ${count(wall0?.totalCols ?? 2304)} tensor, ${count(rows * cols)} cells a wall, ${count(tensor0?.byteLength ?? 0)} bytes in the file for the whole tensor. The window keeps its own shape: reshaping it would put bytes side by side that are not side by side in the tensor. Brightness is the byte’s own value stretched across the middle 96% of that window, so a handful of extremes cannot black the wall out. Frozen — the pass never changes one of them. Cells under the water stand back to 55%, and to 10% under a carrier or a label, so no byte is ever read as light.`
+
+    const spacing = `${n} stream${n === 1 ? '' : 's'} across ${Math.round(g.trackW)} units, ${Math.round(draw?.slot ?? 0)} apart`
+    const fall = !live
+      ? compact
+        ? `One stream a token. No pass has run, so every stream is drawn at one width and one light — no magnitude is claimed. The grain inside is the deterministic stand-in instrument D prints, 768 numbers binned into ${plan.count} filaments of ${plan.group}, and it is a stand-in, not a measurement. Spacing: ${spacing}. The last word is the hero; click any token to make it one.`
+        : `One stream a token, falling through all six walls. No pass has run, so every stream is drawn at one width and one light: nothing here claims a magnitude. The grain inside a stream is the deterministic stand-in instrument D prints, its 768 numbers binned into ${plan.count} filaments of ${plan.group} dimensions each — a stand-in, and not a measurement. Spacing scales with the sentence: ${spacing}, and the drawing’s height never changes with it. The last word is the hero, and clicking any token makes it the hero instead.`
+      : compact
+        ? `One stream a token. Width, light and grain density are the real length (L2) of that token’s 768-number vector at each of the seven depths — ${field.lo.toFixed(2)} to ${count(Number(field.hi.toFixed(2)))} — on one log law shared by all ${n}; the widest stream is ${widest}. Inside, the 768 dimensions are ${plan.count} filaments of ${plan.group}: a filament’s grain is the mean |value| of its own dimensions there, against the brightest filament in that stream at that depth. Spacing: ${spacing}. Hero: ${heroToken ?? '—'} — click any token.`
+        : `One stream a token, ${n} of them, falling through all six walls. Width, light and grain density are the real length (L2) of that token’s 768-number running vector at each of the seven depths — ${field.lo.toFixed(2)} at the rim up to ${count(Number(field.hi.toFixed(2)))} — on one log law shared by all ${n}, and the widest stream is ${widest}. GPT-2’s first piece carries the attention sink, which is usually what makes it the fat one. Inside a stream the 768 dimensions are drawn as ${plan.count} filaments of ${plan.group} dimensions each: a filament’s grain is the mean |value| of its own ${plan.group} dimensions at that depth, scaled against the brightest filament in that same stream at that same depth. Spacing scales with the sentence — ${spacing} — and the drawing’s height never changes with it. The hero is ${heroToken ?? '—'}, the only stream that reaches the landing; clicking any token makes it the hero. The others end as dim grains.`
+
+    const heads = autoHeads
+      ? autoHeads.map((h, l) => `b${l} h${block === l && headPick != null ? headPick : h}`).join(', ')
+      : ''
+    const nearMiss = silent
+      ? ` Block ${silent.layer} draws nothing, and the number beside the hero is what it sent to itself: ${silent.selfWeight.toFixed(4)}${
+          silent.best
+            ? `, against its best other source ${sequence[silent.best.src]} at ${silent.best.w.toFixed(4)}`
+            : ''
+        }. Nothing was lowered to manufacture a transfer.`
+      : ''
+    const transfers = !live
+      ? compact
+        ? `There is no attention to draw without a pass, so no carriers are drawn. Load the real model and each block reads the hero’s own row: green tick = the key that matched, amber carrier = the weight.`
+        : `There is no attention until a pass has run, so no carrier is drawn here. With the real model in hand, each block takes the head that sends the most attention away from the first token and away from itself, and draws the hero’s own sources at or above ${TRANSFER_FLOOR}, at most ${2}: a green tick at the key that matched, an amber carrier whose width and light are that weight, and a brighter hero below the absorption.`
+      : compact
+        ? `Per block, from the head that sends the most attention away from the first token and away from itself (${heads}), the hero’s own sources at or above ${TRANSFER_FLOOR}, at most 2. Self-attention is never a transfer — it is the stream continuing. Green tick = the key that matched; the carrier’s width and light are that weight; the hero runs brighter below each absorption.${nearMiss} Carriers keep to the dark air and pass behind every other stream. The twelve squares beside an open register are lit by the share of the hero’s attention that leaves itself in each head.`
+        : `Per block, from the head that sends the most attention away from the first token and away from itself (${heads}) — the HEAD chips overrule that rule for an open block — the hero’s own sources at or above ${TRANSFER_FLOOR}, at most 2. Self-attention is never a transfer: it is the stream continuing, and it is drawn as the stream. Green tick = the key that matched; the amber carrier’s width and light are that real weight; the hero runs brighter below each absorption, and that brightness is the weight too.${nearMiss} Carriers keep to the dark air above the walls and drop into the hero down one dimmed lane; where a carrier meets another stream it passes behind it. With one register open the other five stand back, and the twelve squares beside it are lit by the share of the hero’s attention that leaves itself in each head — which is what a head chip lets you read a different one of.`
+
+    const argmaxLine = finalTop && splash
+      ? `${finalTop.token} at ${((splash.find((s) => s.id === finalTop.id)?.p ?? 0) * 100).toFixed(1)}%`
+      : ''
+    const pickBar = splash?.find((s) => s.token === nextToken)
+    const landing = !live
+      ? compact
+        ? `The last position’s vector against all 50,257 words. It needs a pass — load the real model and the bars are this sentence’s own softmax.`
+        : `Where the last position’s vector meets all 50,257 words. There is no distribution without a pass, so no bar is drawn: load the real model and the bars become this sentence’s own softmax, top ${g.splashN}.`
+      : compact
+        ? `Only the hero reaches it, and it is the last position’s alone. The ${g.splashN} bars are this pass’s own softmax over all 50,257 words. ${argmaxLine} is the machine’s own top, drawn blue; ${pickBar ? `${pickBar.token} at ${(pickBar.p * 100).toFixed(1)}%` : (nextToken ?? '—')} is what the sampler took (temperature ${DECODING.temperature}, top-k ${DECODING.topK}, repetition penalty ${DECODING.repetitionPenalty}, seed ${DECODING.seed}) and carries the amber mark. Same input → same trace, every time.`
+        : `Only the hero reaches it, and it is the last position’s alone — ${
+            draw?.landingHere
+              ? 'which is where the hero is'
+              : 'so with an earlier token as the hero it stays anchored there and stands back'
+          }. The ${g.splashN} bars are this pass’s own softmax over all 50,257 words, top ${g.splashN}, counted from the last position’s vector and from nothing else. ${argmaxLine} is the machine’s own top and is drawn blue; ${
+            pickBar ? `${pickBar.token} at ${(pickBar.p * 100).toFixed(1)}%` : (nextToken ?? '—')
+          } is what the shipped sampler took (temperature ${DECODING.temperature}, top-k ${DECODING.topK}, repetition penalty ${DECODING.repetitionPenalty}, seed ${DECODING.seed}) and carries the amber mark. A bar’s height is its probability and the rows of dots are how that height is counted. Chance appears nowhere above it: same input → same trace, every time.`
+
+    return [
+      ['THE WALLS', walls],
+      ['THE FALL', fall],
+      ['THE TRANSFERS', transfers],
+      ['THE LANDING', landing],
+    ]
+  }, [
+    compact, wall0, tensor0, fileSize, n, g, draw, live, field, plan, heroToken,
+    autoHeads, block, headPick, silent, sequence, splash, finalTop, nextToken,
+  ])
+
+  const legendLines = useMemo(
     () =>
-      bands
-        .map(({ band }, i) => ({ band, i }))
-        .filter(({ band }) => band.stop !== null),
-    [bands],
+      legend.map(([key, body], i) => [key, wrapText(body, g.legCols, g.legLines[i])]),
+    [legend, g],
   )
 
-  /**
-   * The fall, as a timeline rather than as a render.
-   *
-   * Seven updates of one element group, spaced one cadence apart: the href of
-   * a single image, a translateY, and an opacity. Nothing here is laid out by
-   * the animation and React is not asked to render a frame of it, so the
-   * water can fall the whole way down without moving a pixel of the page.
-   *
-   * Three ways it can end. Parked, because the reader clicked a node: the
-   * strip jumps to that depth and stays. Reduced motion: it is drawn at the
-   * bottom of the fall immediately, which is where a replay would have left
-   * it. Otherwise it falls.
-   */
-  useEffect(() => {
-    const node = stripRef.current
-    const image = stripImgRef.current
-    if (!node || !image) return undefined
-    if (!strip) {
-      node.style.opacity = '0'
-      return undefined
-    }
-    const last = MAP_STOPS - 1
-    const put = (s, lit) => {
-      image.setAttribute('href', strip.urls[s] ?? '')
-      node.style.transform = `translateY(${g.stripY(nodeBands[s].i)}px)`
-      const t = value(lensIndex, s)
-      node.style.opacity = lit && t != null ? String(0.34 + 0.66 * t) : '0'
-      // The whisper travels with the water: whatever depth the strip is at is
-      // the depth the lens line is reading.
-      if (lit) writeWhisper(s)
-    }
-    if (park != null || still) {
-      node.style.transition = 'none'
-      put(Math.min(park ?? last, last), true)
-      // Read a geometry back so the jump is committed before transitions are
-      // handed back; without it the next fall starts from the wrong place.
-      void node.getBoundingClientRect()
-      node.style.transition = ''
-      return undefined
-    }
-    node.style.transition = 'none'
-    put(0, false)
-    void node.getBoundingClientRect()
-    node.style.transition = ''
-    const timers = []
-    for (let s = 0; s <= last; s++) {
-      timers.push(
-        setTimeout(() => put(s, true), PASS_LEAD_MS + s * PASS_STEP_MS),
-      )
-    }
-    return () => {
-      for (const timer of timers) clearTimeout(timer)
-    }
-    // `value` is a closure over these; it is a plain function so that the
-    // nodes and the strip cannot read the field through two different ramps.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [replay, park, still, strip, g, nodeBands, field, lensIndex, armed, n, writeWhisper])
+  const fine = live
+    ? `real distilgpt2 · ${REAL_LAYERS} blocks · ${REAL_HEADS} heads · d ${REAL_HIDDEN}${
+        manifest ? ` · ${(manifest.parameters / 1e6).toFixed(1)}M parameters` : ''
+      } · one pass on the sentence above, run in this browser · nothing in the picture is a stand-in: the only marks that carry no number are the aperture outline and the bloom around the light.`
+    : `real distilgpt2 · ${REAL_LAYERS} blocks · ${REAL_HEADS} heads · d ${REAL_HIDDEN}${
+        manifest ? ` · ${(manifest.parameters / 1e6).toFixed(1)}M parameters` : ''
+      } · the walls are the real file in every mode; the fall, the transfers and the landing wait on a pass. The only marks that carry no number are the aperture outline and the bloom around the light.`
+  const fineLines = useMemo(
+    () => wrapText(fine, Math.floor((SW - 18) / (g.fs.legFine * 0.6)), g.fineLines),
+    [fine, g],
+  )
 
-  /**
-   * The output row's two ends, which share one line.
-   *
-   * At 390 they met in the middle: "␣roared — the stack settles on ␣through"
-   * against "next: ␣The" left forty characters of overlapping glyphs where
-   * two readings should have been. The right-hand end is short and is what
-   * instrument B is about to do, so it is measured first and the left end is
-   * clipped to whatever room is left. Its full wording stays in the tooltip.
-   */
-  const outLeftX = g.MX + g.mark + 5
-  const outRightX = g.RIGHT - g.mark - 5
-  const nextText = waiting
-    ? 'next — running…'
-    : nextToken
-      ? `next: ${nextToken}`
-      : 'no next token'
-  const outText = (() => {
-    if (selectedToken === undefined) return 'nothing to read'
-    if (waiting) return `${selectedToken} — running distilgpt2…`
-    if (!real) return `${selectedToken} — illustrative`
-    if (!settled) {
-      return compact
-        ? `${selectedToken} — click a chip`
-        : `${selectedToken} — click a chip to read the stack here`
-    }
-    return compact
-      ? `${selectedToken} → ${settled}`
-      : `${selectedToken} — the stack settles on ${settled}`
-  })()
-  const outRoom =
-    outRightX - nextText.length * g.fs.out * CHAR - g.gap - outLeftX
+  const chipW = Math.min(g.compact ? 150 : 96, (draw?.slot ?? 96) - 6)
 
-  // The legend baselines. The key line and the cell rule each take a line of
-  // their own at both widths — they are the two that have to be read. Wide
-  // then shares the third line: the replay note at the left end, the head
-  // legend at the right, 201 and 357 units of the 644 the row has. Compact
-  // has room for neither beside the other, so it stacks all four.
-  const keyY = g.legendY + g.fs.key + 2
-  const cellY = keyY + g.fs.legend + 4
-  const tailY = cellY + g.fs.legend + 3
-  const headY = tailY
-  const replayY = compact ? tailY + g.fs.legend + 3 : tailY
-  const lo = field ? field.lo.toFixed(1) : '—'
-  const hi = field ? field.hi.toFixed(1) : '—'
+  const openWindow = (letter, target, label) => (
+    <button
+      key={letter}
+      type="button"
+      className="mr-open"
+      aria-label={label}
+      onClick={() => onOpenInstrument(target)}
+    >
+      {letter}
+    </button>
+  )
 
   return (
     <figure className="instrument" id="inst-forward-figure">
       <InstrumentHead
         eyebrow="INSTRUMENT F"
         title="The forward pass, live"
-        purpose="The whole machine, drawn once — cut rock the pass never touches, and your sentence falling through it like water, picking up meaning as it goes."
+        purpose="Six frozen walls of the file’s own weight bytes, and your sentence falling through them as light. The sentence is the only moving thing in the picture: attention picks a source in green, carries its value in amber, and leaves the last word rich enough to say what comes next."
         note={
           <LoadNote
             label={
               armed
                 ? architectureNote(manifest)
-                : 'illustrative — the shape of the pass, not its numbers'
+                : 'the walls are real in both modes — the fall needs the model'
             }
             status={modelStatus}
             progress={progress}
@@ -720,620 +1019,649 @@ export default function ForwardMap({
         <ReadingLine text={text} />
 
         <div className="map-controls">
-          {/* One slot, one width, whichever of the two is in it. The selector
-              answers to `armed` rather than to `real`, so a STEP — which
-              takes a pass out of date for a third of a second — does not
-              swap the control out and move the button beside it. */}
-          <div className="map-sel-slot">
-            {armed ? (
-              <label className="attn-sel">
-                <span>layer</span>
-                <select
-                  value={layer}
-                  onChange={(e) => onLayerChange(Number(e.target.value))}
-                >
-                  {Array.from({ length: REAL_LAYERS }, (_, l) => (
-                    <option key={l} value={l}>
-                      {l}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ) : (
-              <span className="map-sel-ghost">layer — real only</span>
-            )}
+          <div className="mr-chiprow">
+            <span className="mr-sel-label">BLOCK</span>
+            <button
+              type="button"
+              className={`mr-chip${block == null ? ' is-on' : ''}`}
+              aria-pressed={block == null}
+              aria-label="show all six registers"
+              onClick={() => {
+                setBlockOpen(false)
+                setHeadPick(null)
+              }}
+            >
+              ALL
+            </button>
+            {Array.from({ length: REAL_LAYERS }, (_, l) => (
+              <button
+                key={l}
+                type="button"
+                className={`mr-chip${block === l ? ' is-on' : ''}`}
+                aria-pressed={block === l}
+                aria-label={`open register ${l}`}
+                onClick={() => {
+                  setBlockOpen(true)
+                  setHeadPick(null)
+                  onLayerChange(l)
+                }}
+              >
+                {l}
+              </button>
+            ))}
+            <button type="button" className="btn map-run-btn" onClick={runAgain}>
+              RUN THE PASS
+            </button>
+            <InfoTag topic={armed ? 'mapReal' : 'map'} />
           </div>
-          <button
-            type="button"
-            className="btn map-run-btn"
-            onClick={runAgain}
-          >
-            RUN THE PASS
-          </button>
-          <InfoTag topic={armed ? 'mapReal' : 'map'} />
+          <div className="mr-chiprow">
+            <span className="mr-sel-label">HEAD</span>
+            <button
+              type="button"
+              className={`mr-chip${headPick == null ? ' is-on' : ''}`}
+              aria-pressed={headPick == null}
+              aria-label="read each block’s transfers from the head the rule picks"
+              disabled={block == null}
+              onClick={() => setHeadPick(null)}
+            >
+              RULE
+            </button>
+            {Array.from({ length: REAL_HEADS }, (_, h) => (
+              <button
+                key={h}
+                type="button"
+                className={`mr-chip${headPick === h ? ' is-on' : ''}`}
+                aria-pressed={headPick === h}
+                aria-label={`read the open register’s transfers from head ${h}`}
+                disabled={block == null}
+                onClick={() => setHeadPick(h)}
+              >
+                {h}
+              </button>
+            ))}
+          </div>
+          <div className="mr-chiprow mr-openrow">
+            <span className="mr-opens">
+              OPEN
+              {openWindow('A', 'tokenizer', 'open instrument A, the tokenizer')}
+              {openWindow('B', 'stepper', 'open instrument B, the forward pass and the KV rack')}
+              {openWindow('C', 'attention', 'open instrument C, one head in detail')}
+              {openWindow('D', 'glass', 'open instrument D, the glass pass on this token')}
+              {openWindow('E', 'file', 'open instrument E, the file')}
+            </span>
+          </div>
           <span className="map-ctl-note">{note()}</span>
         </div>
 
-        <div
-          className="map-screen screen"
-          style={{ aspectRatio: `${g.W} / ${g.H}` }}
-        >
+        <div className="map-screen screen" style={{ aspectRatio: `${SW} / ${g.H}` }}>
           <svg
             className="map-svg"
-            viewBox={`0 0 ${g.W} ${g.H}`}
+            viewBox={`0 0 ${SW} ${g.H}`}
             role="img"
-            aria-label={`distilgpt2 drawn once: ${REAL_LAYERS} blocks of attention and MLP, with the current sequence of ${n} tokens running down through them`}
+            aria-label={`one pass of distilgpt2 drawn as a memory room: six full-width walls of real weight bytes, ${n} granular token streams falling through them, the attention transfers into ${
+              heroToken ?? 'the hero'
+            }, and the landing on the last position’s top ${g.splashN} next words`}
           >
-            {/* --- the sequence, across the top --- */}
-            <text className="map-label" x={g.MX} y={g.chipY + g.chipH * 0.7}>
-              {compact ? 'seq' : 'sequence'}
-            </text>
-            {columns.map((col) => {
-              const on = col.i === lensIndex
-              const label = clip(col.token, g.fs.chip, col.w - 4)
-              return (
-                <g
-                  key={col.i}
-                  className={`map-chip${on ? ' is-on' : ''}`}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`read position ${col.i}, ${col.token}`}
-                  aria-pressed={on}
-                  onClick={() => onSelect(col.i)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault()
-                      onSelect(col.i)
-                    }
-                  }}
-                >
-                  <title>{`${col.i} · ${col.token}`}</title>
-                  <rect x={col.x} y={g.chipY} width={col.w} height={g.chipH} rx="2" />
-                  <text
-                    x={col.cx}
-                    y={g.chipY + g.chipH * 0.72}
-                    textAnchor="middle"
-                    style={{ fontSize: g.fs.chip }}
-                  >
-                    {label}
-                  </text>
-                </g>
-              )
-            })}
+            <defs>
+              <linearGradient id="mr-fade" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stopColor="#070A0D" />
+                <stop offset=".62" stopColor="#05070A" />
+                <stop offset="1" stopColor="#030507" />
+              </linearGradient>
+            </defs>
+            <rect width={SW} height={g.H} fill="url(#mr-fade)" />
 
-            {/* --- what the columns are, said on the drawing ---
+            <Walls g={g} windows={windows} />
 
-                The complaint this answers is that the columns were the one
-                thing on the map nobody could name. They are not decoration
-                and they are not a chart of anything: each is one token's
-                vector on its way down, and the bright one is the token being
-                read. Said here, next to them, rather than in the legend. */}
-            <text
-              className="map-annot"
-              x={g.TRACK}
-              y={g.annY}
-              style={{ fontSize: g.fs.annot }}
-            >
-              {clip(
-                compact
-                  ? '↓ one token’s vector, falling'
-                  : `↓ each column is one token’s vector falling through the machine${
-                      selectedToken === undefined
-                        ? ''
-                        : ` — the bright one is ${selectedToken}`
-                    }`,
-                g.fs.annot,
-                g.RIGHT - g.TRACK,
-              )}
-            </text>
-
-            {/* --- the two headings --- */}
-            <text className="map-header" x={g.MX + g.mark + 5} y={g.headerY}>
-              {compact ? 'the file' : 'the machinery — click any box'}
-            </text>
-            <Window
-              letter="E"
-              x={g.MX}
-              y={g.headerY - g.mark + 2}
-              size={g.mark}
-              label="open instrument E, the file"
-              onOpen={() => onOpenInstrument('file')}
-            />
-            <text className="map-header" x={g.RIGHT} y={g.headerY} textAnchor="end">
-              {compact ? 'the stream' : `the stream — ${MAP_STOPS} stops`}
-            </text>
-
-            {/* --- the machinery --- */}
-            {bands.map(({ band, boxes }, bi) => {
-              const y = g.bandY(bi)
-              const isArcBand = bi === arcBand
-              return (
-                <g key={band.key} className={`map-band${isArcBand ? ' is-on' : ''}`}>
-                  <rect
-                    className="map-band-bg"
-                    x={g.MX}
-                    y={y}
-                    width={g.RIGHT - g.MX}
-                    height={g.bandH}
-                    rx="3"
-                  />
-                  <text
-                    className="map-label"
-                    x={g.TRACK - 8}
-                    y={y + g.boxH * 0.62}
-                    textAnchor="end"
-                  >
-                    {compact ? band.short : band.label}
-                  </text>
-                  {boxes.map((box) => {
-                    const facts = factsFor(box.tensor)
-                    const tex = textureFor(box.tensor)
-                    const label = compact ? (box.short ?? box.label) : box.label
-                    const spec = compact ? '' : specFor(facts, g.fs.spec, box.w - 12)
-                    // The unembedding is the word table read the other way
-                    // round, so it and the embedding box name the same tensor.
-                    // Saying the tensor's name twice would hide the tie rather
-                    // than say it, so the tied box gets its own sentence.
-                    const named = facts ? facts.display : box.label
-                    const spoken = box.tie
-                      ? `read the word table back out of the file — the same ${named} the embedding uses, tied, and turned on its side`
-                      : `read ${named} out of the file`
-                    const on = part && part.id === box.id && part.tensor === box.tensor
-                    return (
-                      <g
-                        key={box.id}
-                        className={`map-part${on ? ' is-on' : ''}`}
-                        role="button"
-                        tabIndex={0}
-                        aria-label={spoken}
-                        aria-pressed={Boolean(on)}
-                        onClick={() => handlePart(box)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault()
-                            handlePart(box)
-                          }
-                        }}
-                      >
-                        <title>{partReadout(facts)}</title>
+            {/* Where a cell must stand back so that nothing on top of it is
+                ambiguous. The scrim is painted in the screen's own ground, so
+                a cell under it composites to exactly the fraction the legend
+                names — and the walls themselves stay untouched, which is why
+                a keystroke does not rebuild nine thousand cells. */}
+            {draw ? (
+              <g className="mr-scrims">
+                {block != null
+                  ? Array.from({ length: REAL_LAYERS }, (_, l) =>
+                      l === block ? null : (
                         <rect
-                          x={box.x}
-                          y={y + g.boxTop}
-                          width={box.w}
-                          height={g.boxH}
-                          rx="2"
+                          key={l}
+                          x={g.bandX}
+                          y={g.bandTop[l]}
+                          width={g.bandW}
+                          height={g.bandH}
+                          fill="url(#mr-fade)"
+                          opacity="0.42"
                         />
-                        {/* The tensor itself, faintly, inside the box that
-                            names it: twelve by forty-eight block averages of
-                            its real bytes. Inset by a hair so the box's own
-                            stroke stays the edge of the box. */}
-                        {tex ? (
-                          <image
-                            className="map-tex"
-                            href={tex.frozen}
-                            x={box.x + 0.8}
-                            y={y + g.boxTop + 0.8}
-                            width={Math.max(0, box.w - 1.6)}
-                            height={g.boxH - 1.6}
-                            preserveAspectRatio="none"
-                          />
-                        ) : null}
-                        {tex?.moving ? (
-                          <image
-                            // Keyed on the replay counter for the same reason
-                            // the head squares are: the machinery is not
-                            // remounted, so without this the glint would run
-                            // once and never again.
-                            key={`glint-${replay}`}
-                            className="map-tex map-glint"
-                            href={tex.moving}
-                            style={{ '--d': `${glintAt(bi)}ms` }}
-                            x={box.x + 0.8}
-                            y={y + g.boxTop + 0.8}
-                            width={Math.max(0, box.w - 1.6)}
-                            height={g.boxH - 1.6}
-                            preserveAspectRatio="none"
-                          />
-                        ) : null}
-                        <text
-                          className="map-part-name"
-                          x={box.x + g.pad}
-                          y={y + g.boxTop + (spec ? g.fs.part + 2 : g.boxH * 0.65)}
-                          style={{ fontSize: g.fs.part }}
-                        >
-                          {clip(label, g.fs.part, box.w - g.pad * 2)}
-                        </text>
-                        {spec ? (
-                          <text
-                            className="map-part-spec"
-                            x={box.x + g.pad}
-                            y={y + g.boxTop + g.boxH - 5}
-                            style={{ fontSize: g.fs.spec }}
-                          >
-                            {spec}
-                          </text>
-                        ) : null}
-                        {box.heads
-                          ? Array.from({ length: REAL_HEADS }, (_, h) => {
-                              const share = isArcBand && heads ? heads[h] : null
-                              const tw = g.tick
-                              const total = REAL_HEADS * tw + (REAL_HEADS - 1) * g.tickGap
-                              // Room at the right end for the C marker.
-                              const hx =
-                                box.x + box.w - 8 - g.mark - total + h * (tw + g.tickGap)
-                              const hy = y + g.boxTop + g.boxH - tw - 4
-                              return (
-                                <rect
-                                  // Keyed on the replay counter as well as on
-                                  // the head, so RUN THE PASS remounts these
-                                  // and their arrival animation runs again.
-                                  // The columns and threads get this for free
-                                  // from the keyed group they live in; the
-                                  // head squares are drawn inside the
-                                  // machinery, which is not remounted.
-                                  key={`${h}-${replay}`}
-                                  className={`map-head${share == null ? '' : ' is-lit map-lit'}`}
-                                  style={
-                                    share == null
-                                      ? undefined
-                                      : {
-                                          fillOpacity: 0.12 + 0.88 * share,
-                                          '--d': `${1220 + h * 24}ms`,
-                                        }
-                                  }
-                                  x={hx}
-                                  y={hy}
-                                  width={tw}
-                                  height={tw}
-                                  rx="1"
-                                />
-                              )
-                            })
-                          : null}
-                      </g>
+                      ),
+                    )
+                  : null}
+                {draw.footprints.map((d, i) => (
+                  <path key={i} d={d} fill="url(#mr-fade)" opacity="0.45" />
+                ))}
+                {draw.transfers.map((tr) => (
+                  <path
+                    key={tr.id}
+                    d={`M ${tr.points.map((p) => `${f2(p.x)} ${f2(p.y)}`).join(' L ')}`}
+                    fill="none"
+                    stroke="url(#mr-fade)"
+                    strokeWidth={f2((4 + 3 * tr.w) * 2 + 8)}
+                    strokeLinecap="round"
+                    opacity="0.9"
+                  />
+                ))}
+              </g>
+            ) : null}
+
+            {/* Each wall says which register it is, which head its transfers
+                came from, and which tensor it is cut out of. The plate is a
+                button: it prints the readout under the drawing and opens that
+                row of the file. */}
+            {Array.from({ length: REAL_LAYERS }, (_, l) => {
+              const top = g.bandTop[l]
+              const name = wallTensor(l)
+              const wall = windows ? wallWindow(windows, name) : null
+              const tensor = factsFor(name)
+              const on = part === name
+              const short = tensor ? tensor.display.replace(`h.${l}.`, '') : 'attn.c_attn'
+              return (
+                <g key={l} className={block === l ? 'mr-reg is-open' : 'mr-reg'}>
+                  <rect
+                    className="mr-reg-frame"
+                    x={g.bandX - 4}
+                    y={top - 4}
+                    width={g.bandW + 8}
+                    height={g.bandH + 8}
+                    rx="2"
+                  />
+                  <g
+                    className={on ? 'mr-plate is-on' : 'mr-plate'}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`read ${tensor ? tensor.display : name} out of the file`}
+                    aria-pressed={on}
+                    onClick={() => handlePart(name)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        handlePart(name)
+                      }
+                    }}
+                  >
+                    <title>{partReadout(tensor)}</title>
+                    <rect
+                      className="mr-plate-hit"
+                      x={g.bandX}
+                      y={top}
+                      width={g.bandW}
+                      height={g.bandH}
+                    />
+                    <text
+                      className="mr-tensor"
+                      x={SW - 8}
+                      y={top - (compact ? 34 : 24)}
+                      textAnchor="end"
+                      style={{ fontSize: g.fs.tensor }}
+                    >
+                      {short.toUpperCase()}
+                    </text>
+                    <text
+                      className="mr-tensor is-fine"
+                      x={SW - 8}
+                      y={top - (compact ? 16 : 10)}
+                      textAnchor="end"
+                      style={{ fontSize: g.fs.tensor }}
+                    >
+                      {`${wall?.rows ?? 24} × ${wall?.cols ?? 64} WINDOW · ${
+                        tensor?.dtype ?? 'i8'
+                      }`}
+                    </text>
+                  </g>
+                  <text
+                    className="mr-label"
+                    x="8"
+                    y={top + g.fs.reg}
+                    style={{ fontSize: g.fs.reg }}
+                  >
+                    {`BLOCK ${l}`}
+                  </text>
+                  <text
+                    className="mr-label is-dim"
+                    x="8"
+                    y={top + g.fs.reg * 2.2}
+                    style={{ fontSize: g.fs.reg }}
+                  >
+                    {`HEAD ${live ? headFor(l) : '—'}`}
+                  </text>
+                  {/* Twelve heads, outlined in every register and filled only
+                      in the open one, by the share of the hero's attention
+                      each head spends anywhere but on itself. */}
+                  {Array.from({ length: REAL_HEADS }, (_, h) => {
+                    const size = compact ? 12 : 7
+                    const gap = compact ? 3 : 2
+                    const share = block === l && heads ? heads[h] : null
+                    return (
+                      <rect
+                        key={h}
+                        className={share == null ? 'mr-head' : 'mr-head is-lit'}
+                        style={share == null ? undefined : { fillOpacity: 0.12 + 0.88 * share }}
+                        x={8 + h * (size + gap)}
+                        y={top - size - (compact ? 12 : 8)}
+                        width={size}
+                        height={size}
+                        rx="1"
+                      />
                     )
                   })}
                 </g>
               )
             })}
 
-            {/* --- the tie: the embedding table, used backwards --- */}
-            <path
-              className="map-tie"
-              d={`M ${g.RIGHT} ${g.bandY(BANDS.length - 1) + g.boxTop + g.boxH / 2}
-                  L ${g.tie} ${g.bandY(BANDS.length - 1) + g.boxTop + g.boxH / 2}
-                  L ${g.tie} ${g.tieY}
-                  L ${g.TRACK + g.trackW / 4} ${g.tieY}
-                  L ${g.TRACK + g.trackW / 4} ${g.bandY(0) + g.boxTop}`}
-            />
+            {draw ? <Carriers g={g} draw={draw} /> : null}
+            {draw ? <Streams key={replay} g={g} draw={draw} /> : null}
 
-            {/* --- the moving part --- */}
-            <g key={replay} className="map-stream">
-              {columns.map((col) => {
-                const on = col.i === lensIndex
-                return (
-                  <g key={col.i} className={`map-col${on ? ' is-on' : ''}`}>
-                    <line
-                      className="map-col-line"
-                      x1={col.cx}
-                      y1={g.chipY + g.chipH}
-                      x2={col.cx}
-                      y2={g.outY}
-                    />
-                    {/* Which way it goes. A column of dots on a page has no
-                        direction in it, and depth running downwards is the
-                        one thing this drawing asks the reader to take on
-                        trust. One arrowhead in the gap under every band of
-                        the column being read. */}
-                    {on
-                      ? nodeBands.slice(0, -1).map(({ band, i }) => {
-                          const y = g.bandY(i) + g.bandH + 0.5
-                          return (
-                            <path
-                              key={`arrow-${band.key}`}
-                              className="map-arrow"
-                              d={`M ${col.cx - 2.4} ${y} L ${col.cx + 2.4} ${y} L ${col.cx} ${y + 3.4} Z`}
-                            />
-                          )
-                        })
-                      : null}
-                    {nodeBands.map(({ band, i }, s) => {
-                      const t = value(col.i, s)
-                      if (t == null) return null
-                      const prev = s > 0 ? value(col.i, s - 1) : null
-                      const length = field?.rows?.[col.i]?.[s]
-                      const readout =
-                        `the ${col.token} vector ${stopName(s)}` +
-                        (length == null
-                          ? ''
-                          : ` — length ${length.toFixed(1)}${
-                              field?.real ? '' : ', illustrative'
-                            }`)
-                      return (
-                        <g key={band.key}>
-                          {prev == null ? null : (
-                            <line
-                              className="map-seg map-lit"
-                              style={{ '--d': `${col.i * 34 + s * 108}ms`,
-                                strokeOpacity: 0.14 + 0.5 * ((prev + t) / 2) }}
-                              x1={col.cx}
-                              y1={g.nodeY(nodeBands[s - 1].i)}
-                              x2={col.cx}
-                              y2={g.nodeY(i)}
-                            />
-                          )}
-                          {/* Every node is a button: it parks the falling
-                              strip at that depth, and on another token's
-                              column it moves the reading there first. Only the
-                              selected column's seven are in the tab order —
-                              twenty tokens would otherwise put a hundred and
-                              forty stops between this drawing and the next
-                              control. The other columns are reached by their
-                              chip, which is already a tab stop, and their
-                              nodes then become these. */}
-                          <g
-                            className="map-dot"
-                            role="button"
-                            tabIndex={on ? 0 : -1}
-                            aria-label={`park the strip on ${readout}`}
-                            aria-pressed={on && park === s}
-                            onClick={() => {
-                              if (!on) onSelect(col.i)
-                              setPark(s)
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault()
-                                if (!on) onSelect(col.i)
-                                setPark(s)
-                              }
-                            }}
-                          >
-                            <title>{readout}</title>
-                            <circle
-                              className="map-node map-lit"
-                              style={{
-                                '--d': `${col.i * 34 + s * 108}ms`,
-                                fillOpacity: 0.3 + 0.7 * t,
-                              }}
-                              cx={col.cx}
-                              cy={g.nodeY(i)}
-                              r={1.8 + 2.6 * t}
-                            />
-                            <circle
-                              className="map-dot-hit"
-                              cx={col.cx}
-                              cy={g.nodeY(i)}
-                              r={Math.max(6, 1.8 + 2.6 * t)}
-                            />
-                          </g>
-                        </g>
-                      )
-                    })}
-                  </g>
-                )
-              })}
-
-              {/* attention, in the selected layer, for the selected token */}
-              {arcBand != null && arcs && arcMax > 0
-                ? columns.slice(0, lensIndex).map((col) => {
-                    const w = arcs[col.i] / arcMax
-                    if (!(w > 0.02)) return null
-                    // A thread leaves the stream as it stood BEFORE this block
-                    // and lands on the selected token as it stands after it,
-                    // because that is the direction attention actually moves:
-                    // layer L reads every position's incoming vector and folds
-                    // the blend into one of them.
-                    const q = columns[lensIndex]
-                    const from = g.nodeY(arcBand - 1)
-                    const to = g.nodeY(arcBand)
-                    const mid = (from + to) / 2
-                    return (
-                      <path
-                        key={col.i}
-                        className="map-arc map-lit"
-                        style={{ '--d': '1180ms', strokeOpacity: 0.16 + 0.84 * w }}
-                        d={`M ${col.cx} ${from} C ${col.cx} ${mid} ${q.cx} ${mid} ${q.cx} ${to}`}
+            {/* The transfers, said: a green key at the source, the weight
+                beside it, and the bloom where the hero takes it in. */}
+            {draw
+              ? draw.transfers.map((tr) => {
+                  const x = draw.xs[tr.src]
+                  const label = `${sequence[tr.src]} · ${tr.w.toFixed(4)}`
+                  const key = `KEY · B${tr.layer} H${tr.head}`
+                  const room = Math.max(label.length, key.length) * g.fs.callout * 0.6
+                  // Beside the source, in the dark gap between two streams —
+                  // never over one where there is a gap to sit in. The gap to
+                  // the right unless the source is the last stream.
+                  // The right-hand gap unless the source is the last stream,
+                  // or unless that gap would put the words in the margin the
+                  // wall keeps for the name of the tensor it is cut from.
+                  const nameMargin = compact ? 300 : 250
+                  const right = tr.src < n - 1 && x + draw.slot / 2 + room / 2 < SW - nameMargin
+                  const lx = Math.min(
+                    SW - 10 - room / 2,
+                    Math.max(10 + room / 2, x + ((right ? 1 : -1) * draw.slot) / 2),
+                  )
+                  const ly = tr.lift - (compact ? 24 : 16) - tr.lane * g.fs.callout * 2.4
+                  return (
+                    <g
+                      key={tr.id}
+                      className={tr.standBack ? 'mr-event is-back' : 'mr-event'}
+                    >
+                      <g className="mr-key">
+                        <rect x={x - 8.5} y={tr.lift - 1.8} width="17" height="3.6" rx="1.2" />
+                        {Array.from({ length: 4 }, (_, k) => (
+                          <rect
+                            key={k}
+                            x={x - 12 + k * 8}
+                            y={tr.lift - 6.4}
+                            width="1.6"
+                            height="1.6"
+                            rx=".5"
+                            opacity=".7"
+                          />
+                        ))}
+                      </g>
+                      {/* A scrim in the screen's own ground, so the two
+                          lines stay legible over whatever they land on and
+                          nothing behind them can be mistaken for light. */}
+                      <rect
+                        x={lx - room / 2 - 4}
+                        y={ly - g.fs.callout * 2.1}
+                        width={room + 8}
+                        height={g.fs.callout * 2.5}
+                        fill="url(#mr-fade)"
+                        opacity="0.92"
                       />
-                    )
-                  })
-                : null}
-            </g>
+                      <text
+                        className="mr-callout"
+                        x={lx}
+                        y={ly}
+                        textAnchor="middle"
+                        style={{ fontSize: g.fs.callout }}
+                      >
+                        {label}
+                      </text>
+                      <text
+                        className="mr-callout is-key"
+                        x={lx}
+                        y={ly - g.fs.callout * 1.05}
+                        textAnchor="middle"
+                        style={{ fontSize: g.fs.fine }}
+                      >
+                        {key}
+                      </text>
+                      <g className="mr-absorb">
+                        <circle
+                          cx={draw.xs[hero]}
+                          cy={tr.stopY}
+                          r={3 + 12 * tr.w}
+                          opacity={f2(0.06 + 0.07 * tr.w)}
+                        />
+                        <circle
+                          cx={draw.xs[hero]}
+                          cy={tr.stopY}
+                          r={2 + 6.5 * tr.w}
+                          opacity={f2(0.1 + 0.13 * tr.w)}
+                        />
+                        <circle
+                          cx={draw.xs[hero]}
+                          cy={tr.stopY}
+                          r={0.9 + 2.2 * tr.w}
+                          opacity={f2(0.3 + 0.42 * tr.w)}
+                        />
+                      </g>
+                    </g>
+                  )
+                })
+              : null}
 
-            {/* --- the water itself: one token's 768 numbers, falling ---
+            {/* A register that draws nothing says so where it would have
+                drawn, with the number that made it a near miss. */}
+            {registers
+              ? registers.map((reg) => {
+                  if (!reg || reg.kept.length > 0 || !draw) return null
+                  const label = `no transfer · self ${reg.selfWeight.toFixed(2)}`
+                  const room = label.length * g.fs.quiet * 0.6
+                  const x = draw.xs[hero] - draw.hw[hero][reg.layer + 1] - 14
+                  const y = g.bandMid[reg.layer] + 3
+                  return (
+                    <g key={reg.layer}>
+                      {/* The wall stands back behind the line, as it does
+                          behind a callout, so no byte is read as light and
+                          the words stay words. */}
+                      <rect
+                        x={x - room - 5}
+                        y={y - g.fs.quiet}
+                        width={room + 10}
+                        height={g.fs.quiet * 1.45}
+                        fill="url(#mr-fade)"
+                        opacity="0.92"
+                      />
+                      <text
+                        className="mr-quiet"
+                        x={x}
+                        y={y}
+                        textAnchor="end"
+                        style={{ fontSize: g.fs.quiet }}
+                      >
+                        {label}
+                      </text>
+                    </g>
+                  )
+                })
+              : null}
 
-                A reserved lane in every band, one element, moved by transform
-                and lit by opacity. It is a replay: ONNX hands back the
-                intermediate tensors only once the pass has finished, so what
-                falls here has already happened. The legend says so. */}
-            <g
-              ref={stripRef}
-              className={`map-strip${park != null ? ' is-parked' : ''}`}
-              style={{ '--travel': `${PASS_STEP_MS}ms`, opacity: 0 }}
-              aria-hidden="true"
+            {/* --- the sentence, across the top --- */}
+            <text className="mr-note" x="8" y={g.fs.note + 6} style={{ fontSize: g.fs.note }}>
+              {compact
+                ? 'THE SENTENCE — ONE STREAM EACH'
+                : 'THE SENTENCE — ONE STREAM EACH; CLICK ONE TO MAKE IT THE HERO'}
+            </text>
+            {draw
+              ? draw.xs.map((x, i) => {
+                  const on = i === hero
+                  return (
+                    <g
+                      key={i}
+                      className={on ? 'mr-tok is-hero' : 'mr-tok'}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`make position ${i}, ${sequence[i]}, the hero`}
+                      aria-pressed={on}
+                      onClick={() => onSelect(i)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          onSelect(i)
+                        }
+                      }}
+                    >
+                      <title>{`${i} · ${sequence[i]}`}</title>
+                      <rect
+                        x={x - chipW / 2}
+                        y={g.chipY}
+                        width={chipW}
+                        height={g.chipH}
+                        rx="2"
+                      />
+                      <text
+                        x={x}
+                        y={g.chipY + g.chipH * 0.68}
+                        textAnchor="middle"
+                        style={{ fontSize: g.fs.chip }}
+                      >
+                        {clip(sequence[i], g.fs.chip, chipW - 6)}
+                      </text>
+                    </g>
+                  )
+                })
+              : null}
+            <text
+              className="mr-label"
+              x="8"
+              y={g.rimY - 4}
+              style={{ fontSize: g.fs.reg }}
             >
-              <rect
-                className="map-strip-bed"
-                x={g.TRACK}
-                y={-g.stripH / 2 - 1}
-                width={g.trackW}
-                height={g.stripH + 2}
-                rx="1"
-              />
-              <image
-                ref={stripImgRef}
-                className="map-strip-cells"
-                x={g.TRACK}
-                y={-g.stripH / 2}
-                width={g.trackW}
-                height={g.stripH}
-                preserveAspectRatio="none"
-              />
-            </g>
-
-            {/* --- what falls out --- */}
-            <text className="map-out" x={outLeftX} y={g.outY + g.fs.out + 4}>
-              <title>{outText}</title>
-              {clip(outText, g.fs.out, outRoom)}
+              RIM
             </text>
             <text
-              className="map-out is-next"
-              x={outRightX}
-              y={g.outY + g.fs.out + 4}
-              textAnchor="end"
+              className="mr-label is-dim"
+              x="8"
+              y={g.rimY + g.fs.reg + 2}
+              style={{ fontSize: g.fs.reg }}
             >
-              {nextText}
+              WTE+WPE
             </text>
 
-            {/* --- the landing ---
-
-                The water reaches the bottom and splashes across the whole
-                vocabulary. One bar per candidate, its height that candidate's
-                probability, drawn under the last token's own column because
-                that is the stream this distribution belongs to. The bar the
-                sampler actually took is in the moving amber; the rest stay
-                frozen blue, because they are roads not taken.
-
-                Heights are the probabilities themselves, scaled to the tallest
-                one — so the picture is of how peaked this distribution is,
-                which is the thing worth seeing, and the tooltip gives every
-                bar its real percentage rather than making anyone read it off
-                a height. */}
-            {splashIsHere ? (
-              <g className="map-splash">
-                <title>
-                  {`the last vector against the whole vocabulary — ${splash
-                    .map((c) => `${c.token} ${(c.p * 100).toFixed(1)}%`)
-                    .join(' · ')}. These are the machine's own probabilities, before instrument B skips whitespace pieces, so ␣ and ⏎ appear here and not there.`}
-                </title>
-                {splash.map((cand, i) => {
-                  const total = g.splashN * (g.splashW + g.splashGap) - g.splashGap
-                  const left = Math.min(
-                    Math.max(g.TRACK, (columns[n - 1]?.cx ?? g.TRACK + total / 2) - total / 2),
-                    g.RIGHT - total,
-                  )
-                  const h = Math.max(0.6, (cand.p / splash[0].p) * g.splashH)
-                  const took = nextToken != null && cand.token === nextToken
-                  return (
-                    <rect
-                      key={cand.id}
-                      className={`map-splash-bar${took ? ' is-took' : ''}`}
-                      x={left + i * (g.splashW + g.splashGap)}
-                      y={g.splashBase - h}
-                      width={g.splashW}
-                      height={h}
-                      rx="0.5"
-                    />
-                  )
-                })}
-              </g>
+            {/* --- the landing --- */}
+            <text
+              className="mr-note"
+              x="8"
+              y={g.landTitleY}
+              style={{ fontSize: g.fs.land }}
+            >
+              {compact
+                ? 'LAST POSITION → 50,257 WORDS'
+                : `LAST POSITION → 50,257 WORDS · TOP ${g.splashN}`}
+            </text>
+            {draw ? (
+              <>
+                <g className="mr-absorb">
+                  <circle cx={draw.apertureX} cy={g.apertureY0} r="15" opacity=".07" />
+                  <circle cx={draw.apertureX} cy={g.apertureY0} r="7.5" opacity=".13" />
+                  <circle cx={draw.apertureX} cy={g.apertureY0} r="2.6" opacity=".55" />
+                </g>
+                <g
+                  className="mr-plate mr-aperture-plate"
+                  role="button"
+                  tabIndex={0}
+                  aria-label="read the word table back out of the file — the same wte the embedding uses, tied, and turned on its side"
+                  aria-pressed={part === 'transformer.wte.weight_quantized'}
+                  onClick={() => handlePart('transformer.wte.weight_quantized')}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      handlePart('transformer.wte.weight_quantized')
+                    }
+                  }}
+                >
+                  <title>{partReadout(factsFor('transformer.wte.weight_quantized'))}</title>
+                  <rect
+                    x={draw.apertureX - (compact ? 90 : 55)}
+                    y={g.apertureY0}
+                    width={compact ? 180 : 110}
+                    height={g.apertureH}
+                    rx="2"
+                    fill="url(#mr-fade)"
+                    opacity="0.9"
+                  />
+                  <rect
+                    className="mr-aperture"
+                    x={draw.apertureX - (compact ? 90 : 55)}
+                    y={g.apertureY0}
+                    width={compact ? 180 : 110}
+                    height={g.apertureH}
+                    rx="2"
+                  />
+                  <text
+                    className="mr-aperture-note"
+                    x={draw.apertureX}
+                    y={g.apertureY0 + g.apertureH * 0.68}
+                    textAnchor="middle"
+                    style={{ fontSize: g.fs.aperture }}
+                  >
+                    UNEMBED · WTEᵀ
+                  </text>
+                </g>
+              </>
+            ) : null}
+            {draw?.landing ? (
+              <>
+                <Landing key={`landing-${replay}`} g={g} draw={draw} />
+                {draw.landing.bars.map((bar) => (
+                  <g key={bar.id}>
+                    <text
+                      className={
+                        bar.argmax
+                          ? 'mr-prob is-argmax'
+                          : bar.pick
+                            ? 'mr-prob is-pick'
+                            : 'mr-prob'
+                      }
+                      x={bar.x}
+                      y={g.barBase + g.fs.prob + 6}
+                      textAnchor="middle"
+                      style={{ fontSize: g.fs.prob }}
+                    >
+                      {clip(bar.token, g.fs.prob, g.barPitch - 8)}
+                    </text>
+                    <text
+                      className="mr-prob is-p"
+                      x={bar.x}
+                      y={g.barBase + g.fs.prob + g.fs.probp + 10}
+                      textAnchor="middle"
+                      style={{ fontSize: g.fs.probp }}
+                    >
+                      {`${(bar.p * 100).toFixed(1)}%`}
+                    </text>
+                    {bar.pick ? (
+                      <path
+                        className="mr-pick-mark"
+                        d={`M ${bar.x - 6} ${g.barBase + g.fs.prob + g.fs.probp + 24} L ${
+                          bar.x + 6
+                        } ${g.barBase + g.fs.prob + g.fs.probp + 24} L ${bar.x} ${
+                          g.barBase + g.fs.prob + g.fs.probp + 14
+                        } Z`}
+                      />
+                    ) : null}
+                  </g>
+                ))}
+                <line
+                  className="mr-base-line"
+                  x1={g.barX0 - g.barPitch / 2}
+                  y1={g.barBase + 1}
+                  x2={g.barX0 + (g.splashN - 0.5) * g.barPitch}
+                  y2={g.barBase + 1}
+                />
+              </>
+            ) : (
+              <text
+                className="mr-quiet"
+                x="8"
+                y={g.landTitleY + g.fs.quiet * 1.45}
+                style={{ fontSize: g.fs.quiet }}
+              >
+                {waiting
+                  ? 'the landing is waiting on this pass'
+                  : 'the landing needs the real model — load it above'}
+              </text>
+            )}
+            {draw && !draw.landingHere ? (
+              <text
+                className="mr-quiet"
+                x="8"
+                y={g.landTitleY + g.fs.quiet * 1.45}
+                style={{ fontSize: g.fs.quiet }}
+              >
+                {compact
+                  ? `the landing is the last word’s alone — hero: ${heroToken}`
+                  : `the landing is the last word’s alone; ${heroToken} is the hero, so it stands back`}
+              </text>
+            ) : null}
+            <text className="mr-key-line" x="8" y={g.keyY} style={{ fontSize: g.fs.key }}>
+              {live && finalTop ? (
+                <>
+                  <tspan className="k-blue">■</tspan>
+                  {` ${finalTop.token} BLUE — THE MACHINE’S OWN TOP · `}
+                  <tspan className="k-amber">▲</tspan>
+                  {` AMBER MARK — THE SAMPLER TOOK ${nextToken ?? '—'}`}
+                </>
+              ) : (
+                'BLUE — THE MACHINE’S OWN TOP · AMBER MARK — THE SAMPLER’S PICK'
+              )}
+            </text>
+            {compact ? (
+              <text
+                className="mr-key-line"
+                x="8"
+                y={g.keyY2}
+                style={{ fontSize: g.fs.key }}
+              >
+                {`TEMP ${DECODING.temperature} · TOP-K ${DECODING.topK} · REP-PEN ${DECODING.repetitionPenalty} · SEED ${DECODING.seed}`}
+              </text>
             ) : null}
 
-            <Window
-              letter="B"
-              x={g.RIGHT - g.mark}
-              y={g.outY + 1}
-              size={g.mark}
-              label="open instrument B, the forward pass and the KV rack"
-              onOpen={() => onOpenInstrument('stepper')}
+            {/* --- the legend: every rule in the drawing, stated --- */}
+            <line
+              className="mr-leg-rule"
+              x1="8"
+              y1={g.legRuleY}
+              x2={SW - 8}
+              y2={g.legRuleY}
             />
-
-            {/* --- windows onto the other instruments --- */}
-            <Window
-              letter="A"
-              x={g.TRACK + g.trackW / 2 - g.gap - g.mark - 4}
-              y={g.bandY(0) + g.boxTop + 3}
-              size={g.mark}
-              label="open instrument A, the tokenizer — your tokens become rows of wte"
-              onOpen={() => onOpenInstrument('tokenizer')}
-            />
-            <Window
-              letter="C"
-              x={bands[headBand].boxes[1].x + bands[headBand].boxes[1].w - g.mark - 4}
-              y={g.bandY(headBand) + g.boxTop + 2}
-              size={g.mark}
-              label="open instrument C, one head of this layer in detail"
-              onOpen={() => onOpenInstrument('attention')}
-            />
-            <Window
-              letter="D"
-              x={g.MX}
-              y={g.outY + 1}
-              size={g.mark}
-              label="open instrument D, the glass pass on this token"
-              onOpen={() => onOpenInstrument('glass')}
-            />
-
-            {/* --- the lens, whispered as the water passes ---
-
-                The words go in the tspan, which is rendered with no children
-                so React has nothing to reconcile inside it and never
-                overwrites what the timeline wrote. The title is a sibling of
-                that tspan rather than the thing being written, for the same
-                reason. The line is reserved in the geometry whether or not
-                there is anything to say in it, so nothing below the figure
-                moves when there is.
-
-                Not announced live: it changes seven times in a second, and a
-                screen reader reading every depth aloud as the water fell would
-                be noise. Instrument D presents the same seven readings as a
-                table, which is where they can actually be read. */}
-            <text
-              className="map-whisper"
-              x={g.MX}
-              y={g.whisperY}
-              style={{ fontSize: g.fs.whisper }}
-            >
-              <title>
-                the logit lens: this token’s running vector at that depth, put
-                through the model’s own final LayerNorm and unembedding. It is
-                what the machine would say if the stack stopped there — not a
-                prediction it makes at that depth. The same reading instrument
-                D prints, from the same worker.
-              </title>
-              <tspan ref={whisperRef} />
-            </text>
-
-            {/* --- legend: what the lit things mean ---
-
-                The first line is not fine print. It is the one sentence that
-                turns the drawing into a reading — what the strip is and what
-                its brightness measures — so it is set at the size of the
-                readouts and in the screen's own text colour, and the smaller
-                second line carries the two honesty notes under it. */}
-            <text className="map-legend is-key" x={g.MX} y={keyY}>
-              {real
-                ? compact
-                  ? `strip = 768 numbers · ‖residual‖ ${lo} → ${hi}, log`
-                  : `strip = this token’s 768 numbers · brightness = ‖residual‖ ${lo} → ${hi}, log scale`
-                : waiting
-                  ? compact
-                    ? '‖residual‖ — waiting on this pass'
-                    : 'strip and nodes = ‖residual‖ — waiting on this pass'
-                  : compact
-                    ? 'strip = 768 numbers — illustrative stand-in'
-                    : 'strip = this token’s 768 numbers — illustrative stand-in, not a measurement'}
-            </text>
-            <text className="map-legend" x={g.MX} y={cellY}>
-              {compact
-                ? `cell = |value| vs ${STRIP_CAP}× the middle value there`
-                : `cell = |value| against ${STRIP_CAP}× the middle value at that depth`}
-            </text>
-            <text
-              className="map-legend"
-              x={compact ? g.MX : g.RIGHT}
-              y={headY}
-              textAnchor={compact ? 'start' : 'end'}
-            >
-              {real || waiting
-                ? compact
-                  ? HEAD_LEGEND_SHORT
-                  : HEAD_LEGEND
-                : 'no heads to light — load the real model'}
-            </text>
-            <text className="map-legend" x={g.MX} y={replayY}>
-              a replay — this pass has already run
-            </text>
+            {(() => {
+              let y = g.legTop
+              const out = []
+              legendLines.forEach(([key, lines], i) => {
+                out.push(
+                  <text
+                    key={`k${key}`}
+                    className="mr-leg-key"
+                    x="8"
+                    y={y}
+                    style={{ fontSize: g.fs.legKey }}
+                  >
+                    {key}
+                  </text>,
+                )
+                if (compact) y += g.legKeyLine
+                lines.forEach((line, li) => {
+                  out.push(
+                    <text
+                      key={`${key}-${li}`}
+                      className="mr-leg"
+                      x={g.legX}
+                      y={y}
+                      style={{ fontSize: g.fs.leg }}
+                    >
+                      {line}
+                    </text>,
+                  )
+                  y += g.legLine
+                })
+                y += (g.legLines[i] - lines.length) * g.legLine + g.legGap
+              })
+              return out
+            })()}
+            {fineLines.map((line, i) => (
+              <text
+                key={i}
+                className="mr-leg-fine"
+                x="8"
+                y={g.fineTop + i * g.fs.legFine * 1.35}
+                style={{ fontSize: g.fs.legFine }}
+              >
+                {line}
+              </text>
+            ))}
           </svg>
         </div>
 
@@ -1352,16 +1680,16 @@ export default function ForwardMap({
         <TeachPair
           className="teach dim"
           show={armed ? 'b' : 'a'}
-          a="the machinery is drawn from the file's own manifest, so every shape and byte count here is real, and the texture inside each box is that tensor's own bytes read out of the file. the water is not: no model is running, so the strip and the columns are the same deterministic stand-ins instrument D prints, and they are labelled as such. each texture is stretched to its own tensor's range, so a tensor with a narrow range shows faint grain from the rounding in the file, and one whose blocks all read alike is drawn as an even wash rather than as nothing."
-          b="one drawing, six readings. the shapes and byte counts come from the file and the texture in each box is that tensor's own bytes; the strip is this token's 768 numbers at one depth; the columns are the length of that vector at each depth; the threads are the selected layer's attention averaged over its twelve heads; and the line at the bottom is the token instrument B appends next. each texture is stretched to its own tensor's range, so a tensor with a narrow range shows faint grain from the rounding in the file, and one whose blocks all read alike is drawn as an even wash rather than as nothing."
+          a="the six walls are real in this mode too: every cell is one byte of that block's attention weights, read out of the file when this page was built, stretched across the middle 96% of its own window. what is not real is the fall — no model is running, so every stream is drawn at one width, the grain inside it is the deterministic stand-in instrument D prints, and there is no attention to carry and no landing to reach. load the real model and the same drawing fills with this sentence's own numbers."
+          b="one drawing, five readings, all of them real. the walls are the file's own weight bytes; a stream's width and light are the length of that token's 768-number vector at each depth; the filaments inside it are those 768 numbers grouped and averaged; a carrier is one attention weight out of the block's chosen head, read at the hero's own row; and the landing is the softmax over all 50,257 words at the last position. the head rule, the floor under a transfer and both normalisations are stated in the legend, because a drawing that does not say what it is doing is a picture rather than an instrument."
         />
       </div>
 
       <figcaption>
-        FIG.3 — distilgpt2, drawn once, with the sentence falling through it.
-        Depth runs down; the sequence runs across. The boxes are cut rock:
-        training shaped them and a pass does not touch them. The strip is the
-        water — one token&rsquo;s vector, picking up meaning as it goes.
+        FIG.3 — one pass through distilgpt2, drawn as a memory room. Six walls
+        of the file&rsquo;s own weight bytes; the sentence falling through them
+        as light; the transfers attention makes into the last word; and the
+        landing, where that word&rsquo;s vector meets all 50,257 of them.
       </figcaption>
     </figure>
   )

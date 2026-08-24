@@ -635,7 +635,6 @@ export default function App() {
         armed={isReal}
         real={isReal && Boolean(ranKey)}
         run={isReal && runReady ? realRun : null}
-        reading={lensStale ? null : lensReading}
         nextToken={
           // The token B will append. In real mode that is the sampler's own
           // pick, which is not always in the printed shortlist — the draw
