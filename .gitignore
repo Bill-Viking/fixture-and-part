@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Design comps and other non-shipping visual work (kept local, never committed)
+design
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
