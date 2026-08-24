@@ -228,14 +228,18 @@ granular light. Redrawn in arc 4 from comp-a3; the data layer is unchanged.
   i8 byte of that block's `attn.c_attn.weight` as the file stores it — the
   24 × 64 window `fileFacts.json` keeps, 1,536 cells a wall, drawn in the
   window's own shape because reshaping it would put bytes side by side that
-  are not side by side in the tensor. A byte's brightness is its own value
-  stretched across the middle 96% of that window, so a handful of extremes
-  cannot black the wall out; a window whose bytes are all but identical gets
-  arc 3's even wash instead of a black panel. The walls are real in both
-  modes, because they were read out of the file rather than out of a pass.
-  Cells are grouped by byte value and drawn one path per value — nothing is
-  quantised on the way to the screen, and a wall costs tens of elements
-  rather than fifteen hundred.
+  are not side by side in the tensor. The bytes are read as what the manifest
+  says they are: i8 at zero point 0, so a byte above 127 is a negative weight
+  and 255 is −1. A cell's brightness is the weight's own magnitude — its size
+  and not its sign, because both signs are the machinery working — stretched
+  across the middle 96% of that window's own magnitudes, so a handful of large
+  weights cannot flatten the rest; on the real windows that runs 0 → 33 of a
+  largest 47 on block 0 and 0 → 13 of 19 on block 5. A window whose weights
+  are all but identical in size gets arc 3's even wash instead of a black
+  panel. The walls are real in both modes, because they were read out of the
+  file rather than out of a pass. Cells are grouped by magnitude and drawn one
+  path per magnitude — nothing is quantised on the way to the screen, and a
+  wall costs tens of elements rather than fifteen hundred.
 - **The fall.** One stream per token. Width, light and grain density are all
   the real L2 length of that token's 768-number running vector at each of the
   seven depths, on one log law shared by every stream, which the legend states
@@ -248,8 +252,12 @@ granular light. Redrawn in arc 4 from comp-a3; the data layer is unchanged.
   carries a whole column of particles and the ink density per unit of area
   stays even whatever the stream's width.
 - **The hero.** The last token by default; clicking any token makes it the
-  hero. Its stream is the lit one, it is the only stream that reaches the
-  landing, and every transfer is aimed at it.
+  hero. Its stream is the lit one and every transfer is aimed at it. What the
+  hero does not do is move the landing: below the last wall every stream fades
+  into the mist but the last position's, which is the one the landing is
+  counted from and the one drawn down to the aperture — dimmed, when an
+  earlier token is the hero, because it is still the stream that feeds it.
+  The hero's own fall then ends in the mist with the rest.
 - **The transfers.** Per block, from the head that sends the most attention
   away from the first token and away from itself — averaged over the queries
   that have somewhere else to look — the hero's own sources at or above 0.15,
@@ -273,10 +281,21 @@ granular light. Redrawn in arc 4 from comp-a3; the data layer is unchanged.
   position, stands back, and says so — a landing is never drawn from a
   non-final position's vector.
 - **Nothing is drawn over the picture without standing the picture back.**
-  Cells dim to 55% under a stream and to 10% under a carrier or a label, by a
-  scrim painted in the screen's own background gradient — the same colour a
-  per-cell alpha would compose to, and it keeps the walls out of every
-  re-render.
+  Cells dim to 55% under a stream and to 8% under a carrier, a label or a
+  plate, by a scrim painted in the screen's own background gradient at that
+  scrim's own depth in the drawing — which keeps all 9,216 wall cells out of
+  every re-render. The words the drawing names its own parts with are painted
+  after the fall rather than before it, each on a scrim sized from its own
+  measured width: a label the water runs over is not a label, and the
+  stylesheet cannot see that the water is there.
+- The sentence runs across the top as one clickable chip per token, and a
+  chip carries its word. Where the sentence is long enough that a chip has
+  room for fewer than three characters — around seventeen tokens — two
+  characters of a word would be a different word, so the chips carry their
+  position number instead and the line above them says so. The word is still
+  there: the hero is named in the legend, every transfer source is named at
+  its own callout, and each chip keeps its own piece as a tooltip and in its
+  accessible name.
 - Controls: BLOCK chips (ALL, then 0–5) open one register — its wall lifts, the
   other five stand back, and its twelve head squares light by the share of the
   hero's attention each head spends anywhere but on itself. HEAD chips
@@ -297,8 +316,10 @@ granular light. Redrawn in arc 4 from comp-a3; the data layer is unchanged.
   real-model heading.
 - The legend lives inside the screen and states every rule the drawing uses:
   the byte window and its stretch, the dimming, the filament binning, the log
-  law, the head-choice rule with the heads it picked, the floor under a
-  transfer and the near-miss numbers when a block draws nothing, the landing's
+  law, the chips' fallback to position numbers where a chip has room for fewer
+  than three characters, the head-choice rule with the heads it picked, the
+  floor under a transfer and the near-miss numbers when a block draws nothing,
+  the landing's
   conventions, and the closing line that nothing in the picture is a stand-in —
   the only marks carrying no number are the aperture outline and the bloom
   around the light. Its four entries have reserved line counts, because the
