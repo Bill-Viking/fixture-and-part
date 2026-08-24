@@ -383,37 +383,260 @@ export const HEAD_LEGEND =
 export const HEAD_LEGEND_SHORT = 'head squares — attention leaving this token'
 
 // ---------------------------------------------------------------------------
+// The memory room: the walls, the filaments and the transfers
+// ---------------------------------------------------------------------------
+
+/**
+ * The wall of a block: the 24 × 64 window of that block's own c_attn weight
+ * bytes, exactly as `fileFacts.json` read them out of the file.
+ *
+ * Two things are decided here and both are said on the drawing. The window is
+ * never reshaped — a squarer field would put bytes next to each other that are
+ * not next to each other in the tensor, which is a lie about adjacency. And a
+ * byte's brightness is stretched across the middle 96 % of that window's own
+ * values rather than across its extremes, because a handful of outliers would
+ * otherwise black the wall out.
+ *
+ * The cells are grouped by byte value rather than drawn one element each: a
+ * window holds 1,536 bytes but only a few dozen distinct values, so one path
+ * per value draws every cell of that value at exactly that value's brightness.
+ * Nothing is quantised — the byte is already the quantisation — and a wall
+ * costs the drawing tens of elements instead of fifteen hundred.
+ */
+const wallCache = new Map()
+
+export function wallWindow(windows, name) {
+  const cached = wallCache.get(name)
+  if (cached) return cached
+  const meta = windows?.[name]
+  if (!meta?.base64) return null
+  const binary = atob(meta.base64)
+  const raw = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) raw[i] = binary.charCodeAt(i)
+  const ordered = Uint8Array.from(raw)
+  ordered.sort()
+  const lo = ordered[Math.floor(0.02 * (ordered.length - 1))]
+  const hi = ordered[Math.floor(0.98 * (ordered.length - 1))]
+  const span = Math.max(1, hi - lo)
+  const byValue = new Map()
+  for (let i = 0; i < raw.length; i++) {
+    const value = raw[i]
+    let cells = byValue.get(value)
+    if (!cells) {
+      cells = []
+      byValue.set(value, cells)
+    }
+    cells.push(i)
+  }
+  const groups = [...byValue.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([value, cells]) => ({
+      value,
+      // The byte's own value on the middle-96 % stretch, 0 to 1.
+      v: Math.max(0, Math.min(1, (value - lo) / span)),
+      cells,
+    }))
+  const wall = {
+    name,
+    rows: meta.rows,
+    cols: meta.cols,
+    totalRows: meta.totalRows,
+    totalCols: meta.totalCols,
+    count: raw.length,
+    lo,
+    hi,
+    // A window whose bytes are all but identical gets Arc 3's wash rather than
+    // a black panel: the stretch has nothing to stretch, and saying nothing
+    // would be the one dishonest option.
+    flat: hi - lo <= 1,
+    groups,
+  }
+  wallCache.set(name, wall)
+  return wall
+}
+
+/** The c_attn window a block's wall is drawn from. */
+export const wallTensor = (layer) =>
+  `transformer.h.${layer}.attn.c_attn.weight_quantized`
+
+/**
+ * How the 768 dimensions are grouped into filaments, given how many streams
+ * have to share the width.
+ *
+ * 768 = 64 × 12 = 32 × 24 = 16 × 48, so the grouping is exact at every step
+ * and the drawing never has a filament standing for a different number of
+ * dimensions than its neighbour. Long sentences get fewer, fatter filaments
+ * because thirty streams cannot each carry sixty-four legible ones — the
+ * drawing states the grouping it is using.
+ */
+export function filamentPlan(n) {
+  const group = n <= 12 ? 12 : n <= 24 ? 24 : 48
+  return { group, count: REAL_HIDDEN / group }
+}
+
+/**
+ * Every token's vector at every depth, binned into filaments: the mean of the
+ * absolute values of each group of dimensions.
+ *
+ * This is the texture inside a stream. It answers a different question from
+ * the stream's width — the width is how much vector there is, the filaments
+ * are which dimensions are carrying it — so it is normalised differently and
+ * both normalisations are named on screen: a filament's brightness is its own
+ * bin against the brightest filament in that same stream at that same depth.
+ *
+ * @param {(index: number, stop: number) => ArrayLike<number>|null} vectorAt
+ * @param {number} n how many streams
+ * @param {number} group dimensions per filament
+ */
+export function filamentField(vectorAt, n, group) {
+  const count = REAL_HIDDEN / group
+  const bins = []
+  const rel = []
+  for (let i = 0; i < n; i++) {
+    const rows = []
+    const relRows = []
+    for (let s = 0; s < MAP_STOPS; s++) {
+      const vector = vectorAt(i, s)
+      const row = new Float64Array(count)
+      if (vector) {
+        for (let fbin = 0; fbin < count; fbin++) {
+          let sum = 0
+          const base = fbin * group
+          for (let d = 0; d < group; d++) sum += Math.abs(vector[base + d])
+          row[fbin] = sum / group
+        }
+      }
+      let max = 0
+      for (let fbin = 0; fbin < count; fbin++) if (row[fbin] > max) max = row[fbin]
+      const scale = max > 0 ? 1 / max : 0
+      const relRow = new Float64Array(count)
+      for (let fbin = 0; fbin < count; fbin++) relRow[fbin] = row[fbin] * scale
+      rows.push(row)
+      relRows.push(relRow)
+    }
+    bins.push(rows)
+    rel.push(relRows)
+  }
+  return { group, count, bins, rel }
+}
+
+/** One position's 768 numbers at one depth, straight out of the pass. */
+export function residualRow(run, index, stop) {
+  const data = run?.residuals?.[stop]
+  if (!data || index < 0 || index >= run.n) return null
+  const base = index * REAL_HIDDEN
+  return data.subarray(base, base + REAL_HIDDEN)
+}
+
+/**
+ * The head a block's transfers are read from, when the reader has not picked
+ * one: the head that sends the most attention away from the first token and
+ * away from itself, averaged over the queries that have somewhere else to
+ * look.
+ *
+ * Why not the average over all twelve. Averaged, distilgpt2's attention is
+ * dominated by the first-token sink: every query sends 0.4 to 0.8 of its
+ * weight to the first piece at every depth, so the average draws the same
+ * picture six times and hides the mechanism. This rule picks the head doing
+ * lookup work instead. Both readings are honest; this one is stated on the
+ * drawing rather than assumed, and the HEAD chips let the reader overrule it.
+ */
+export function blockHead(run, layer) {
+  if (!run?.attention?.length || run.n === 0) return 0
+  const n = run.n
+  const data = run.attention[Math.min(Math.max(layer, 0), REAL_LAYERS - 1)]
+  const first = Math.min(2, Math.max(1, n - 1))
+  const denominator = Math.max(1, n - first)
+  let best = -1
+  let bestHead = 0
+  for (let h = 0; h < REAL_HEADS; h++) {
+    let total = 0
+    for (let q = first; q < n; q++) {
+      const base = (h * n + q) * n
+      for (let k = 1; k < q; k++) total += data[base + k]
+    }
+    total /= denominator
+    if (total > best) {
+      best = total
+      bestHead = h
+    }
+  }
+  return bestHead
+}
+
+/** The weight below which a source is not drawn as a transfer. */
+export const TRANSFER_FLOOR = 0.15
+/** How many transfers one block may draw into the hero. */
+export const TRANSFER_MAX = 2
+
+/**
+ * One block's transfers into the hero: that position's own strongest sources
+ * in the block's head, at or above the floor, at most two.
+ *
+ * Self-attention is never a transfer. It is the stream continuing, and the
+ * stream is already drawn — so a block whose hero mostly reads itself draws
+ * nothing, and says so in place with the two numbers that made it a near miss.
+ */
+export function blockTransfers(run, layer, hero, head) {
+  if (!run?.attention?.length || run.n === 0) return null
+  const n = run.n
+  const q = Math.min(Math.max(hero, 0), n - 1)
+  const data = run.attention[Math.min(Math.max(layer, 0), REAL_LAYERS - 1)]
+  const h = Math.min(Math.max(head, 0), REAL_HEADS - 1)
+  const base = (h * n + q) * n
+  const ranked = []
+  for (let k = 0; k < q; k++) ranked.push({ src: k, w: data[base + k] })
+  ranked.sort((a, b) => b.w - a.w)
+  const kept = ranked.filter((x) => x.w >= TRANSFER_FLOOR).slice(0, TRANSFER_MAX)
+  return {
+    layer,
+    head: h,
+    kept,
+    selfWeight: data[base + q],
+    best: ranked[0] ?? null,
+  }
+}
+
+// ---------------------------------------------------------------------------
 // The check
 // ---------------------------------------------------------------------------
 
-// The map's three claims are that the brightness of a node is the norm of a
-// real vector, that every cell of the falling strip is a real number out of
-// the residual stream, and that a lit head square is a real share of a real
-// attention row. All three are worth being able to re-run rather than
-// remember, so a dev build puts the check on the console.
+// The drawing makes four claims about numbers, and a dev build can re-run all
+// four from the console rather than being taken on trust:
+//
+//   the streams    a stream's width and light are the L2 length of that
+//                  token's 768-number running vector at that depth;
+//   the filaments  a filament's grain is the mean |value| of its own group of
+//                  dimensions there — 64 × 12 of them per stream per depth;
+//   the transfers  a carrier's width and light are one real attention weight,
+//                  read from the block's chosen head at the hero's own row;
+//   the landing    a bar's height is one real probability out of a softmax
+//                  over all 50,257 words of the last position's logits.
 //
 // `__mapCheck()` takes what the instrument currently has on screen — it
-// publishes it to `__mapState` on every render — and recomputes all of it from
-// the forward pass by a different route: the stop values and the strip's
-// 5,376 cells against `residualStops()`, which packs the seven depths for one
-// position through code the glass pass uses and this file does not, and the
-// head values against `run.attention` read directly. It returns the largest
-// disagreement it found. Production drops the whole block.
+// publishes it to `__mapState` on every render — and recomputes every one of
+// those from a pass it runs itself, by a different route: the norms and the
+// filament bins against `residualStops()`, which packs the seven depths for
+// one position through code the glass pass uses and this file does not; the
+// transfers and the head shares against `run.attention` read directly; the
+// landing against a softmax written out here rather than the one the drawing
+// called. It returns the largest disagreement it found. Production drops the
+// whole block.
 if (import.meta.env.DEV) {
   globalThis.__mapCheck = async () => {
     const state = globalThis.__mapState
     if (!state) return { error: 'instrument F has not published a state yet' }
-    if (!state.real) return { error: 'the map is showing illustrative columns' }
+    if (!state.real) return { error: 'the map is drawing the schematic, not a pass' }
     const model = await import('./realModel.js')
 
     // The pass is memoised one deep, so asking for the sequence that is
-    // already on screen hands back the very object the instrument is drawing
-    // and the strip check below compares a buffer against itself — a check
+    // already on screen hands back the very object the instrument is drawing,
+    // and every check below would compare a buffer against itself — a check
     // that cannot fail is not a check. Running one token first evicts that
     // memo, so the second call runs the model again and the numbers on screen
     // are compared against a pass they had no part in. Whether that worked is
-    // reported rather than assumed: `freshPass` is false if any stop still
-    // shares a buffer with the strip.
+    // reported rather than assumed: `freshPass` is false if any depth still
+    // shares a buffer with what the instrument published.
     await model.realForward(
       state.ids.length === 1 ? [state.ids[0], state.ids[0]] : [state.ids[0]],
     )
@@ -422,68 +645,98 @@ if (import.meta.env.DEV) {
       return { error: `the run moved: ${run.key} vs ${state.key}` }
     }
     let freshPass = true
-    if (state.stripStops) {
-      for (let s = 0; s < MAP_STOPS; s++) {
-        if (state.stripStops[s].buffer === run.residuals[s].buffer) {
-          freshPass = false
-        }
-      }
-    }
-
-    const packed = model.residualStops(run, state.index)
-    let worstStop = 0
-    const stops = []
     for (let s = 0; s < MAP_STOPS; s++) {
-      let sum = 0
-      for (let d = 0; d < REAL_HIDDEN; d++) {
-        const v = packed[s * REAL_HIDDEN + d]
-        sum += v * v
-      }
-      const truth = Math.sqrt(sum)
-      const delta = Math.abs(truth - state.stops[s])
-      if (delta > worstStop) worstStop = delta
-      stops.push({ stop: s, onScreen: state.stops[s], truth, delta })
+      if (state.buffers?.[s] === run.residuals[s].buffer) freshPass = false
     }
 
-    // The strip claims something stronger than the node above it: not that a
-    // reduction of the vector is right, but that every one of the 768 numbers
-    // on screen is the number the pass produced. So it is checked value by
-    // value against the same packed block, not stop by stop.
-    let worstStrip = null
-    if (state.stripStops) {
-      worstStrip = 0
+    // --- the streams and their filaments ---------------------------------
+    let worstNorm = 0
+    let worstBin = 0
+    let bins = 0
+    const group = state.group
+    for (let i = 0; i < state.norms.length; i++) {
+      const packed = model.residualStops(run, i)
       for (let s = 0; s < MAP_STOPS; s++) {
-        const onScreen = state.stripStops[s]
+        let sum = 0
         for (let d = 0; d < REAL_HIDDEN; d++) {
-          const delta = Math.abs(packed[s * REAL_HIDDEN + d] - onScreen[d])
-          if (delta > worstStrip) worstStrip = delta
+          const v = packed[s * REAL_HIDDEN + d]
+          sum += v * v
+        }
+        const delta = Math.abs(Math.sqrt(sum) - state.norms[i][s])
+        if (delta > worstNorm) worstNorm = delta
+        const onScreen = state.filaments[i][s]
+        for (let fbin = 0; fbin < onScreen.length; fbin++) {
+          let acc = 0
+          for (let d = 0; d < group; d++) {
+            acc += Math.abs(packed[s * REAL_HIDDEN + fbin * group + d])
+          }
+          const binDelta = Math.abs(acc / group - onScreen[fbin])
+          if (binDelta > worstBin) worstBin = binDelta
+          bins++
         }
       }
     }
 
+    // --- the transfers ----------------------------------------------------
     const n = run.n
-    const q = state.index
-    const data = run.attention[state.layer]
-    let worstHead = 0
+    let worstTransfer = 0
+    const transfers = []
+    for (const t of state.transfers) {
+      const data = run.attention[t.layer]
+      const truth = data[(t.head * n + state.hero) * n + t.src]
+      const delta = Math.abs(truth - t.w)
+      if (delta > worstTransfer) worstTransfer = delta
+      transfers.push({ ...t, truth, delta })
+    }
+    // The head each block chose, recomputed here rather than read back.
     const heads = []
-    for (let h = 0; h < REAL_HEADS; h++) {
-      const truth = 1 - data[(h * n + q) * n + q]
-      const delta = Math.abs(truth - state.heads[h])
-      if (delta > worstHead) worstHead = delta
-      heads.push({ head: h, onScreen: state.heads[h], truth, delta })
+    for (let layer = 0; layer < REAL_LAYERS; layer++) {
+      heads.push(blockHead(run, layer))
+    }
+    const headsMatch =
+      state.autoHeads.length === heads.length &&
+      state.autoHeads.every((h, i) => h === heads[i])
+
+    // --- the lit head squares, when a block is open -----------------------
+    let worstHead = null
+    if (state.heads) {
+      worstHead = 0
+      const data = run.attention[state.block]
+      for (let h = 0; h < REAL_HEADS; h++) {
+        const truth = 1 - data[(h * n + state.hero) * n + state.hero]
+        const delta = Math.abs(truth - state.heads[h])
+        if (delta > worstHead) worstHead = delta
+      }
+    }
+
+    // --- the landing ------------------------------------------------------
+    let worstLanding = 0
+    const row = run.lastLogits
+    let max = -Infinity
+    for (let id = 0; id < row.length; id++) if (row[id] > max) max = row[id]
+    let total = 0
+    for (let id = 0; id < row.length; id++) total += Math.exp(row[id] - max)
+    for (const bar of state.landing) {
+      const truth = Math.exp(row[bar.id] - max) / total
+      const delta = Math.abs(truth - bar.p)
+      if (delta > worstLanding) worstLanding = delta
     }
 
     return {
       key: state.key,
-      index: state.index,
-      layer: state.layer,
+      hero: state.hero,
+      block: state.block,
       freshPass,
-      worstStopDelta: worstStop,
-      worstStripDelta: worstStrip,
-      stripCells: state.stripStops ? MAP_STOPS * REAL_HIDDEN : 0,
-      worstHeadDelta: worstHead,
-      stops,
-      heads,
+      worstNormDelta: worstNorm,
+      worstFilamentDelta: worstBin,
+      filamentBins: bins,
+      worstTransferDelta: worstTransfer,
+      transfers,
+      autoHeadsMatch: headsMatch,
+      autoHeads: heads,
+      worstHeadShareDelta: worstHead,
+      worstLandingDelta: worstLanding,
+      landingBars: state.landing.length,
     }
   }
 }
