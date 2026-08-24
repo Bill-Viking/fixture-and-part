@@ -567,7 +567,7 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
   transition:background-color .15s ease,color .15s ease;
 }
 .mr-chip:hover:not(:disabled){background:var(--frozen-tint);}
-.mr-chip.is-on{background:var(--frozen);border-color:var(--frozen);color:#FFFFFF;}
+.mr-chip.is-on{background:var(--frozen);border-color:var(--frozen);color:var(--card);}
 /* A head chip has nothing to overrule until a register is open, and says so
    by being unavailable rather than by silently doing nothing. */
 .mr-chip:disabled{opacity:.45;cursor:default;}
@@ -583,7 +583,7 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
   border-radius:2px;height:22px;min-width:22px;padding:0 4px;cursor:pointer;
   transition:background-color .15s ease,color .15s ease;
 }
-.mr-open:hover{background:var(--frozen);border-color:var(--frozen);color:#FFFFFF;}
+.mr-open:hover{background:var(--frozen);border-color:var(--frozen);color:var(--card);}
 .map-ctl-note{
   /* Basis zero, not auto: the note takes whatever the row has left and
      ellipsizes, so no wording of it can wrap the row and move the drawing. */
@@ -612,27 +612,27 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 .mr-reg.is-open .mr-reg-frame{
   stroke:var(--frozen-on-screen);stroke-width:1;stroke-opacity:.55;
 }
+/* Every one of these four labels is drawn over the fall rather than under it
+   and stands on a scrim of the screen's own ground, sized from the line's own
+   measured width. That is what holds them above 4.5:1 measured off the raster:
+   the opacity that looked right on dark air is not the opacity that survives a
+   lit byte cell or a stream of light, and the stylesheet cannot see either. */
 .mr-label{
   font-family:var(--mono);letter-spacing:0.11em;fill:var(--frozen-on-screen);
   opacity:.85;
 }
-/* The four recessive labels are held above 5:1 measured off the raster
-   rather than at the opacity that looked right on the ground they were
-   designed against: they sit over a field of lit byte cells, and the
-   stylesheet cannot see that. */
 .mr-label.is-dim{opacity:.82;}
 .mr-tensor{
   font-family:var(--mono);letter-spacing:0.1em;fill:var(--frozen-on-screen);
   opacity:.85;
 }
-.mr-tensor.is-fine{opacity:.72;}
+.mr-tensor.is-fine{opacity:.78;}
 
 /* Every wall is a button: it prints its own row of the file underneath and
    offers to open it in instrument E. */
 .mr-plate{cursor:pointer;}
 .mr-plate-hit{fill:#000;fill-opacity:0;}
 .mr-plate:hover .mr-tensor,.mr-plate.is-on .mr-tensor{opacity:1;}
-.mr-reg .mr-plate:hover ~ .mr-reg-frame{stroke-opacity:1;}
 .mr-plate.is-on .mr-plate-hit{
   fill:var(--frozen-on-screen);fill-opacity:.07;
   stroke:var(--frozen-on-screen);stroke-opacity:.7;stroke-width:1;
@@ -666,7 +666,11 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 .mr-callout{
   font-family:var(--mono);letter-spacing:0.02em;fill:var(--moving-lit);
 }
-.mr-callout.is-key{fill:var(--keys-on-screen);letter-spacing:0.1em;opacity:.9;}
+/* The key line is the smallest type in the picture and it is green on near
+   black, which is the least of the three roles' contrast. It is drawn at
+   full strength: at .9 the fringe of its glyphs measured below AA off the
+   raster, and a line this small has more fringe than body. */
+.mr-callout.is-key{fill:var(--keys-on-screen);letter-spacing:0.1em;}
 .mr-absorb circle{fill:var(--moving-lit);}
 /* With one register open the other five keep their transfers, at half light:
    the reading is still true, it is simply not the one being read. */

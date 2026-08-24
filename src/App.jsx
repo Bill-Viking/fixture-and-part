@@ -510,11 +510,10 @@ export default function App() {
   const safeQuery = Math.min(queryIndex, Math.max(0, sequence.length - 1))
   const safeLens = Math.min(lensIndex, Math.max(0, sequence.length - 1))
 
-  // Instrument F whispers the lens at each depth as the water passes it, and
-  // the water starts falling the moment a pass lands — so the reading has to
-  // already be in flight by then, rather than waiting for someone to click a
-  // token. A finished pass therefore reads the lens at whatever position is
-  // selected.
+  // Instrument D presents the lens at all seven depths, and it should have
+  // something to present the moment a pass lands rather than waiting for
+  // someone to click a token. A finished pass therefore reads the lens at
+  // whatever position is selected.
   //
   // Keyed on the run alone, deliberately. Selecting a token calls
   // `handleLensSelect`, which reads it; if the selected index were a

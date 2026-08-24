@@ -2,15 +2,15 @@
 //
 // The map has two halves and this file is both of them.
 //
-// The machinery half is static: distilgpt2's architecture, named part by part
-// with the shape, dtype and byte count each part actually occupies in the
-// file. None of that is written out by hand here — it is read out of
-// `fileFacts.json`, the same reading instrument E draws, so a part whose shape
-// is printed on the map is a part the file really holds at that size. If the
-// file ever changed, the drawing would change with it or say it could not find
-// the tensor.
+// The frozen half is the file itself: the shape, dtype and byte count each
+// part actually occupies, and the windows of real weight bytes the six walls
+// are cut from. None of that is written out by hand here — it is read out of
+// `fileFacts.json`, the same reading instrument E draws, so a tensor whose
+// shape is printed on the map is a tensor the file really holds at that size.
+// If the file ever changed, the drawing would change with it or say it could
+// not find the tensor.
 //
-// The moving half is three scalars per pass, and each of them is a plain
+// The moving half is four readings per pass, and each of them is a plain
 // reduction of a tensor the forward pass already produced. Nothing is
 // smoothed, rescaled or invented on the way to the screen:
 //
@@ -18,8 +18,10 @@
 //                     each of the seven depths — how much vector there is at
 //                     that stop, which is the honest thing a single number
 //                     can say about a point in the residual stream;
-//   the arc weights   the selected token's attention row at the selected
-//                     layer, averaged across the twelve heads;
+//   the filaments     the mean |value| of each group of dimensions at that
+//                     same depth — which dimensions are carrying it;
+//   the transfers     one real attention weight out of the block's chosen
+//                     head, at the hero's own row;
 //   the head values   the share of that token's attention, in each head, that
 //                     lands on a token other than itself — one minus the
 //                     diagonal. A head that only reads itself scores zero; a
@@ -39,106 +41,9 @@ import {
   RESIDUAL_STOPS,
   tokenText,
 } from './realModel.js'
-import { LENS_STOPS, residualVector } from './toyModel.js'
 
 /** How many depths the map draws a node at. Seven, for six blocks. */
 export const MAP_STOPS = RESIDUAL_STOPS
-
-// ---------------------------------------------------------------------------
-// The machinery, band by band
-// ---------------------------------------------------------------------------
-
-const block = (layer) => ({
-  key: `block${layer}`,
-  layer,
-  label: `block ${layer}`,
-  short: `b${layer}`,
-  // The stop this band's node row reads: the stream as it leaves this block.
-  stop: layer + 1,
-  parts: [
-    {
-      id: 'ln_1',
-      label: 'ln_1',
-      tensor: `transformer.h.${layer}.ln_1.weight`,
-      width: 1,
-      cwidth: 1.4,
-    },
-    {
-      id: 'attn',
-      label: `attention · ${REAL_HEADS} heads`,
-      short: 'attn',
-      tensor: `transformer.h.${layer}.attn.c_attn.weight_quantized`,
-      width: 4,
-      cwidth: 3.7,
-      heads: true,
-      window: 'attention',
-    },
-    {
-      id: 'ln_2',
-      label: 'ln_2',
-      tensor: `transformer.h.${layer}.ln_2.weight`,
-      width: 1,
-      cwidth: 1.4,
-    },
-    {
-      id: 'mlp',
-      label: `MLP ${REAL_HIDDEN}→${REAL_HIDDEN * 4}→${REAL_HIDDEN}`,
-      short: 'mlp',
-      tensor: `transformer.h.${layer}.mlp.c_fc.weight_quantized`,
-      width: 4,
-      cwidth: 3.5,
-    },
-  ],
-})
-
-/**
- * The bands of the drawing, top to bottom: what the sentence passes through,
- * in the order it passes through it.
- */
-export const BANDS = [
-  {
-    key: 'embed',
-    label: 'embed',
-    short: 'emb',
-    stop: 0,
-    parts: [
-      {
-        id: 'wte',
-        label: 'wte · one row per token',
-        short: 'wte',
-        tensor: 'transformer.wte.weight_quantized',
-        width: 1,
-        window: 'tokenizer',
-      },
-      {
-        id: 'wpe',
-        label: 'wpe · one row per position',
-        short: 'wpe',
-        tensor: 'transformer.wpe.weight_quantized',
-        width: 1,
-      },
-    ],
-  },
-  ...Array.from({ length: REAL_LAYERS }, (_, layer) => block(layer)),
-  {
-    key: 'unembed',
-    label: 'unembed',
-    short: 'out',
-    stop: null,
-    parts: [
-      { id: 'ln_f', label: 'ln_f', tensor: 'transformer.ln_f.weight', width: 2 },
-      {
-        id: 'unembed',
-        label: 'unembed — wteᵀ, tied',
-        short: 'unembed',
-        tensor: 'transformer.wte.weight_quantized',
-        width: 5,
-        tie: true,
-        window: 'glass',
-      },
-    ],
-  },
-]
 
 // ---------------------------------------------------------------------------
 // Reading the file's own manifest
@@ -239,52 +144,6 @@ export function residualField(run) {
 }
 
 /**
- * The same field, illustratively: the norm of the deterministic stand-in
- * vector instrument D already prints six numbers of, taken over enough
- * dimensions to give the number somewhere to move. No model is running, and
- * the legend says so.
- */
-export function illustrativeField(sequence) {
-  if (sequence.length === 0) return null
-  const rows = []
-  let lo = Infinity
-  let hi = -Infinity
-  for (const token of sequence) {
-    const row = new Float64Array(LENS_STOPS)
-    for (let s = 0; s < LENS_STOPS; s++) {
-      const vec = residualVector(token, s, 24)
-      let sum = 0
-      for (const v of vec) sum += v * v
-      const value = Math.sqrt(sum)
-      row[s] = value
-      if (value < lo) lo = value
-      if (value > hi) hi = value
-    }
-    rows.push(row)
-  }
-  return { rows, lo, hi, real: false }
-}
-
-/**
- * The selected token's attention row at one layer, averaged over the twelve
- * heads — what the arcs are drawn from. Positions after the query are zero by
- * the causal mask and are not returned.
- */
-export function headAverageRow(run, layer, index) {
-  if (!run?.attention?.length || run.n === 0) return null
-  const n = run.n
-  const q = Math.min(Math.max(index, 0), n - 1)
-  const data = run.attention[Math.min(Math.max(layer, 0), REAL_LAYERS - 1)]
-  const out = new Float64Array(q + 1)
-  for (let h = 0; h < REAL_HEADS; h++) {
-    const base = (h * n + q) * n
-    for (let i = 0; i <= q; i++) out[i] += data[base + i]
-  }
-  for (let i = 0; i <= q; i++) out[i] /= REAL_HEADS
-  return out
-}
-
-/**
  * Per head, the share of the selected token's attention that goes anywhere
  * other than itself. The first token of a sequence can only read itself, so
  * every head scores exactly zero there — which is correct, and worth seeing.
@@ -376,12 +235,6 @@ export function finalSplash(run, count = 8) {
   }))
 }
 
-/** The wording of the head row, so the drawing never has to be guessed at. */
-export const HEAD_LEGEND =
-  'head squares — share of this token’s attention that leaves itself'
-/** The same sentence, at a width that has room for forty-odd characters. */
-export const HEAD_LEGEND_SHORT = 'head squares — attention leaving this token'
-
 // ---------------------------------------------------------------------------
 // The memory room: the walls, the filaments and the transfers
 // ---------------------------------------------------------------------------
@@ -390,18 +243,37 @@ export const HEAD_LEGEND_SHORT = 'head squares — attention leaving this token'
  * The wall of a block: the 24 × 64 window of that block's own c_attn weight
  * bytes, exactly as `fileFacts.json` read them out of the file.
  *
- * Two things are decided here and both are said on the drawing. The window is
- * never reshaped — a squarer field would put bytes next to each other that are
- * not next to each other in the tensor, which is a lie about adjacency. And a
- * byte's brightness is stretched across the middle 96 % of that window's own
- * values rather than across its extremes, because a handful of outliers would
- * otherwise black the wall out.
+ * Three things are decided here and all three are said on the drawing.
  *
- * The cells are grouped by byte value rather than drawn one element each: a
- * window holds 1,536 bytes but only a few dozen distinct values, so one path
- * per value draws every cell of that value at exactly that value's brightness.
- * Nothing is quantised — the byte is already the quantisation — and a wall
- * costs the drawing tens of elements instead of fifteen hundred.
+ * The bytes are read as what the manifest says they are. `attn.c_attn.weight`
+ * is stored i8 at zero point 0, so a byte is a signed number from −128 to 127
+ * and 255 is the weight −1, not the weight 255. Reading the same bytes
+ * unsigned wraps every negative weight to the top of the range, which is what
+ * this drawing did until it was measured: the byte histogram of every window
+ * was bimodal at the two extremes and the stretch below had nothing left to
+ * do, because a window that holds weights from −43 to +47 looked like a window
+ * that holds 0 and 255.
+ *
+ * A cell's brightness is the size of the weight, not its sign. Both signs are
+ * the machinery working; a wall drawn on the signed value would read as a
+ * gradient from "black" at −128 to "white" at +127, which is a picture of the
+ * sign bit rather than of the weights. So brightness is |weight|, stretched
+ * across the middle 96 % of that window's own magnitudes rather than across
+ * its extremes — which on the real windows clips the top 2 % of magnitudes at
+ * full light and stretches the rest over the range that actually has cells in
+ * it (block 0 runs 0 → 33 out of a largest magnitude of 47; block 5, 0 → 13
+ * out of 19).
+ *
+ * The window is never reshaped — a squarer field would put bytes next to each
+ * other that are not next to each other in the tensor, which is a lie about
+ * adjacency.
+ *
+ * The cells are grouped by magnitude rather than drawn one element each: a
+ * window holds 1,536 bytes but only a few dozen distinct magnitudes, so one
+ * path per magnitude draws every cell of that magnitude at exactly that
+ * magnitude's brightness. Nothing is quantised — the byte is already the
+ * quantisation — and a wall costs the drawing tens of elements instead of
+ * fifteen hundred.
  */
 const wallCache = new Map()
 
@@ -411,16 +283,25 @@ export function wallWindow(windows, name) {
   const meta = windows?.[name]
   if (!meta?.base64) return null
   const binary = atob(meta.base64)
-  const raw = new Uint8Array(binary.length)
-  for (let i = 0; i < binary.length; i++) raw[i] = binary.charCodeAt(i)
-  const ordered = Uint8Array.from(raw)
+  // i8, zero point 0: the high half of the byte range is the negative weights.
+  const mag = new Uint8Array(binary.length)
+  let peak = 0
+  let least = 127
+  for (let i = 0; i < binary.length; i++) {
+    const b = binary.charCodeAt(i)
+    const value = Math.abs(b > 127 ? b - 256 : b)
+    mag[i] = value
+    if (value > peak) peak = value
+    if (value < least) least = value
+  }
+  const ordered = Uint8Array.from(mag)
   ordered.sort()
   const lo = ordered[Math.floor(0.02 * (ordered.length - 1))]
   const hi = ordered[Math.floor(0.98 * (ordered.length - 1))]
   const span = Math.max(1, hi - lo)
   const byValue = new Map()
-  for (let i = 0; i < raw.length; i++) {
-    const value = raw[i]
+  for (let i = 0; i < mag.length; i++) {
+    const value = mag[i]
     let cells = byValue.get(value)
     if (!cells) {
       cells = []
@@ -432,7 +313,7 @@ export function wallWindow(windows, name) {
     .sort((a, b) => a[0] - b[0])
     .map(([value, cells]) => ({
       value,
-      // The byte's own value on the middle-96 % stretch, 0 to 1.
+      // The weight's own magnitude on the middle-96 % stretch, 0 to 1.
       v: Math.max(0, Math.min(1, (value - lo) / span)),
       cells,
     }))
@@ -442,12 +323,16 @@ export function wallWindow(windows, name) {
     cols: meta.cols,
     totalRows: meta.totalRows,
     totalCols: meta.totalCols,
-    count: raw.length,
+    count: mag.length,
     lo,
     hi,
-    // A window whose bytes are all but identical gets Arc 3's wash rather than
-    // a black panel: the stretch has nothing to stretch, and saying nothing
-    // would be the one dishonest option.
+    // The window's own full magnitude range, which is what the stretch is
+    // being measured against when the legend prints it.
+    min: least,
+    max: peak,
+    // A window whose weights are all but identical in size gets Arc 3's wash
+    // rather than a black panel: the stretch has nothing to stretch, and
+    // saying nothing would be the one dishonest option.
     flat: hi - lo <= 1,
     groups,
   }
@@ -567,7 +452,7 @@ export function blockHead(run, layer) {
 /** The weight below which a source is not drawn as a transfer. */
 export const TRANSFER_FLOOR = 0.15
 /** How many transfers one block may draw into the hero. */
-export const TRANSFER_MAX = 2
+const TRANSFER_MAX = 2
 
 /**
  * One block's transfers into the hero: that position's own strongest sources
