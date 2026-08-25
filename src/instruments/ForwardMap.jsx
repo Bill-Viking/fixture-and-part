@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   MAP_STOPS,
   TRANSFER_FLOOR,
@@ -17,6 +17,17 @@ import {
   wallTensor,
   wallWindow,
 } from '../lib/forwardMap.js'
+import {
+  IDLE_MS,
+  MOTION_PRESETS,
+  buildTour,
+  carrierWhy,
+  cellWhy,
+  motionPresetId,
+  rayWhy,
+  silentWhy,
+  unembedWhy,
+} from '../lib/tour.js'
 import {
   DECODING,
   REAL_HEADS,
@@ -51,7 +62,19 @@ import InstrumentHead from '../components/InstrumentHead.jsx'
  * all rather than falling back to the stand-ins.
  *
  * Nothing in the picture is a stand-in. The only marks carrying no number are
- * the aperture outline and the bloom around the light.
+ * the aperture outline, the bloom around the light, and — while the sheet is
+ * running itself — the sweep of light that travels down it.
+ *
+ * Two things drive that picture over time, and both of them are timing rather
+ * than data. The narrated run walks one pass at reading speed, a stop at a
+ * time, with a line of plain words under the controls that speaks the pass's
+ * own numbers; its stops, its dwells and every sentence it says come out of
+ * `lib/tour.js`. And when the sheet is left alone — in view, tab visible,
+ * reduced motion off — it starts running itself: a slow sweep down the fall,
+ * a glint where the light crosses a wall, the carriers re-firing in turn. All
+ * of that is CSS on a handful of overlay elements. Not one of the 9,216 wall
+ * cells is re-rendered by any of it, which is the rule that keeps the whole
+ * thing cheap enough to leave running.
  */
 
 /** The drawing is this many units wide at every screen width. */
@@ -74,10 +97,22 @@ const mqMatches = (query) =>
   typeof window.matchMedia === 'function' &&
   window.matchMedia(query).matches
 
-/** The cadence of a replay: how long the light takes to reach the next depth. */
-const PASS_STEP_MS = 150
-/** The pause before the first depth, so a replay is visibly a beginning. */
-const PASS_LEAD_MS = 80
+/** Whether the reader has asked for no animation. Checked, not assumed. */
+const MOTION_MQ = '(prefers-reduced-motion: reduce)'
+
+/** The speeds the tour offers. One of these multiplies every dwell. */
+const SPEEDS = [1, 2, 4]
+
+/**
+ * How the drawing is revealed when no tour is running: all of it.
+ *
+ * The reveal is a set of numbers the stylesheet compares against each mark's
+ * own index, so "everything" is simply a number larger than any index. The
+ * frontier is a fraction of the drawing's height, and 1 is the bottom of it.
+ */
+const FULL_REVEAL = {
+  front: 1, carriers: 999, bars: 999, aperture: 1, pick: 1, cue: null,
+}
 
 /** Deterministic pseudo-random in [0,1) — the comp's generator, unchanged. */
 function h01(...args) {
@@ -199,8 +234,10 @@ function geometryFor(compact, full) {
   const fineCols = Math.floor((SW - 18) / (fs.legFine * legAdvance))
   // Reserved, not measured: the legend prints live numbers, so its wording
   // changes with the sentence. A block whose height followed its own text
-  // would move everything below the figure on every keystroke.
-  const legLines = per([8, 9, 14, 7], [9, 10, 13, 8], [7, 7, 9, 6])
+  // would move everything below the figure on every keystroke. The fifth
+  // entry is the tour and the ambient loop, which are rules of the drawing
+  // like any other and are stated here rather than left to be discovered.
+  const legLines = per([8, 9, 14, 7, 6], [9, 10, 13, 8, 8], [7, 7, 9, 6, 6])
   const legKeyLine = compact ? fs.legKey * 1.5 : 0
   const legHeight =
     legLines.reduce((sum, l) => sum + l * legLine + legKeyLine + legGap, 0)
@@ -373,17 +410,19 @@ const Walls = memo(function Walls({ g, windows }) {
  * Ink density is held roughly even per unit of area — the dash period comes
  * off the stream's own width — so a wide stream is not a solid bar and a thin
  * one is not a dotted line.
+ *
+ * Its props are the geometry and the pass, and nothing else. That is
+ * deliberate: the tour reveals the fall by moving a clip the stylesheet
+ * drives, and the ambient loop animates an overlay, so neither of them is a
+ * prop here and neither can cost this component a re-render. Thousands of
+ * grains are built when the sentence changes and at no other time.
  */
 const Streams = memo(function Streams({ g, draw }) {
   const { n, plan, segments } = draw
   return (
     <g className="mr-streams">
-      {segments.map((seg, si) => (
-        <g
-          key={seg.key}
-          className="mr-fall"
-          style={{ '--d': `${PASS_LEAD_MS + si * PASS_STEP_MS}ms` }}
-        >
+      {segments.map((seg) => (
+        <g key={seg.key} className="mr-fall">
           {Array.from({ length: n }, (_, i) => {
             const hero = i === draw.hero
             const a0 = draw.alpha[i][seg.s0]
@@ -481,8 +520,14 @@ const Streams = memo(function Streams({ g, draw }) {
  * streams are, and masked out of every stream it crosses so that no line ever
  * crosses the water. The source's own stream and the hero's are not masked —
  * the carrier leaves one and lands in the other.
+ *
+ * Each one carries its own index as a custom property and is a button. The
+ * index is what the tour counts against to decide whether this transfer has
+ * fired yet; the button is what answers a reader who clicks the line and
+ * wants to know what it is. A grained sweep is not a hit target, so the hit
+ * target is a fat transparent stroke down the carrier's own centre line.
  */
-const Carriers = memo(function Carriers({ g, draw }) {
+const Carriers = memo(function Carriers({ g, draw, onInspect }) {
   return (
     <g className="mr-carriers">
       <defs>
@@ -505,7 +550,7 @@ const Carriers = memo(function Carriers({ g, draw }) {
           </mask>
         ))}
       </defs>
-      {draw.transfers.map((tr) => {
+      {draw.transfers.map((tr, ci) => {
         const filaments = 2 + Math.round(tr.w * 4)
         const width = (1.2 + 4.4 * tr.w) * (g.compact ? 1.6 : 1)
         const paths = []
@@ -529,13 +574,26 @@ const Carriers = memo(function Carriers({ g, draw }) {
           )
         }
         return (
-          <g
-            key={tr.id}
-            className="mr-carrier mr-fall"
-            style={{ '--d': `${PASS_LEAD_MS + (tr.layer + 1) * PASS_STEP_MS}ms` }}
-            mask={`url(#mr-behind-${tr.id})`}
-          >
-            {paths}
+          <g key={tr.id} className="mr-carrier" style={{ '--ci': ci }}>
+            <g className="mr-carrier-ink" mask={`url(#mr-behind-${tr.id})`}>
+              {paths}
+            </g>
+            <path
+              className="mr-carrier-hit"
+              d={tr.centre}
+              role="button"
+              tabIndex={0}
+              aria-label={tr.aria}
+              onClick={() => onInspect(tr)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  onInspect(tr)
+                }
+              }}
+            >
+              <title>{tr.aria}</title>
+            </path>
           </g>
         )
       })}
@@ -543,13 +601,23 @@ const Carriers = memo(function Carriers({ g, draw }) {
   )
 })
 
-/** The landing bars: dot grids whose row count is the real probability. */
-const Landing = memo(function Landing({ g, draw }) {
+/**
+ * The landing bars: dot grids whose row count is the real probability.
+ *
+ * A bar and its ray are one button. The ray is a hairline and the dots have
+ * gaps between them, so the hit target is neither: it is a transparent stroke
+ * along the ray and a transparent rect over the bar's own column.
+ */
+const Landing = memo(function Landing({ g, draw, onInspect }) {
   const { landing } = draw
   if (!landing) return null
   return (
     <g className={draw.landingHere ? 'mr-landing' : 'mr-landing is-away'}>
       {landing.bars.map((bar, i) => {
+        const thread = `M ${f2(draw.apertureX)} ${f2(g.apertureY0 + g.apertureH)} Q ${f2(
+          (draw.apertureX + bar.x) / 2,
+        )} ${f2(g.apertureY0 + g.apertureH + 70)} ${f2(bar.x)} ${f2(bar.top - 8)}`
+        const aria = `what the landing ray for ${bar.token} at ${(bar.p * 100).toFixed(1)}% is`
         const rows = Math.max(2, Math.round(bar.h / g.dotPitchY))
         const groups = [[], [], [], []]
         for (let r = 0; r < rows; r++) {
@@ -572,13 +640,20 @@ const Landing = memo(function Landing({ g, draw }) {
             className={
               bar.argmax ? 'mr-bar is-argmax' : bar.pick ? 'mr-bar is-pick' : 'mr-bar'
             }
+            style={{ '--bi': i }}
+            role="button"
+            tabIndex={0}
+            aria-label={aria}
+            onClick={() => onInspect(i)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                onInspect(i)
+              }
+            }}
           >
-            <path
-              className="mr-thread"
-              d={`M ${f2(draw.apertureX)} ${f2(g.apertureY0 + g.apertureH)} Q ${f2(
-                (draw.apertureX + bar.x) / 2,
-              )} ${f2(g.apertureY0 + g.apertureH + 70)} ${f2(bar.x)} ${f2(bar.top - 8)}`}
-            />
+            <title>{aria}</title>
+            <path className="mr-thread" d={thread} />
             {groups.map((d, gi) =>
               d.length === 0 ? null : (
                 <path
@@ -592,6 +667,14 @@ const Landing = memo(function Landing({ g, draw }) {
                 />
               ),
             )}
+            <path className="mr-ray-hit" d={thread} />
+            <rect
+              className="mr-bar-hit"
+              x={f2(bar.x - g.barW / 2 - 3)}
+              y={f2(bar.top - 8)}
+              width={f2(g.barW + 6)}
+              height={f2(g.barBase - bar.top + 8)}
+            />
           </g>
         )
       })}
@@ -620,9 +703,34 @@ export default function ForwardMap({
 }) {
   const [compact, setCompact] = useState(() => mqMatches(COMPACT_MQ))
   const [full, setFull] = useState(() => mqMatches(FULL_MQ))
+  // Asked, not assumed: a reader who has turned animation off gets the tour as
+  // a stepper — the same stops, the same words, the same buttons, no timer —
+  // and the ambient loop never starts at all.
+  const [reduced, setReduced] = useState(() => mqMatches(MOTION_MQ))
   const [facts, setFacts] = useState(null)
   const [part, setPart] = useState(null)
-  const [replay, setReplay] = useState(0)
+  /** What a click on the sheet asked about: a carrier, a ray, a cell, a plate. */
+  const [inspect, setInspect] = useState(null)
+  /**
+   * The tour: whether it has been opened, where it is, whether it is running
+   * and how fast. `index` is a stop in the list `lib/tour.js` builds, and it
+   * is the only thing that moves — every mark on the sheet reads its own
+   * visibility off that stop's reveal through the stylesheet.
+   */
+  const [tour, setTour] = useState({ active: false, index: 0, playing: false, speed: 1 })
+  /** Whether the sheet is currently running itself. */
+  const [ambient, setAmbient] = useState(false)
+  /** The motion study in force. A dev switch; with no querystring, preset a. */
+  const preset = useMemo(
+    () => motionPresetId(typeof window === 'undefined' ? '' : window.location.search),
+    [],
+  )
+  const motion = MOTION_PRESETS[preset]
+
+  const figureRef = useRef(null)
+  const svgRef = useRef(null)
+  const hoverRef = useRef(null)
+  const timerRef = useRef(null)
   // Whether a register is open — which one is the layer instruments C and F
   // share, so the two can never disagree about it — and which head that
   // register's transfers are read from, or null for the rule.
@@ -638,6 +746,7 @@ export default function ForwardMap({
     const offs = [
       [COMPACT_MQ, setCompact],
       [FULL_MQ, setFull],
+      [MOTION_MQ, setReduced],
     ].map(([query, set]) => {
       const mq = window.matchMedia(query)
       const onChange = (e) => set(e.matches)
@@ -671,13 +780,6 @@ export default function ForwardMap({
   const runKey = run?.key ?? null
   const manifest = facts?.manifest ?? null
   const windows = facts?.windows ?? null
-
-  // A new pass, or a new token appended, replays the fall.
-  useEffect(() => {
-    setReplay((r) => r + 1)
-  }, [runKey, stepTick, n])
-
-  const runAgain = useCallback(() => setReplay((r) => r + 1), [])
 
   // A register opened somewhere else — instrument C's own layer selector — is
   // a different register, so the head this one was pinned to goes with it.
@@ -923,6 +1025,13 @@ export default function ForwardMap({
       tr.lift = lift
       tr.stopY = stop
       tr.laneX = lane
+      // The carrier's own centre line, written once: the scrim under it, the
+      // hit target over it and the ambient re-fire all follow this path.
+      tr.centre = `M ${tr.points.map((p) => `${f2(p.x)} ${f2(p.y)}`).join(' L ')}`
+      tr.srcToken = sequence[tr.src]
+      tr.aria =
+        `what block ${tr.layer} head ${tr.head} carried out of ${sequence[tr.src]} ` +
+        `into ${sequence[hero]} — ${tr.w.toFixed(4)}`
     }
 
     // The landing. It belongs to the last position and to no other, so it is
@@ -958,6 +1067,7 @@ export default function ForwardMap({
     }
   }, [
     n, filaments, field, g, hero, registers, splash, finalTop, nextToken, plan, block,
+    sequence,
   ])
 
   // What the instrument has on screen, for the console check. Dev only; the
@@ -1030,6 +1140,358 @@ export default function ForwardMap({
     ? `${(facts.provenance.bytes / 1e6).toFixed(1)} MB`
     : 'the'
   const count = (v) => v.toLocaleString('en-US')
+
+  // --- the narrated run -----------------------------------------------------
+  //
+  // The tour is a list of stops, and a stop is a line of words plus the whole
+  // state of the drawing at that moment. Playing it is a timer that moves an
+  // index; stepping it is the same index moved by hand; the reduced-motion
+  // path is that index with no timer at all. Nothing below re-renders a wall.
+
+  const tourPlan = useMemo(
+    () =>
+      buildTour({
+        preset,
+        live,
+        n,
+        sequence,
+        hero,
+        field,
+        run: live ? run : null,
+        registers,
+        autoHeads,
+        splash,
+        finalTop,
+        nextToken,
+        decoding: DECODING,
+        wall0,
+        segmentCount: draw?.segments?.length ?? MAP_STOPS + 1,
+      }),
+    [
+      preset, live, n, sequence, hero, field, run, registers, autoHeads, splash,
+      finalTop, nextToken, wall0, draw,
+    ],
+  )
+  const stages = tourPlan.stages
+  const stageIndex = Math.min(Math.max(tour.index, 0), stages.length - 1)
+  const stop = stages[stageIndex]
+
+  /**
+   * What the stylesheet is told, once per stop.
+   *
+   * `front` is how far down the drawing the light has reached, as a fraction
+   * of its height; the rest are counts a mark compares its own index against.
+   * All of it is inherited into the SVG as custom properties, which is why a
+   * stop can move the picture without any of the memoised layers re-rendering.
+   */
+  const reveal = useMemo(() => {
+    if (!tour.active) return FULL_REVEAL
+    const r = stop.reveal
+    let y = g.fallTop
+    if (r.segs === 1) y = g.rimY
+    else if (r.segs > 1) {
+      y = r.segs - 1 < MAP_STOPS ? g.stopY[r.segs - 1] : g.apertureY0
+    }
+    return {
+      front: Math.min(1, y / g.H),
+      carriers: r.carriers,
+      bars: r.bars,
+      aperture: r.aperture ? 1 : 0,
+      pick: r.pick ? 1 : 0,
+      cue: r.cue,
+    }
+  }, [tour.active, stop, g])
+
+  // The timer. One stop at a time, at the speed the reader asked for, and
+  // never at all with reduced motion on — there the step buttons are the tour.
+  useEffect(() => {
+    clearTimeout(timerRef.current)
+    if (!tour.active || !tour.playing || reduced) return undefined
+    if (stageIndex >= stages.length - 1) return undefined
+    const ms = Math.max(350, stop.ms / tour.speed)
+    timerRef.current = setTimeout(() => {
+      setTour((t) => (t.playing ? { ...t, index: Math.min(t.index + 1, stages.length - 1) } : t))
+    }, ms)
+    return () => clearTimeout(timerRef.current)
+  }, [tour.active, tour.playing, tour.speed, stageIndex, stages.length, stop, reduced])
+
+  // The last stop is the end of the tour, not a stop that hangs on a timer.
+  useEffect(() => {
+    if (tour.playing && tour.active && stageIndex >= stages.length - 1) {
+      const id = setTimeout(
+        () => setTour((t) => ({ ...t, playing: false })),
+        Math.max(350, stop.ms / tour.speed),
+      )
+      return () => clearTimeout(id)
+    }
+    return undefined
+  }, [tour.playing, tour.active, stageIndex, stages.length, stop, tour.speed])
+
+  // A different sentence, or a pass over a different sentence, is a different
+  // tour: it closes rather than carrying an index into words it no longer
+  // matches. Re-aiming at another token does not — the brief for that is that
+  // the click is honoured and the tour waits where it was.
+  useEffect(() => {
+    setTour((t) => (t.active ? { ...t, active: false, playing: false, index: 0 } : t))
+  }, [n, runKey, stepTick])
+
+  const openTour = () => {
+    setTour((t) => {
+      if (!t.active) return { ...t, active: true, index: 0, playing: !reduced }
+      if (t.index >= stages.length - 1 && !t.playing) {
+        return { ...t, index: 0, playing: !reduced }
+      }
+      return { ...t, playing: !t.playing }
+    })
+  }
+  const stepTo = (i) =>
+    setTour((t) => ({
+      ...t,
+      active: true,
+      playing: false,
+      index: Math.min(Math.max(i, 0), stages.length - 1),
+    }))
+
+  const playLabel = reduced
+    ? tour.active
+      ? 'RESTART'
+      : 'STEP THROUGH'
+    : !tour.active
+      ? 'PLAY THE PASS'
+      : tour.playing
+        ? 'PAUSE'
+        : stageIndex >= stages.length - 1
+          ? 'PLAY AGAIN'
+          : 'RESUME'
+
+  /**
+   * How long the water takes to reach the next stop.
+   *
+   * Down the sheet it travels for most of the stop's dwell, which is what
+   * makes the fall look like falling. Up it — opening the tour from the
+   * finished drawing, or stepping back — it snaps, because light retracting
+   * slowly up a page is a picture of nothing at all.
+   */
+  const frontWas = useRef(1)
+  const travelMs =
+    reveal.front < frontWas.current
+      ? 260
+      : Math.max(120, Math.round((stop.ms * motion.travel) / tour.speed))
+  useEffect(() => {
+    frontWas.current = reveal.front
+  })
+
+  const runLength = (ms) => {
+    const s = Math.round(ms / 1000)
+    return s >= 60 ? `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, '0')} s` : `${s} s`
+  }
+
+  // --- running itself -------------------------------------------------------
+  //
+  // Three conditions, all of them checked rather than assumed: the figure is
+  // on screen, the tab is in front, and nobody has touched anything for a
+  // while. Reduced motion removes the whole path.
+
+  const idleAt = useRef(Date.now())
+  const inView = useRef(false)
+  // A tour that has been opened owns the drawing until it is finished with,
+  // paused or not: a paused tour that started running itself would move marks
+  // the reader had deliberately stopped.
+  const touring = useRef(false)
+  touring.current = tour.active
+
+  useEffect(() => {
+    const el = figureRef.current
+    if (!el || typeof IntersectionObserver !== 'function') return undefined
+    const io = new IntersectionObserver(
+      (entries) => {
+        inView.current = entries.some((e) => e.isIntersecting)
+        if (!inView.current) setAmbient(false)
+      },
+      { threshold: 0 },
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+
+  useEffect(() => {
+    if (reduced) {
+      setAmbient(false)
+      return undefined
+    }
+    const el = figureRef.current
+    const bump = () => {
+      idleAt.current = Date.now()
+      setAmbient(false)
+    }
+    const onHidden = () => {
+      if (document.hidden) setAmbient(false)
+    }
+    window.addEventListener('pointerdown', bump, true)
+    window.addEventListener('keydown', bump, true)
+    el?.addEventListener('pointermove', bump)
+    document.addEventListener('visibilitychange', onHidden)
+    const id = setInterval(() => {
+      if (document.hidden || !inView.current || touring.current) {
+        setAmbient(false)
+        return
+      }
+      setAmbient(Date.now() - idleAt.current >= IDLE_MS)
+    }, 1000)
+    return () => {
+      clearInterval(id)
+      window.removeEventListener('pointerdown', bump, true)
+      window.removeEventListener('keydown', bump, true)
+      el?.removeEventListener('pointermove', bump)
+      document.removeEventListener('visibilitychange', onHidden)
+    }
+  }, [reduced])
+
+  // A click anywhere on the sheet pauses the tour and is then honoured in the
+  // ordinary way — the hero re-aims, the register opens, the readout answers.
+  // The tour's own controls are the exception: they are how it is driven.
+  const onSheetPointerDown = (e) => {
+    if (typeof e.target?.closest === 'function' && e.target.closest('.mr-docent')) return
+    setTour((t) => (t.playing ? { ...t, playing: false } : t))
+  }
+
+  // --- what a click on the sheet answers ------------------------------------
+
+  const say = useCallback((next) => {
+    setInspect(next)
+    // Every readout also selects the tensor it is talking about, so OPEN IN
+    // THE FILE always has somewhere to go.
+    if (next?.tensor) setPart(next.tensor)
+  }, [])
+
+  const sayUnembed = useCallback(() => {
+    say({
+      kind: 'plate',
+      text: unembedWhy(),
+      tensor: 'transformer.wte.weight_quantized',
+      instrument: 'stepper',
+      letter: 'B',
+    })
+  }, [say])
+
+  const inspectCarrier = useCallback(
+    (tr) => {
+      say({
+        kind: 'carrier',
+        text: carrierWhy(tr, sequence, sequence[hero]),
+        tensor: wallTensor(tr.layer),
+        instrument: 'attention',
+        letter: 'C',
+      })
+    },
+    [say, sequence, hero],
+  )
+
+  const inspectRay = useCallback(
+    (i) => {
+      const bar = draw?.landing?.bars?.[i]
+      if (!bar) return
+      say({
+        kind: 'ray',
+        text: rayWhy(bar, finalTop?.token ?? null, nextToken ?? null),
+        tensor: 'transformer.wte.weight_quantized',
+        instrument: 'stepper',
+        letter: 'B',
+      })
+    },
+    [say, draw, finalTop, nextToken],
+  )
+
+  /** Which cell of a wall a pointer is over, in the tensor's own coordinates. */
+  const cellUnder = useCallback(
+    (layer, clientX, clientY) => {
+      const svg = svgRef.current
+      const wall = windows ? wallWindow(windows, wallTensor(layer)) : null
+      if (!svg || !wall) return null
+      const box = svg.getBoundingClientRect()
+      const ux = ((clientX - box.left) * SW) / box.width
+      const uy = ((clientY - box.top) * g.H) / box.height
+      const col = Math.min(
+        wall.cols - 1,
+        Math.max(0, Math.floor((ux - g.bandX) / g.pitchX)),
+      )
+      const row = Math.min(
+        wall.rows - 1,
+        Math.max(0, Math.floor((uy - g.bandTop[layer]) / g.pitchY)),
+      )
+      return { wall, row, col, index: row * wall.cols + col }
+    },
+    [windows, g],
+  )
+
+  const onWallMove = (layer) => (e) => {
+    const rect = hoverRef.current
+    const hit = cellUnder(layer, e.clientX, e.clientY)
+    if (!rect || !hit) return
+    // Written straight to the element rather than through state: a hover that
+    // re-rendered the instrument would be a hover that rebuilt the fall.
+    rect.setAttribute('x', f2(g.bandX + hit.col * g.pitchX - 1))
+    rect.setAttribute('y', f2(g.bandTop[layer] + hit.row * g.pitchY - 1))
+    rect.setAttribute('width', f2(g.cellW + 2))
+    rect.setAttribute('height', f2(g.cellH + 2))
+    rect.style.display = ''
+  }
+  const onWallLeave = () => {
+    if (hoverRef.current) hoverRef.current.style.display = 'none'
+  }
+  const onWallClick = (layer) => (e) => {
+    const hit = cellUnder(layer, e.clientX, e.clientY)
+    const name = wallTensor(layer)
+    const tensor = factsFor(name)
+    if (!hit || !tensor || tensor.scale == null) return
+    // The plate around this rect toggles the tensor on and off; a cell answers
+    // for itself and always selects, because the next click is a different
+    // byte and toggling one off to read another would be a nuisance.
+    e.stopPropagation()
+    const value = hit.wall.values[hit.index]
+    say({
+      kind: 'cell',
+      text: cellWhy({
+        value,
+        weight: tensor.scale * (value - (tensor.zeroPoint ?? 0)),
+        row: hit.wall.row0 + hit.row,
+        col: hit.wall.col0 + hit.col,
+        tensor: tensor.display,
+        scale: tensor.scale,
+        zeroPoint: tensor.zeroPoint ?? 0,
+        totalRows: hit.wall.totalRows,
+        totalCols: hit.wall.totalCols,
+      }),
+      tensor: name,
+      instrument: 'file',
+      letter: 'E',
+    })
+  }
+
+  const readout = inspect ? inspect.text : partReadout(partFacts)
+
+  // What the tour has on screen, for the same reason `__mapState` exists: a
+  // claim about how long a run takes, or about which stop says what, can be
+  // measured rather than taken. Dev only; production drops the branch.
+  useEffect(() => {
+    if (!import.meta.env.DEV) return
+    globalThis.__tourState = {
+      preset,
+      reduced,
+      ambient,
+      active: tour.active,
+      playing: tour.playing,
+      speed: tour.speed,
+      index: stageIndex,
+      count: stages.length,
+      totalMs: tourPlan.totalMs,
+      kind: stop?.kind ?? null,
+      caption: stop?.caption ?? null,
+      lead: stop?.lead ?? null,
+      readout,
+      reveal,
+    }
+  })
 
   const legend = useMemo(() => {
     // Which stream is the fat one is a fact about this sentence, so it is
@@ -1118,16 +1580,30 @@ export default function ForwardMap({
             pickBar ? `${pickBar.token} at ${(pickBar.p * 100).toFixed(1)}%` : (nextToken ?? '—')
           } is what the shipped sampler took (temperature ${DECODING.temperature}, top-k ${DECODING.topK}, repetition penalty ${DECODING.repetitionPenalty}, seed ${DECODING.seed}) and carries the amber mark. A bar’s height is its probability and the rows of dots are how that height is counted. Chance appears nowhere above it: same input → same trace, every time.`
 
+    // The tour and the ambient loop are rules of this drawing like any other,
+    // so they are stated here rather than left to be found. What they change
+    // is when a mark is drawn, never what it says.
+    const tourLine = compact
+      ? `Play walks one pass at reading speed, a stop at a time — ${stages.length} stops, about ${runLength(
+          tourPlan.totalMs,
+        )} at 1×. The line under the controls speaks this pass’s own numbers. Step moves one stop; a click anywhere pauses the tour and is then honoured. Reduced motion: no timer, step through it. Left alone for 20 seconds, in view, the sheet runs itself — the sweep of light carries no number and changes no value.`
+      : `Press play and one pass is walked at reading speed rather than replayed in a second: ${
+          stages.length
+        } stops, about ${runLength(
+          tourPlan.totalMs,
+        )} at 1×, and the line under the controls says what is happening at each one in this pass’s own numbers. The steps move a stop either way, and clicking anything on the sheet pauses the tour and then honours the click. With reduced motion on there is no animation and no timer at all: play opens the tour at its first stop and the steps walk it. Left alone for twenty seconds — in view, tab in front, reduced motion off — the sheet runs itself: a sweep of light travels down the fall, the walls glint where it crosses them, and the carriers fire again in turn. That sweep is the one mark in the picture that carries no number; it redraws nothing and changes no value.`
+
     return [
       ['THE WALLS', walls],
       ['THE FALL', fall],
       ['THE TRANSFERS', transfers],
       ['THE LANDING', landing],
+      ['THE TOUR', tourLine],
     ]
   }, [
     compact, wall0, tensor0, fileSize, n, g, draw, live, field, plan, heroToken,
     autoHeads, block, headPick, silent, sequence, splash, finalTop, nextToken,
-    numberedChips,
+    numberedChips, stages.length, tourPlan.totalMs,
   ])
 
   const legendLines = useMemo(
@@ -1139,10 +1615,10 @@ export default function ForwardMap({
   const fine = live
     ? `real distilgpt2 · ${REAL_LAYERS} blocks · ${REAL_HEADS} heads · d ${REAL_HIDDEN}${
         manifest ? ` · ${(manifest.parameters / 1e6).toFixed(1)}M parameters` : ''
-      } · one pass on the sentence above, run in this browser · nothing in the picture is a stand-in: the only marks that carry no number are the aperture outline and the bloom around the light.`
+      } · one pass on the sentence above, run in this browser · nothing in the picture is a stand-in: the only marks that carry no number are the aperture outline, the bloom around the light, and the sweep that travels down the sheet while it runs itself.`
     : `real distilgpt2 · ${REAL_LAYERS} blocks · ${REAL_HEADS} heads · d ${REAL_HIDDEN}${
         manifest ? ` · ${(manifest.parameters / 1e6).toFixed(1)}M parameters` : ''
-      } · the walls are the real file in every mode; the fall, the transfers and the landing wait on a pass. The only marks that carry no number are the aperture outline and the bloom around the light.`
+      } · the walls are the real file in every mode; the fall, the transfers and the landing wait on a pass. The only marks that carry no number are the aperture outline, the bloom around the light, and the sweep that travels down the sheet while it runs itself.`
   const fineLines = useMemo(
     () => wrapText(fine, g.fineCols, g.fineLines),
     [fine, g],
@@ -1161,7 +1637,12 @@ export default function ForwardMap({
   )
 
   return (
-    <figure className="instrument is-fullbleed" id="inst-forward-figure">
+    <figure
+      className="instrument is-fullbleed"
+      id="inst-forward-figure"
+      ref={figureRef}
+      onPointerDownCapture={onSheetPointerDown}
+    >
       <InstrumentHead
         eyebrow="INSTRUMENT F"
         title="The forward pass, live"
@@ -1215,9 +1696,6 @@ export default function ForwardMap({
                 {l}
               </button>
             ))}
-            <button type="button" className="btn map-run-btn" onClick={runAgain}>
-              RUN THE PASS
-            </button>
             <InfoTag topic={armed ? 'mapReal' : 'map'} />
           </div>
           <div className="mr-chiprow">
@@ -1259,8 +1737,76 @@ export default function ForwardMap({
           <span className="map-ctl-note">{note()}</span>
         </div>
 
+        {/* The docent. It rides at the top of the window while the drawing —
+            which is two and a half thousand units tall — scrolls past it, so
+            the words for a stop are readable at the part of the sheet that
+            stop is about. Its height is fixed at every width and the caption
+            clips rather than reflows, so nothing here can move the page. */}
+        <div className="mr-docent">
+          <div className="mr-tourrow">
+            <button
+              type="button"
+              className="btn mr-play"
+              onClick={openTour}
+              aria-pressed={tour.playing}
+            >
+              {playLabel}
+            </button>
+            <button
+              type="button"
+              className="mr-chip mr-step"
+              aria-label="back one stop of the tour"
+              disabled={tour.active && stageIndex === 0}
+              onClick={() => stepTo(stageIndex - 1)}
+            >
+              ◀
+            </button>
+            <button
+              type="button"
+              className="mr-chip mr-step"
+              aria-label="forward one stop of the tour"
+              disabled={tour.active && stageIndex >= stages.length - 1}
+              onClick={() => stepTo(stageIndex + 1)}
+            >
+              ▶
+            </button>
+            <span className="mr-sel-label mr-speed-label">SPEED</span>
+            {SPEEDS.map((s) => (
+              <button
+                key={s}
+                type="button"
+                className={`mr-chip${tour.speed === s ? ' is-on' : ''}`}
+                aria-pressed={tour.speed === s}
+                aria-label={`play the tour at ${s} times speed`}
+                disabled={reduced}
+                onClick={() => setTour((t) => ({ ...t, speed: s }))}
+              >
+                {s}×
+              </button>
+            ))}
+            <span className="mr-stopcount">
+              {tour.active
+                ? `STOP ${stageIndex + 1}/${stages.length} · ${stop.kind.toUpperCase()}`
+                : `${stages.length} STOPS · ${runLength(tourPlan.totalMs / tour.speed)}`}
+            </span>
+          </div>
+          <p className="mr-caption" aria-live={tour.active ? 'polite' : 'off'}>
+            {tour.active
+              ? compact
+                ? stop.lead
+                : stop.caption
+              : ambient
+                ? 'The sheet is running itself: a sweep of light down the fall, a glint where it crosses a wall, the carriers firing again in turn. Nothing is being recomputed and no number is changing — move the pointer over the drawing and it stops.'
+                : reduced
+                  ? `Step through one pass at your own pace: ${stages.length} stops, each with a line of plain words and this pass’s own numbers. Animation is off, so every stop is drawn at once.`
+                  : `Press play and one pass is walked at reading speed — ${stages.length} stops, about ${runLength(
+                      tourPlan.totalMs / tour.speed,
+                    )} at ${tour.speed}×. Left alone for twenty seconds the sheet starts running itself.`}
+          </p>
+        </div>
+
         <div
-          className="map-screen screen"
+          className={`map-screen screen is-motion-${preset}${ambient ? ' is-ambient' : ''}`}
           style={{
             aspectRatio: `${SW} / ${g.H}`,
             // The stroke of a grain, in the drawing's own units. It belongs to
@@ -1268,9 +1814,30 @@ export default function ForwardMap({
             // reads at 0.58 px a unit is a third too heavy at one.
             '--mr-grain-w': String(g.grainWidth),
             '--mr-grain-w-hero': String(g.grainWidthHero),
+            // The whole of the tour's state, as five numbers the stylesheet
+            // compares each mark against. Nothing below re-renders to reveal:
+            // the marks read these and decide for themselves.
+            '--mr-front': String(reveal.front),
+            '--mr-carriers': String(reveal.carriers),
+            '--mr-bars': String(reveal.bars),
+            '--mr-aperture': String(reveal.aperture),
+            '--mr-pick': String(reveal.pick),
+            '--mr-fade': `${Math.round(motion.fadeMs / tour.speed)}ms`,
+            '--mr-travel': `${travelMs}ms`,
+            // The ambient loop's own tempo, one preset at a time.
+            // How far the sweep travels: the whole drawing, plus its own
+            // depth, so it enters from above the sheet and leaves below it.
+            '--mr-sweep-to': `${f2(g.H + g.bandH * 2.4)}px`,
+            '--mr-sweep-ms': `${motion.ambient.sweepMs}ms`,
+            '--mr-sweep-op': String(motion.ambient.sweepOpacity),
+            '--mr-glint-op': String(motion.ambient.glintOpacity),
+            '--mr-carrier-ms': `${motion.ambient.carrierMs}ms`,
+            '--mr-breathe-ms': `${motion.ambient.breatheMs}ms`,
+            '--mr-hero-ms': `${motion.ambient.heroMs}ms`,
           }}
         >
           <svg
+            ref={svgRef}
             className="map-svg"
             viewBox={`0 0 ${SW} ${g.H}`}
             role="img"
@@ -1296,6 +1863,46 @@ export default function ForwardMap({
                 <stop offset="0" stopColor="#070A0D" />
                 <stop offset=".62" stopColor="#05070A" />
                 <stop offset="1" stopColor="#030507" />
+              </linearGradient>
+              {/* How far down the sheet the light has reached.
+                  The whole tour's fall is this one rectangle: it covers the
+                  drawing and is scaled from its own top edge by a number the
+                  stylesheet reads off `--mr-front`, so a stop advances the
+                  water by transitioning a transform — one animated element
+                  for the entire fall, and not a single React render inside
+                  it. With no tour running it stands at 1 and clips nothing. */}
+              <clipPath id="mr-front" clipPathUnits="userSpaceOnUse">
+                <rect className="mr-front-rect" x="0" y="0" width={SW} height={g.H} />
+              </clipPath>
+              {/* The six walls, for the glint. The ambient sweep is painted
+                  twice: once over everything at a low light, and once through
+                  this, so that crossing a wall is brighter than crossing the
+                  dark air — which is what "the walls glint where the light
+                  crosses them" means. */}
+              <clipPath id="mr-bands" clipPathUnits="userSpaceOnUse">
+                {Array.from({ length: REAL_LAYERS }, (_, l) => (
+                  <rect
+                    key={l}
+                    x={g.bandX}
+                    y={g.bandTop[l]}
+                    width={g.bandW}
+                    height={g.bandH}
+                  />
+                ))}
+              </clipPath>
+              {/* The sweep itself: a soft band of the moving colour, in the
+                  drawing's own units so it is the same shape at every width. */}
+              <linearGradient
+                id="mr-sweep"
+                gradientUnits="userSpaceOnUse"
+                x1="0"
+                y1="0"
+                x2="0"
+                y2={f2(g.bandH * 2.2)}
+              >
+                <stop offset="0" stopColor="var(--moving)" stopOpacity="0" />
+                <stop offset=".5" stopColor="var(--moving-lit)" stopOpacity="1" />
+                <stop offset="1" stopColor="var(--moving)" stopOpacity="0" />
               </linearGradient>
             </defs>
             <rect width={SW} height={g.H} fill="url(#mr-fade)" />
@@ -1324,18 +1931,24 @@ export default function ForwardMap({
                       ),
                     )
                   : null}
-                {draw.footprints.map((d, i) => (
-                  <path key={i} d={d} fill="url(#mr-fade)" opacity={SCRIM_WATER} />
-                ))}
-                {draw.transfers.map((tr) => (
+                {/* Under the same clip as the water itself: a wall that
+                    stands back where no stream has arrived yet would be a
+                    shadow with nothing casting it. */}
+                <g clipPath="url(#mr-front)">
+                  {draw.footprints.map((d, i) => (
+                    <path key={i} d={d} fill="url(#mr-fade)" opacity={SCRIM_WATER} />
+                  ))}
+                </g>
+                {draw.transfers.map((tr, ci) => (
                   <path
                     key={tr.id}
-                    d={`M ${tr.points.map((p) => `${f2(p.x)} ${f2(p.y)}`).join(' L ')}`}
+                    className="mr-cscrim"
+                    style={{ '--ci': ci }}
+                    d={tr.centre}
                     fill="none"
                     stroke="url(#mr-fade)"
                     strokeWidth={f2((4 + 3 * tr.w) * 2 + 8)}
                     strokeLinecap="round"
-                    opacity={SCRIM_MARK}
                   />
                 ))}
               </g>
@@ -1347,8 +1960,14 @@ export default function ForwardMap({
                 label. */}
             {Array.from({ length: REAL_LAYERS }, (_, l) => {
               const top = g.bandTop[l]
+              // A register the tour is talking about is lifted the same way an
+              // opened one is, and by nothing else: the cue changes where the
+              // reader looks, never which head or which numbers are read.
+              const cls = `mr-reg${block === l ? ' is-open' : ''}${
+                reveal.cue === l ? ' is-cued' : ''
+              }`
               return (
-                <g key={l} className={block === l ? 'mr-reg is-open' : 'mr-reg'}>
+                <g key={l} className={cls}>
                   <rect
                     className="mr-reg-frame"
                     x={g.bandX - 4}
@@ -1381,8 +2000,36 @@ export default function ForwardMap({
               )
             })}
 
-            {draw ? <Carriers g={g} draw={draw} /> : null}
-            {draw ? <Streams key={replay} g={g} draw={draw} /> : null}
+            {draw ? <Carriers g={g} draw={draw} onInspect={inspectCarrier} /> : null}
+            {draw ? (
+              <g clipPath="url(#mr-front)">
+                <Streams g={g} draw={draw} />
+              </g>
+            ) : null}
+
+            {/* The ambient loop, and nothing else, lives in these two. Both
+                are inert — no animation, no light — until the sheet is left
+                alone; the stylesheet is what starts them. */}
+            <g className="mr-ambient" aria-hidden="true">
+              <rect
+                className="mr-sweep"
+                x="0"
+                y={f2(-g.bandH * 2.2)}
+                width={SW}
+                height={f2(g.bandH * 2.2)}
+                fill="url(#mr-sweep)"
+              />
+              <g clipPath="url(#mr-bands)">
+                <rect
+                  className="mr-sweep is-glint"
+                  x="0"
+                  y={f2(-g.bandH * 2.2)}
+                  width={SW}
+                  height={f2(g.bandH * 2.2)}
+                  fill="url(#mr-sweep)"
+                />
+              </g>
+            </g>
 
             {/* Each wall says which register it is, which head its transfers
                 came from, and which tensor it is cut out of — over the fall
@@ -1416,7 +2063,9 @@ export default function ForwardMap({
                     className={on ? 'mr-plate is-on' : 'mr-plate'}
                     role="button"
                     tabIndex={0}
-                    aria-label={`read ${tensor ? tensor.display : name} out of the file`}
+                    aria-label={`read ${
+                      tensor ? tensor.display : name
+                    } out of the file; click a cell of this wall for the weight that byte stands for`}
                     aria-pressed={on}
                     onClick={() => handlePart(name)}
                     onKeyDown={(e) => {
@@ -1427,12 +2076,21 @@ export default function ForwardMap({
                     }}
                   >
                     <title>{partReadout(tensor)}</title>
+                    {/* One rect for fifteen hundred targets. A wall is drawn
+                        as a few dozen paths grouped by magnitude, so no cell
+                        is an element that could be hovered; the cell under
+                        the pointer is worked out from the pointer instead,
+                        which costs the drawing nothing and lets every byte
+                        answer for itself. */}
                     <rect
                       className="mr-plate-hit"
                       x={g.bandX}
                       y={top}
                       width={g.bandW}
                       height={g.bandH}
+                      onClick={onWallClick(l)}
+                      onPointerMove={onWallMove(l)}
+                      onPointerLeave={onWallLeave}
                     />
                     <rect
                       x={f2(SW - 8 - nameW - 5)}
@@ -1492,7 +2150,7 @@ export default function ForwardMap({
             {/* The transfers, said: a green key at the source, the weight
                 beside it, and the bloom where the hero takes it in. */}
             {draw
-              ? draw.transfers.map((tr) => {
+              ? draw.transfers.map((tr, ci) => {
                   const x = draw.xs[tr.src]
                   const label = `${sequence[tr.src]} · ${tr.w.toFixed(4)}`
                   const key = `KEY · B${tr.layer} H${tr.head}`
@@ -1517,6 +2175,7 @@ export default function ForwardMap({
                     <g
                       key={tr.id}
                       className={tr.standBack ? 'mr-event is-back' : 'mr-event'}
+                      style={{ '--ci': ci }}
                     >
                       <g className="mr-key">
                         <rect x={x - 8.5} y={tr.lift - 1.8} width="17" height="3.6" rx="1.2" />
@@ -1602,8 +2261,41 @@ export default function ForwardMap({
                     ? draw.xs[hero] - draw.hw[hero][reg.layer + 1] - 14
                     : draw.xs[hero] + draw.hw[hero][reg.layer + 1] + 14
                   const y = g.bandMid[reg.layer] + 3
+                  const why = silentWhy(reg, sequence)
                   return (
-                    <g key={reg.layer}>
+                    // The plate says what it means when it is asked. A line
+                    // reading `no transfer · self 0.59` is a fact with its
+                    // explanation missing, and the explanation is the same
+                    // sentence the tour speaks at this block.
+                    <g
+                      key={reg.layer}
+                      className="mr-said"
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`why block ${reg.layer} draws no transfer`}
+                      onClick={() =>
+                        say({
+                          kind: 'plate',
+                          text: why,
+                          tensor: wallTensor(reg.layer),
+                          instrument: 'attention',
+                          letter: 'C',
+                        })
+                      }
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          say({
+                            kind: 'plate',
+                            text: why,
+                            tensor: wallTensor(reg.layer),
+                            instrument: 'attention',
+                            letter: 'C',
+                          })
+                        }
+                      }}
+                    >
+                      <title>{why}</title>
                       {/* The wall stands back behind the line, as it does
                           behind a callout, so no byte is read as light and
                           the words stay words. */}
@@ -1715,27 +2407,27 @@ export default function ForwardMap({
                 : `LAST POSITION → 50,257 WORDS · TOP ${g.splashN}`}
             </text>
             {draw ? (
-              <>
+              <g className="mr-aperture-group">
                 <g className="mr-absorb">
                   <circle cx={draw.apertureX} cy={g.apertureY0} r="15" opacity=".07" />
                   <circle cx={draw.apertureX} cy={g.apertureY0} r="7.5" opacity=".13" />
                   <circle cx={draw.apertureX} cy={g.apertureY0} r="2.6" opacity=".55" />
                 </g>
                 <g
-                  className="mr-plate mr-aperture-plate"
+                  className="mr-plate mr-aperture-plate mr-said"
                   role="button"
                   tabIndex={0}
-                  aria-label="read the word table back out of the file — the same wte the embedding uses, tied, and turned on its side"
+                  aria-label="what UNEMBED · WTEᵀ means, and the word table it reads back out of the file"
                   aria-pressed={part === 'transformer.wte.weight_quantized'}
-                  onClick={() => handlePart('transformer.wte.weight_quantized')}
+                  onClick={() => sayUnembed()}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault()
-                      handlePart('transformer.wte.weight_quantized')
+                      sayUnembed()
                     }
                   }}
                 >
-                  <title>{partReadout(factsFor('transformer.wte.weight_quantized'))}</title>
+                  <title>{unembedWhy()}</title>
                   <rect
                     x={f2(draw.apertureX - apertureW / 2)}
                     y={g.apertureY0}
@@ -1763,13 +2455,13 @@ export default function ForwardMap({
                     {APERTURE_NOTE}
                   </text>
                 </g>
-              </>
+              </g>
             ) : null}
             {draw?.landing ? (
               <>
-                <Landing key={`landing-${replay}`} g={g} draw={draw} />
-                {draw.landing.bars.map((bar) => (
-                  <g key={bar.id}>
+                <Landing g={g} draw={draw} onInspect={inspectRay} />
+                {draw.landing.bars.map((bar, bi) => (
+                  <g key={bar.id} className="mr-barwords" style={{ '--bi': bi }}>
                     <text
                       className={
                         bar.argmax
@@ -1903,6 +2595,19 @@ export default function ForwardMap({
               })
               return out
             })()}
+            {/* The cell under the pointer, outlined. It is written straight
+                to the DOM on a pointer move and is the one element on the
+                sheet React does not own — a hover that went through state
+                would rebuild the fall sixty times a second. */}
+            <rect
+              ref={hoverRef}
+              className="mr-hover"
+              style={{ display: 'none' }}
+              x="0"
+              y="0"
+              width="0"
+              height="0"
+            />
             {fineLines.map((line, i) => (
               <text
                 key={i}
@@ -1917,8 +2622,13 @@ export default function ForwardMap({
           </svg>
         </div>
 
+        {/* One row answers every click on the sheet — a wall cell, a carrier,
+            a landing ray, either plate — and the two buttons beside it take
+            the reader to wherever that answer can be read at length. Both are
+            fixed width and the box is two reserved lines, so no wording of
+            any readout moves anything. */}
         <div className="map-readout-row">
-          <p className="map-readout">{partReadout(partFacts)}</p>
+          <p className="map-readout">{readout}</p>
           <button
             type="button"
             className="btn map-open-btn"
@@ -1926,6 +2636,19 @@ export default function ForwardMap({
             onClick={() => partFacts && onOpenTensor(partFacts.name)}
           >
             OPEN IN THE FILE
+          </button>
+          <button
+            type="button"
+            className="btn map-inst-btn"
+            disabled={!inspect?.instrument}
+            aria-label={
+              inspect?.instrument
+                ? `open instrument ${inspect.letter}, where this reading can be read at length`
+                : 'no instrument to open for this readout'
+            }
+            onClick={() => inspect?.instrument && onOpenInstrument(inspect.instrument)}
+          >
+            {`OPEN ${inspect?.letter ?? '—'}`}
           </button>
         </div>
 
