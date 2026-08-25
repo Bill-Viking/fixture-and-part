@@ -1,0 +1,541 @@
+// Instrument F — the narrated run, and the words the drawing says about itself.
+//
+// The drawing this belongs to used to replay itself in about a second: seven
+// opacity delays, one per depth, and it was over before a reader had found
+// where to look. This file is the other half of the answer to that. It turns
+// one pass into a staged tour at reading speed — thirty-odd stops, each with
+// a line of plain words and the pass’s own numbers in it — and it is also the
+// single source of the sentences the sheet says when a reader clicks a
+// carrier, a wall cell, a landing ray or one of the two plates. The tour and
+// the click-readouts say the same things because they are written here once.
+//
+// The honesty law does not bend for any of it. Every number a caption speaks
+// is read out of the objects instrument F already has on screen — the same
+// arrays it publishes to `__mapState` — or out of the file’s own manifest.
+// Where a mode genuinely has no number, the caption says so and says what to
+// do about it. Motion may dramatise the timing of a pass. It may not invent a
+// single value.
+//
+// Nothing here renders. It returns data; ForwardMap.jsx draws it.
+
+import { REAL_HEADS, REAL_LAYERS } from './realModel.js'
+import { MAP_STOPS, TRANSFER_FLOOR, headOutwardShares } from './forwardMap.js'
+
+/** How long the sheet has to be left alone before it starts running itself. */
+export const IDLE_MS = 20000
+
+const w4 = (v) => v.toFixed(4)
+const n2 = (v) => v.toFixed(2)
+const pc = (v) => `${(v * 100).toFixed(1)}%`
+const q = (t) => `“${t}”`
+
+/**
+ * The three motion studies.
+ *
+ * Motion cannot be judged from a still, and the parameter space here is wide:
+ * how long a stop dwells, how much is said at each one, and how much the sheet
+ * moves when it is left alone. These are three points in it, picked to differ
+ * in kind rather than in degree, and they are selectable with `?motion=a|b|c`
+ * so the choice can be made from real motion. The default is what a reader
+ * gets with no querystring at all.
+ *
+ *   a  measured docent   every transfer and every landing bar gets its own
+ *                        stop; the ambient loop is slow and sparse.
+ *   b  slow cinema       the same stops, dwelt on half again as long, with a
+ *                        fuller ambient loop underneath.
+ *   c  brisk survey      a block is one stop rather than three, and the eight
+ *                        landing bars arrive together; ambient is drift alone.
+ */
+export const MOTION_PRESETS = {
+  a: {
+    id: 'a',
+    name: 'measured docent',
+    note: 'every transfer and every bar its own stop; ambient slow and sparse',
+    dwell: 1,
+    density: 'full',
+    bars: 'each',
+    // A reveal cross-fade, and the share of a fall stop spent travelling.
+    fadeMs: 620,
+    travel: 0.72,
+    ambient: {
+      sweepMs: 11000,
+      sweepOpacity: 0.06,
+      glintOpacity: 0.1,
+      carrierMs: 9000,
+      breatheMs: 8000,
+      heroMs: 6500,
+    },
+  },
+  b: {
+    id: 'b',
+    name: 'slow cinema',
+    note: 'the same stops, dwelt on half again as long; the fullest ambient loop',
+    dwell: 1.6,
+    density: 'full',
+    bars: 'each',
+    fadeMs: 1100,
+    travel: 0.8,
+    ambient: {
+      sweepMs: 7000,
+      sweepOpacity: 0.085,
+      glintOpacity: 0.16,
+      carrierMs: 5000,
+      breatheMs: 5200,
+      heroMs: 4200,
+    },
+  },
+  c: {
+    id: 'c',
+    name: 'brisk survey',
+    note: 'a block is one stop, the landing arrives at once; ambient is drift alone',
+    dwell: 0.92,
+    density: 'block',
+    bars: 'all',
+    fadeMs: 420,
+    travel: 0.6,
+    ambient: {
+      sweepMs: 14000,
+      sweepOpacity: 0.05,
+      glintOpacity: 0.07,
+      carrierMs: 0,
+      breatheMs: 0,
+      heroMs: 9000,
+    },
+  },
+}
+
+/** The preset a querystring asks for, or the default. Dev switch; prod default. */
+export function motionPresetId(search) {
+  const asked = new URLSearchParams(search ?? '').get('motion')
+  return asked && MOTION_PRESETS[asked] ? asked : 'a'
+}
+
+// ---------------------------------------------------------------------------
+// The sentences the sheet says about itself
+// ---------------------------------------------------------------------------
+
+/**
+ * Why a block drew nothing.
+ *
+ * The plate on the drawing says `no transfer · self 0.59` and has never said
+ * what that means. This is what it means, in the legend’s own voice, and the
+ * tour’s caption for that block is the same string — the two cannot
+ * contradict each other because there is only one of them.
+ */
+export function silentLead(reg) {
+  if (!reg) return ''
+  return (
+    `Block ${reg.layer} draws no transfer: in its chosen head the hero sent ${w4(reg.selfWeight)} of its ` +
+    `attention straight back to itself.`
+  )
+}
+
+export function silentDetail(reg, sequence) {
+  if (!reg) return ''
+  const best = reg.best
+    ? `Its best other source, ${q(sequence[reg.best.src])} at ${w4(reg.best.w)}, is under the floor of ${TRANSFER_FLOOR}`
+    : 'It has no other source to draw: the hero is the first piece, and the first piece can only read itself'
+  return (
+    `Self-attention is not a transfer — it is the stream continuing, and the stream is already drawn. ` +
+    `${best}. Nothing was lowered to manufacture a carrier.`
+  )
+}
+
+export function silentWhy(reg, sequence) {
+  if (!reg) return ''
+  return `${silentLead(reg)} ${silentDetail(reg, sequence)}`
+}
+
+/** What the aperture plate means. Shared by its click readout and the tour. */
+export function unembedLead() {
+  return 'UNEMBED · WTEᵀ — the word table, turned on its side.'
+}
+
+export function unembedDetail(vocab = 50257) {
+  return (
+    `The last position’s 768 numbers are scored against all ${vocab.toLocaleString('en-US')} words at once, and ` +
+    `the table doing the scoring is the same wte that turned words into vectors at the rim, transposed. This file ` +
+    `has no separate output matrix: the two ends of the pass share one table, which is why this plate opens the ` +
+    `same tensor the rim uses.`
+  )
+}
+
+export function unembedWhy(vocab = 50257) {
+  return `${unembedLead()} ${unembedDetail(vocab)}`
+}
+
+/** What one carrier is, in plain words, with its own weight in it. */
+export function carrierWhy(tr, sequence, heroToken) {
+  return (
+    `Carrier — block ${tr.layer}, head ${tr.head}. Reading the sentence up to here, this head matched the ` +
+    `hero’s question against ${q(sequence[tr.src])}’s key and carried ${w4(tr.w)} of that piece’s value into ` +
+    `${q(heroToken)}’s own stream. The weight is one number out of the block’s attention softmax at the hero’s ` +
+    `row; the carrier’s width and light are that number, and the hero runs brighter below where it lands.`
+  )
+}
+
+/** What one landing ray is. */
+export function rayWhy(bar, argmaxToken, pickToken) {
+  const role = bar.argmax
+    ? ' It is the machine’s own top — the largest of all 50,257 — and is drawn blue.'
+    : bar.pick
+      ? ' It is what the sampler took, and it carries the amber mark.'
+      : argmaxToken
+        ? ` The machine’s own top is ${q(argmaxToken)}; the sampler took ${q(pickToken ?? '—')}.`
+        : ''
+  return (
+    `Landing ray — ${q(bar.token)} at ${pc(bar.p)}. The ray is one word’s share of a softmax over the whole ` +
+    `vocabulary, counted from the last position’s vector and from no other. The bar’s height is that share ` +
+    `against the tallest bar, and the rows of dots are how the height is counted, so read the number rather ` +
+    `than the dots.${role}`
+  )
+}
+
+/** What one wall cell is: this byte, this weight, this position in the tensor. */
+export function cellWhy(cell) {
+  const { value, weight, row, col, tensor, scale, zeroPoint, totalRows, totalCols } = cell
+  // The 2,304 columns of c_attn are the query, the key and the value
+  // projections laid side by side, in that order — so a column number says
+  // which of the three a weight belongs to. That is the file’s own layout.
+  const third = col < totalCols / 3 ? 'query' : col < (2 * totalCols) / 3 ? 'key' : 'value'
+  return (
+    `Wall cell — byte ${value} at [${row}, ${col}] of ${tensor} [${totalRows}×${totalCols}]. ` +
+    `The file stores this tensor as i8 at zero point ${zeroPoint}, so the weight is scale · (q − zp) = ` +
+    `${scale.toPrecision(3)} · (${value} − ${zeroPoint}) = ${weight.toPrecision(4)}. Column ${col} of ${totalCols} ` +
+    `falls in the ${third} projection. Brightness is the size of the weight, not its sign, and no pass changes it.`
+  )
+}
+
+// ---------------------------------------------------------------------------
+// The tour
+// ---------------------------------------------------------------------------
+
+/**
+ * One stop of the tour.
+ *
+ * `reveal` is the whole state of the drawing at that stop rather than a change
+ * to it, so stepping backwards is the same operation as stepping forwards and
+ * the reduced-motion stepper is the same code as the played tour:
+ *
+ *   segs      how many of the fall’s segments have arrived (0 = none)
+ *   carriers  how many transfers have fired, in the drawing’s own order
+ *   bars      how many landing bars have been counted
+ *   cue       the block to look at, lit at its frame, or null
+ *   aperture  whether the unembedding plate is drawn
+ *   pick      whether the sampler’s mark is drawn
+ */
+function stage(kind, ms, lead, detail, reveal) {
+  // Two lengths of the same sentence, never two different sentences. The lead
+  // is what a phone has room for; the wider settings get the lead and the
+  // detail together. Splitting rather than rewriting is what keeps the short
+  // caption from quietly saying something the long one does not.
+  return { kind, ms, lead, caption: detail ? `${lead} ${detail}` : lead, reveal }
+}
+
+/**
+ * Build the whole tour for what is on screen now.
+ *
+ * Everything it says comes in through this one argument: the norms field, the
+ * per-block registers, the splash, the file’s own wall reading. Nothing is
+ * fetched and nothing is recomputed from the model — if instrument F cannot
+ * see a number, the tour cannot speak it.
+ */
+export function buildTour({
+  preset,
+  live,
+  n,
+  sequence,
+  hero,
+  field,
+  run,
+  registers,
+  autoHeads,
+  splash,
+  finalTop,
+  nextToken,
+  decoding,
+  wall0,
+  segmentCount,
+}) {
+  const p = MOTION_PRESETS[preset] ?? MOTION_PRESETS.a
+  const dwell = (base) => Math.round(base * p.dwell)
+  const stages = []
+  const heroToken = sequence[hero] ?? '—'
+  const lastSeg = segmentCount ?? MAP_STOPS + 1
+  // Every reveal below is written out of this running state, so a stage can
+  // never claim to show something an earlier stage had not reached.
+  const at = (over) => ({
+    segs: 0, carriers: 0, bars: 0, cue: null, aperture: false, pick: false, ...over,
+  })
+
+  if (n === 0) {
+    const only = stage(
+      'empty',
+      4000,
+      'There is nothing to run: the box in instrument A is empty.',
+      'Type a sentence and the streams appear.',
+      at({ segs: lastSeg, carriers: 99, bars: 99, aperture: true, pick: true }),
+    )
+    return { stages: [only], totalMs: only.ms, presetId: p.id }
+  }
+
+  // --- the sentence ---------------------------------------------------------
+  const shown = sequence.slice(0, 3).map(q).join(', ')
+  const rest = n > 3 ? `, and ${n - 3} more` : ''
+  stages.push(
+    stage(
+      'sentence',
+      dwell(4000),
+      `Your sentence is ${n} piece${n === 1 ? '' : 's'} — ${shown}${rest} — and one of them is the hero: ` +
+        `${q(heroToken)}, at position ${hero}.`,
+      `Each piece gets a stream of its own. Everything the tour draws from here is aimed at that one stream, and ` +
+        `clicking a different chip re-aims the whole drawing.`,
+      at({}),
+    ),
+  )
+
+  // --- the rim --------------------------------------------------------------
+  let widest = '—'
+  let widestV = 0
+  if (field) {
+    for (let i = 0; i < n; i++) {
+      if (field.rows[i][0] > widestV) {
+        widestV = field.rows[i][0]
+        widest = sequence[i]
+      }
+    }
+  }
+  stages.push(
+    stage(
+      'embed',
+      dwell(4400),
+      live
+        ? `Each piece becomes 768 numbers — its row of the word table (WTE) plus its row of the position table ` +
+            `(WPE) — and at the rim the hero’s are ${n2(field.rows[hero][0])} long.`
+        : `Each piece becomes 768 numbers: its row of the word table (WTE) plus its row of the position table ` +
+            `(WPE).`,
+      live
+        ? `That sum is the stream. The longest here is ${q(widest)} at ${n2(widestV)} — usually the first piece, ` +
+            `which carries the attention sink. Width, light and grain are that length, on one log law shared by ` +
+            `all ${n} streams.`
+        : `No pass has run, so the drawing has no length to draw: every stream is at one width and one light, and ` +
+            `the grain inside it is the deterministic stand-in instrument D prints. Load the real model above and ` +
+            `these become this sentence’s own numbers.`,
+      at({ segs: 1 }),
+    ),
+  )
+
+  // --- the six blocks -------------------------------------------------------
+  let carriers = 0
+  for (let l = 0; l < REAL_LAYERS; l++) {
+    const reg = registers?.[l] ?? null
+    const head = autoHeads?.[l] ?? null
+    const before = field ? field.rows[hero][l] : null
+    const after = field ? field.rows[hero][l + 1] : null
+    const dir = before != null && after != null ? (after >= before ? 'up from' : 'down from') : ''
+    const wallLine = wall0
+      ? `The wall is ${(wall0.rows * wall0.cols).toLocaleString('en-US')} real bytes of that block’s own attn.c_attn.weight, and the pass does not change one of them.`
+      : ''
+    const share = live && run ? headOutwardShares(run, l, hero)?.[head] ?? null : null
+
+    const fallLead = live
+      ? `The streams fall through block ${l}, and the hero’s vector leaves it ${n2(after)} long, ${dir} ${n2(before)}.`
+      : `The streams fall through block ${l}.`
+    const fallDetail = live
+      ? `${wallLine} A block writes its result back into the same running vector, so the seven stops are seven ` +
+        `readings of one thing rather than seven different things.`
+      : `${wallLine} What the block does to the vector needs a pass: without one there is no length to read, so ` +
+        `the stream leaves the wall exactly as wide as it entered.`
+
+    const headLead =
+      live && head != null
+        ? `Block ${l} is read from head ${head} of ${REAL_HEADS}, where the hero spends ` +
+          `${share != null ? pc(share) : '—'} of its attention on something other than itself.`
+        : `Attention needs a pass, so no head is chosen here yet.`
+    const headDetail =
+      live && head != null
+        ? `That is the head sending the most attention away from the first piece and away from itself — the rule ` +
+          `the legend states, and the one the HEAD chips overrule.`
+        : `With the real model in hand each block picks the head that sends the most attention away from the ` +
+          `first piece and away from itself, and draws the hero’s own sources from it.`
+
+    if (p.density === 'block') {
+      // One stop for the whole block: the fall, the head and every transfer.
+      const kept = reg?.kept ?? []
+      let lead = `${fallLead}`
+      let detail = `${fallDetail} ${headLead} ${headDetail}`
+      if (!live) {
+        detail += ' No pass has run, so no carrier is drawn.'
+      } else if (kept.length === 0) {
+        lead = `${fallLead} ${silentLead(reg)}`
+        detail = `${fallDetail} ${headLead} ${silentDetail(reg, sequence)}`
+      } else {
+        const carried = kept
+          .map((source) => `${w4(source.w)} out of ${q(sequence[source.src])}`)
+          .join(' and ')
+        lead = `${fallLead} It carries ${carried} into the hero.`
+        detail += ' Green marks the key that matched, and a carrier’s width is its weight.'
+      }
+      carriers += kept.length
+      stages.push(stage('block', dwell(4800), lead, detail, at({ segs: l + 2, carriers, cue: l })))
+      continue
+    }
+
+    stages.push(
+      stage('fall', dwell(3000), fallLead, fallDetail, at({ segs: l + 2, carriers, cue: l })),
+    )
+    stages.push(
+      stage('head', dwell(3000), headLead, headDetail, at({ segs: l + 2, carriers, cue: l })),
+    )
+
+    if (!live) {
+      if (l === 0) {
+        stages.push(
+          stage(
+            'nopass',
+            dwell(4200),
+            `There is no attention to draw without a pass, so no carrier is drawn anywhere on this sheet.`,
+            `The walls below are still the file’s own bytes — they are real in both modes — but the green keys, ` +
+              `the amber carriers and the landing all wait on the model. Load it above and this same tour speaks ` +
+              `this sentence’s own weights.`,
+            at({ segs: l + 2, cue: l }),
+          ),
+        )
+      }
+      continue
+    }
+
+    const kept = reg?.kept ?? []
+    if (kept.length === 0) {
+      stages.push(
+        stage(
+          'silent',
+          dwell(4200),
+          silentLead(reg),
+          silentDetail(reg, sequence),
+          at({ segs: l + 2, carriers, cue: l }),
+        ),
+      )
+    } else {
+      kept.forEach((source, i) => {
+        carriers += 1
+        const lead =
+          i === 0
+            ? `Block ${l}, head ${head} — ${q(sequence[source.src])} hands the hero ${w4(source.w)} of its value.`
+            : `And ${q(sequence[source.src])} hands it ${w4(source.w)} as well.`
+        const detail =
+          i === 0
+            ? `The green tick is the key that matched; the amber carrier’s width and light are that weight; the ` +
+              `bloom is where the hero takes it in, and the hero runs brighter below it.`
+            : `A block draws at most two, and only sources at or above ${TRANSFER_FLOOR} — everything under the ` +
+              `floor is left out rather than drawn faint.`
+        stages.push(stage('transfer', dwell(3400), lead, detail, at({ segs: l + 2, carriers, cue: l })))
+      })
+    }
+  }
+
+  // --- the mist and ln_f ----------------------------------------------------
+  stages.push(
+    stage(
+      'tail',
+      dwell(3800),
+      `Below the last wall every stream fades into the mist but one: the last position’s, because the landing is ` +
+        `counted from that vector and from no other.`,
+      `One thing happens to it that the drawing does not stop at — ln_f, the final normalisation, which rescales ` +
+        `the vector before it meets the word table. The seven stops above are the stream entering block 0 and ` +
+        `leaving each of the six.`,
+      at({ segs: lastSeg, carriers, cue: null }),
+    ),
+  )
+
+  // --- the unembedding ------------------------------------------------------
+  stages.push(
+    stage(
+      'unembed',
+      dwell(4400),
+      unembedLead(),
+      unembedDetail(),
+      at({ segs: lastSeg, carriers, aperture: true }),
+    ),
+  )
+
+  // --- the landing ----------------------------------------------------------
+  if (!live || !splash) {
+    stages.push(
+      stage(
+        'noland',
+        dwell(4000),
+        `There is no distribution without a pass, so no bar is drawn.`,
+        `With the real model in hand these become this sentence’s own softmax over the whole vocabulary, top ` +
+          `eight, with the machine’s own top drawn blue and the sampler’s pick marked in amber.`,
+        at({ segs: lastSeg, carriers, aperture: true }),
+      ),
+    )
+  } else if (p.bars === 'all') {
+    const topIsArgmax = finalTop && splash[0].id === finalTop.id
+    stages.push(
+      stage(
+        'land',
+        dwell(4800),
+        `The ${splash.length} tallest of all 50,257: ${q(splash[0].token)} at ${pc(splash[0].p)} is the largest` +
+          `${topIsArgmax ? ', and is the machine’s own top' : ''}.`,
+        `A bar’s height is its probability and the rows of dots are how that height is counted.`,
+        at({ segs: lastSeg, carriers, bars: splash.length, aperture: true }),
+      ),
+    )
+  } else {
+    splash.forEach((candidate, i) => {
+      const isArgmax = finalTop && candidate.id === finalTop.id
+      const lead =
+        i === 0
+          ? `The landing, counted one word at a time. The tallest of all 50,257 is ${q(candidate.token)} at ` +
+            `${pc(candidate.p)}${isArgmax ? ', which is the machine’s own top and is drawn blue' : ''}.`
+          : `${q(candidate.token)} at ${pc(candidate.p)}.`
+      const detail =
+        i === 0
+          ? `A bar’s height is its probability; the rows of dots are how that height is counted.`
+          : ''
+      stages.push(
+        stage('bar', dwell(i === 0 ? 3400 : 1600), lead, detail, at({
+          segs: lastSeg, carriers, bars: i + 1, aperture: true,
+        })),
+      )
+    })
+  }
+
+  // --- the sampler ----------------------------------------------------------
+  if (live && splash) {
+    const picked = splash.find((s) => s.token === nextToken)
+    stages.push(
+      stage(
+        'pick',
+        dwell(4200),
+        `The sampler took ${q(nextToken ?? '—')}${picked ? ` at ${pc(picked.p)}` : ''}.`,
+        `Temperature ${decoding.temperature}, top-k ${decoding.topK}, repetition penalty ` +
+          `${decoding.repetitionPenalty}, seed ${decoding.seed}. Blue is what the machinery scored highest; amber ` +
+          `is what the draw actually took. Same sentence, same seed, same word, every time.`,
+        at({ segs: lastSeg, carriers, bars: splash.length, aperture: true, pick: true }),
+      ),
+    )
+  }
+
+  // --- the end --------------------------------------------------------------
+  stages.push(
+    stage(
+      'done',
+      dwell(5000),
+      live
+        ? `That is one pass: the file frozen, one sentence moving through it, one next word.`
+        : `That is the shape of one pass, with the walls real and the fall a schematic.`,
+      live
+        ? `Nothing above ran twice and nothing was smoothed on the way to the screen. Press play to run it again, ` +
+          `step back through it, or click anything on the sheet — a carrier, a ray, a wall cell — and it will say ` +
+          `what it is.`
+        : `Load the real model above and the same tour speaks this sentence’s own numbers at every stop.`,
+      at({ segs: lastSeg, carriers, bars: splash ? splash.length : 0, aperture: true, pick: true }),
+    ),
+  )
+
+  const totalMs = stages.reduce((sum, s) => sum + s.ms, 0)
+  return { stages, totalMs, presetId: p.id }
+}

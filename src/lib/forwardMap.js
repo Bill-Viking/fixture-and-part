@@ -285,11 +285,18 @@ export function wallWindow(windows, name) {
   const binary = atob(meta.base64)
   // i8, zero point 0: the high half of the byte range is the negative weights.
   const mag = new Uint8Array(binary.length)
+  // The signed values themselves are kept as well as their magnitudes, because
+  // a reader who clicks a cell is owed the weight and not its size: the byte
+  // 236 is the weight −20 × the tensor's scale, and only the signed reading
+  // can say so.
+  const signed = new Int8Array(binary.length)
   let peak = 0
   let least = 127
   for (let i = 0; i < binary.length; i++) {
     const b = binary.charCodeAt(i)
-    const value = Math.abs(b > 127 ? b - 256 : b)
+    const raw = b > 127 ? b - 256 : b
+    signed[i] = raw
+    const value = Math.abs(raw)
     mag[i] = value
     if (value > peak) peak = value
     if (value < least) least = value
@@ -321,9 +328,14 @@ export function wallWindow(windows, name) {
     name,
     rows: meta.rows,
     cols: meta.cols,
+    // Where the window sits in the whole tensor, so a cell can name its own
+    // [row, col] there rather than in the 24 × 64 crop.
+    row0: meta.row0 ?? 0,
+    col0: meta.col0 ?? 0,
     totalRows: meta.totalRows,
     totalCols: meta.totalCols,
     count: mag.length,
+    values: signed,
     lo,
     hi,
     // The window's own full magnitude range, which is what the stretch is
