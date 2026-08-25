@@ -57,6 +57,23 @@ import InstrumentHead from '../components/InstrumentHead.jsx'
 /** The drawing is this many units wide at every screen width. */
 const SW = 1166
 
+/**
+ * Where the drawing changes setting.
+ *
+ * These two are the stylesheet's as well: `.instrument.is-fullbleed` breaks
+ * the figure out of the essay's column at exactly FULL_MQ, which is what puts
+ * a pixel under a unit and lets the type go back to its designed size. Change
+ * one of these and the other has to change with it.
+ */
+const COMPACT_MQ = '(max-width: 640px)'
+const FULL_MQ = '(min-width: 1200px)'
+
+/** Whether a query holds right now, or false where there is no window. */
+const mqMatches = (query) =>
+  typeof window !== 'undefined' &&
+  typeof window.matchMedia === 'function' &&
+  window.matchMedia(query).matches
+
 /** The cadence of a replay: how long the light takes to reach the next depth. */
 const PASS_STEP_MS = 150
 /** The pause before the first depth, so a replay is visibly a beginning. */
@@ -76,26 +93,51 @@ const f2 = (x) => Math.round(x * 100) / 100
 /**
  * Where everything sits, in drawing units.
  *
- * One law, two settings of it. The drawing is 1,166 units wide at both
- * breakpoints, so a unit is about 0.58 px at 1280 and 0.26 px at 390 — which
- * is why the compact type sizes are roughly twice the wide ones, and why the
- * grain of the walls and the streams is coarser there. The height is a
- * function of the setting and of nothing else: not of how many tokens are in
- * the sequence, not of which block is open, not of whether a model has
- * loaded. That is what lets the sentence change without moving the page.
+ * One law, three settings of it. The drawing is 1,166 units wide at every
+ * width the page has, so what a setting really chooses is how many pixels sit
+ * under a unit — and therefore how large a word set in units actually reads:
+ *
+ *   compact   ≤ 640 px    the screen is the phone's column, about 342 px of
+ *                         it: a unit is 0.29 px, so the type is set roughly
+ *                         twice the size of the column setting's and the
+ *                         grain of the streams is coarser.
+ *   column    641–1199 px  the screen is the essay's own column, 678 px: a
+ *                         unit is 0.58 px, and the type is enlarged to suit.
+ *   full      ≥ 1200 px    the figure breaks out of the column and takes the
+ *                         sheet, 1,166 px of it: a unit is a pixel, so the
+ *                         type and the grain go back to the sizes the drawing
+ *                         was designed at.
+ *
+ * The stylesheet breaks the figure out at exactly the width FULL_MQ names, so
+ * the two can never disagree about how many pixels are under a unit.
+ *
+ * The height is a function of the setting and of nothing else: not of how
+ * many tokens are in the sequence, not of which block is open, not of whether
+ * a model has loaded. That is what lets the sentence change without moving
+ * the page.
  */
-function geometryFor(compact) {
+function geometryFor(compact, full) {
+  /** One constant, one value per setting: the phone, the column, the sheet. */
+  const per = (compactValue, columnValue, fullValue) =>
+    compact ? compactValue : full ? fullValue : columnValue
+
   const fs = compact
     ? {
         note: 29, reg: 27, tensor: 24, chip: 30, callout: 29, fine: 24,
         quiet: 27, land: 28, aperture: 24, prob: 29, probp: 25, key: 25,
         legKey: 27, leg: 29, legFine: 25,
       }
-    : {
-        note: 16, reg: 15, tensor: 14, chip: 19, callout: 17, fine: 13.5,
-        quiet: 16, land: 16, aperture: 13.5, prob: 17, probp: 15, key: 15,
-        legKey: 16, leg: 16.5, legFine: 14.5,
-      }
+    : full
+      ? {
+          note: 9.5, reg: 9, tensor: 8.5, chip: 11, callout: 10, fine: 8,
+          quiet: 9.5, land: 9.5, aperture: 8, prob: 10, probp: 9, key: 9,
+          legKey: 9.5, leg: 10.5, legFine: 9,
+        }
+      : {
+          note: 16, reg: 15, tensor: 14, chip: 19, callout: 17, fine: 13.5,
+          quiet: 16, land: 16, aperture: 13.5, prob: 17, probp: 15, key: 15,
+          legKey: 16, leg: 16.5, legFine: 14.5,
+        }
 
   const bandX = 62
   const bandW = SW - 2 * bandX
@@ -108,7 +150,7 @@ function geometryFor(compact) {
   const bandH = rows * pitchY - (pitchY - cellH)
   // The dark air above each wall, where the carriers sweep and the callouts
   // sit. It is set by the type: two lines of callout plus room to breathe.
-  const air = compact ? 150 : 94
+  const air = per(150, 94, 66)
   const blockPitch = bandH + air
 
   const chipY = compact ? 46 : 38
@@ -147,11 +189,18 @@ function geometryFor(compact) {
   const legLine = fs.leg * 1.4
   const legX = compact ? 8 : 196
   const legGap = compact ? 14 : 10
-  const legCols = Math.floor((SW - legX - 10) / (fs.leg * 0.6))
+  // How many characters of legend fit on a line. The advance of a legend
+  // character includes its tracking, and at a pixel a unit leaving that out
+  // puts the longest line three units past the screen's own edge. The two
+  // narrower settings were wrapped and measured without it and land well
+  // inside the edge anyway, so they keep the count they were verified with.
+  const legAdvance = per(0.6, 0.6, MONO_ADVANCE + TRACK.leg)
+  const legCols = Math.floor((SW - legX - 10) / (fs.leg * legAdvance))
+  const fineCols = Math.floor((SW - 18) / (fs.legFine * legAdvance))
   // Reserved, not measured: the legend prints live numbers, so its wording
   // changes with the sentence. A block whose height followed its own text
   // would move everything below the figure on every keystroke.
-  const legLines = compact ? [8, 9, 14, 7] : [9, 10, 13, 8]
+  const legLines = per([8, 9, 14, 7], [9, 10, 13, 8], [7, 7, 9, 6])
   const legKeyLine = compact ? fs.legKey * 1.5 : 0
   const legHeight =
     legLines.reduce((sum, l) => sum + l * legLine + legKeyLine + legGap, 0)
@@ -167,15 +216,19 @@ function geometryFor(compact) {
     splashN, barBase, barMaxH, barPitch, barX0, barW,
     dotCols, dotPitchX, dotW, dotPitchY, dotH,
     keyY, keyY2, legRuleY, legTop, legLine, legX, legGap, legCols, legLines,
-    legKeyLine, fineTop, fineLines,
+    legKeyLine, fineTop, fineLines, fineCols,
     // Where the streams live: inside the walls, with the right-hand end left
     // clear for the tensor each wall is cut from.
     trackX: 70,
     trackW: 936,
     // The grain. A dash on a 1,166-unit drawing has to be sized in units, and
-    // the two breakpoints put very different numbers of pixels under a unit.
-    grain: compact ? 2.4 : 1.1,
-    grainWidth: compact ? 3.6 : 1.75,
+    // the three settings put very different numbers of pixels under a unit.
+    // The stroke of a grain is published to the stylesheet rather than set
+    // there, for the same reason: at one pixel a unit the mark the column
+    // setting needs is a third too heavy.
+    grain: per(2.4, 1.1, 0.6),
+    grainWidth: per(1.75, 1.75, 1.05),
+    grainWidthHero: per(2, 2, 1.2),
     H,
   }
 }
@@ -200,7 +253,7 @@ function textWidth(text, size, tracking) {
 /** The tracking each class of type on the screen is set with, in em. */
 const TRACK = {
   label: 0.11, tensor: 0.1, callout: 0.02, key: 0.1, quiet: 0.06,
-  note: 0.13, aperture: 0.11,
+  note: 0.13, aperture: 0.11, leg: 0.01,
 }
 
 /**
@@ -565,12 +618,8 @@ export default function ForwardMap({
   onOpenInstrument,
   onOpenTensor,
 }) {
-  const [compact, setCompact] = useState(
-    () =>
-      typeof window !== 'undefined' &&
-      typeof window.matchMedia === 'function' &&
-      window.matchMedia('(max-width: 640px)').matches,
-  )
+  const [compact, setCompact] = useState(() => mqMatches(COMPACT_MQ))
+  const [full, setFull] = useState(() => mqMatches(FULL_MQ))
   const [facts, setFacts] = useState(null)
   const [part, setPart] = useState(null)
   const [replay, setReplay] = useState(0)
@@ -581,15 +630,22 @@ export default function ForwardMap({
   const [headPick, setHeadPick] = useState(null)
   const block = blockOpen ? layer : null
 
-  // One media query, read before the first paint and then only on a change of
-  // breakpoint, so the drawing is never laid out at the wrong scale.
+  // Two media queries, read before the first paint and then only on a change
+  // of breakpoint, so the drawing is never laid out at the wrong scale. The
+  // stylesheet answers the second of them for itself, at the same width.
   useEffect(() => {
     if (typeof window.matchMedia !== 'function') return undefined
-    const mq = window.matchMedia('(max-width: 640px)')
-    const onChange = (e) => setCompact(e.matches)
-    mq.addEventListener('change', onChange)
-    setCompact(mq.matches)
-    return () => mq.removeEventListener('change', onChange)
+    const offs = [
+      [COMPACT_MQ, setCompact],
+      [FULL_MQ, setFull],
+    ].map(([query, set]) => {
+      const mq = window.matchMedia(query)
+      const onChange = (e) => set(e.matches)
+      mq.addEventListener('change', onChange)
+      set(mq.matches)
+      return () => mq.removeEventListener('change', onChange)
+    })
+    return () => offs.forEach((off) => off())
   }, [])
 
   // The same shipped reading instrument E draws: the manifest for the shapes
@@ -609,7 +665,7 @@ export default function ForwardMap({
     }
   }, [])
 
-  const g = useMemo(() => geometryFor(compact), [compact])
+  const g = useMemo(() => geometryFor(compact, full), [compact, full])
   const n = sequence.length
   const hero = Math.min(Math.max(lensIndex, 0), Math.max(0, n - 1))
   const runKey = run?.key ?? null
@@ -1088,7 +1144,7 @@ export default function ForwardMap({
         manifest ? ` · ${(manifest.parameters / 1e6).toFixed(1)}M parameters` : ''
       } · the walls are the real file in every mode; the fall, the transfers and the landing wait on a pass. The only marks that carry no number are the aperture outline and the bloom around the light.`
   const fineLines = useMemo(
-    () => wrapText(fine, Math.floor((SW - 18) / (g.fs.legFine * 0.6)), g.fineLines),
+    () => wrapText(fine, g.fineCols, g.fineLines),
     [fine, g],
   )
 
@@ -1105,7 +1161,7 @@ export default function ForwardMap({
   )
 
   return (
-    <figure className="instrument" id="inst-forward-figure">
+    <figure className="instrument is-fullbleed" id="inst-forward-figure">
       <InstrumentHead
         eyebrow="INSTRUMENT F"
         title="The forward pass, live"
@@ -1203,7 +1259,17 @@ export default function ForwardMap({
           <span className="map-ctl-note">{note()}</span>
         </div>
 
-        <div className="map-screen screen" style={{ aspectRatio: `${SW} / ${g.H}` }}>
+        <div
+          className="map-screen screen"
+          style={{
+            aspectRatio: `${SW} / ${g.H}`,
+            // The stroke of a grain, in the drawing's own units. It belongs to
+            // the setting rather than to the stylesheet, because a stroke that
+            // reads at 0.58 px a unit is a third too heavy at one.
+            '--mr-grain-w': String(g.grainWidth),
+            '--mr-grain-w-hero': String(g.grainWidthHero),
+          }}
+        >
           <svg
             className="map-svg"
             viewBox={`0 0 ${SW} ${g.H}`}
