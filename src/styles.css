@@ -595,6 +595,36 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 
+/* The drawing breaks out of the essay's column and takes the sheet.
+
+   The column is 760 px wide and the drawing is 1,166 units, so inside it a
+   unit is 0.58 px and every word in the picture has to be set at nearly twice
+   its designed size to be read at all. Given the whole sheet a unit is a
+   pixel: the figure takes 1,200 — the screen's 1,166 plus the instrument
+   body's 16 px of padding and the sheet's own hairline on each side — and
+   ForwardMap.jsx answers the same 1,200 px query by returning the type and
+   the grain to the sizes the drawing was drawn at. The two widths are one
+   decision and have to be changed together.
+
+   The figure is still laid out in the column, so a percentage in its margin
+   is a percentage of the column: half of what the figure overhangs it, on the
+   side it overhangs. min() keeps it inside a narrower window, and the 48 px
+   held back there is wider than any scrollbar, so the breakout cannot put a
+   horizontal bar on the page. Below the query nothing here applies at all and
+   the figure is the column's, as it was. */
+@media(min-width:1200px){
+  .instrument.is-fullbleed{
+    --bleed:min(1200px,calc(100vw - 48px));
+    width:var(--bleed);
+    margin-left:calc((100% - var(--bleed)) / 2);
+  }
+  /* A line of prose does not want 1,200 px of measure. The words around the
+     drawing keep a readable one and let the drawing have the width. */
+  .instrument.is-fullbleed .inst-purpose{max-width:92ch;}
+  .instrument.is-fullbleed .teach{max-width:110ch;}
+  .instrument.is-fullbleed figcaption{max-width:110ch;}
+}
+
 .map-screen{
   width:100%;overflow:hidden;
   /* aspect-ratio is set inline from the same constants the viewBox uses. */
@@ -653,10 +683,15 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
    so one element carries a whole column of particles. */
 .mr-halo path{fill:var(--moving);stroke:none;}
 .mr-stream.is-hero .mr-halo path{fill:var(--moving-lit);}
+/* The stroke is in the drawing's units and comes from the setting, which is
+   the only thing that knows how many pixels are under one of them. */
 .mr-grain path{
-  fill:none;stroke:var(--moving);stroke-width:1.75;stroke-linecap:round;
+  fill:none;stroke:var(--moving);stroke-width:var(--mr-grain-w,1.75);
+  stroke-linecap:round;
 }
-.mr-stream.is-hero .mr-grain path{stroke:var(--moving-lit);stroke-width:2;}
+.mr-stream.is-hero .mr-grain path{
+  stroke:var(--moving-lit);stroke-width:var(--mr-grain-w-hero,2);
+}
 
 /* --- the transfers ------------------------------------------------------ */
 .mr-carrier path{
