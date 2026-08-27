@@ -625,7 +625,7 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 }
 
 /* --- the docent ----------------------------------------------------------
-   The drawing is 2,239 units tall at the sheet setting, which is taller than
+   The drawing is 2,336.95 units tall at the sheet setting, which is taller than
    any window it will be read in, so the words for a stop have to travel with
    the reader rather than sit at the top of a figure they have scrolled past.
    This bar sticks to the top of the window for exactly as long as the

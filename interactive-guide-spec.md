@@ -301,12 +301,80 @@ granular light. Redrawn in arc 4 from comp-a3; the data layer is unchanged.
   hero's attention each head spends anywhere but on itself. HEAD chips
   overrule the head rule for the open register and are unavailable until one is
   open. The open register is the same `layer` instrument C uses. OPEN A·B·C·D·E
-  are real buttons that scroll to the instrument each reading came from. RUN
-  THE PASS replays the fall; reduced motion draws the finished still.
+  are real buttons that scroll to the instrument each reading came from.
+- **The narrated run** (arc 5). One pass is walked at reading speed rather than
+  replayed in a second: 35 stops on the default sentence in real mode, about
+  1 min 48 s at 1× (19 stops and 66 s illustrative, where there is less to
+  say), built by `lib/tour.js` out of the arrays instrument F already has on
+  screen. Each stop is a line of plain words with this pass's own numbers in
+  it — the rim, the fall through each block with the hero's own ‖residual‖
+  either side of it, the chosen head and the share of attention it sends away
+  from itself, each transfer with its weight, a silent block saying why in
+  place, ln_f, the unembedding, the landing bar by bar, and the sampler's pick
+  last. A stop is the whole state of the drawing rather than a change to it,
+  which is what makes stepping backwards the same operation as stepping
+  forwards. The docent bar over the drawing carries play/pause, step either
+  way, 1×/2×/4× and the caption, and it sticks to the top of the window while
+  the drawing scrolls past it, because the drawing is taller than any window
+  it will be read in.
+  - **The reveal costs no renders.** A stop sets five custom properties on the
+    screen — how far down the light has reached, how many carriers have fired,
+    how many bars are counted, whether the aperture is drawn, whether the pick
+    is marked — and every mark compares its own index against them in the
+    stylesheet. Measured with a MutationObserver over the whole SVG: one step
+    writes nothing at all, and a full 35-stop tour writes twelve attributes,
+    all of them the `class` on the six register groups as the cue moves. No
+    node is added or removed and no wall cell is touched.
+  - **Clicking anything pauses the tour** and is then honoured in the ordinary
+    way — the hero re-aims, the register opens, the readout answers. The tour
+    waits where it was; the docent's own controls are the exception.
+  - **Reduced motion is a first-class path**, not a shortened animation: no
+    timer, no transitions, the same stops and the same words, walked by the
+    buttons. Play opens the tour at its first stop and the steps move it.
+  - The caption clips rather than reflows and its reservation is measured per
+    band, one line over the worst stop on both the default sentence and a
+    21-token one: 4 lines on the sheet for 3 used, 5 in the column for 4, 6 in
+    the narrow column for 5, 5 on the phone for 4 (where the caption is the
+    stop's lead alone rather than the whole sentence).
+- **Ambient — the sheet runs itself** (arc 5). Left alone for twenty seconds,
+  with the figure intersecting the viewport, the tab in front and reduced
+  motion off, a slow loop starts: a band of light sweeps down the fall, the
+  walls glint where it crosses them, the carriers fire again in turn and the
+  landing breathes. All of it is CSS animation on overlay elements that already
+  exist. Any interaction stops it instantly and it resumes after idle again. It
+  is the one thing in the picture that carries no number, and the drawing's
+  closing line says so. Measured over 60 s: 60.0 fps, mean frame 16.7 ms, p99
+  16.8 ms, zero frames over 50 ms at 1,280 and at 390, and zero DOM mutations
+  inside the SVG over 30 s of it.
+- **Motion studies** `?motion=a|b|c` (arc 5, dev switch, default `a`): (a)
+  measured docent — every transfer and every bar its own stop, ambient slow and
+  sparse; (b) slow cinema — the same stops dwelt on half again as long, the
+  fullest ambient loop; (c) brisk survey — a block is one stop, the landing
+  arrives at once, ambient is drift alone. The losing presets are removed once
+  the choice is made.
+- **Nothing on the sheet is dead** (arc 5). A carrier, a landing ray, a wall
+  cell and both plates each answer a click — and Enter or Space — with plain
+  words in the readout under the drawing, and the sentences come from
+  `lib/tour.js`, which is also where the tour's captions come from, so the two
+  cannot contradict each other. A carrier names its block, head, source, real
+  weight and what the weight is; a ray names its word, its share and whether it
+  is the machine's top or the sampler's pick; a wall cell turns its own byte
+  back into a weight — `scale · (q − zp)` with the file's own scale — and names
+  its `[row, col]` in the whole tensor and which of the three projections that
+  column falls in; `no transfer · self 0.59` says what self-attention is and
+  why nothing was lowered to manufacture a carrier; `UNEMBED · WTEᵀ` says the
+  word table is the same one the rim uses, transposed, and that this file has
+  no separate output matrix. A wall is a hit area with a crosshair cursor and
+  the cell under the pointer is outlined — written straight to that one rect
+  rather than through state, because a hover that went through React would
+  rebuild the fall sixty times a second. An answer that names the hero comes
+  down when the drawing is re-aimed.
 - Every wall is a button carrying that tensor's real shape, dtype, scale, zero
   point and byte count out of `fileFacts.json`, and so is the unembedding
   aperture; clicking one prints the readout under the drawing and offers to
-  open that row in instrument E.
+  open that row in instrument E. The plate's toggle is against what is on
+  screen, so pressing it while some other answer is showing prints the plate's
+  own reading rather than turning the tensor off underneath it.
 - Three states, not two. A finished pass over the text in the box draws its own
   numbers. With no model the streams are the schematic — one width, one light,
   no transfers, no landing — with the grain inside them the deterministic
@@ -319,19 +387,26 @@ granular light. Redrawn in arc 4 from comp-a3; the data layer is unchanged.
   law, the chips' fallback to position numbers where a chip has room for fewer
   than three characters, the head-choice rule with the heads it picked, the
   floor under a transfer and the near-miss numbers when a block draws nothing,
-  the landing's
-  conventions, and the closing line that nothing in the picture is a stand-in —
-  the only marks carrying no number are the aperture outline and the bloom
-  around the light. Its four entries have reserved line counts, because the
-  numbers in it change with the sentence and a legend that reflowed would move
-  the page.
+  the landing's conventions, the tour and the ambient loop, and the closing
+  line that nothing in the picture is a stand-in — the only marks carrying no
+  number are the aperture outline, the bloom around the light, and the sweep
+  that travels down the sheet while it is running itself. Its five entries have
+  reserved line counts, because the numbers in it change with the sentence and
+  a legend that reflowed would move the page. The fifth entry (arc 5) is what
+  makes the drawing taller than arc 4's at every breakpoint: 2,336.95 units at
+  the sheet against 2,238.75, and 5,217.1 at the phone against 4,919.
 - The lens whisper of arc 3 is not part of this drawing. Instrument D presents
   the same seven depths as a table, which is where they can be read.
 - `__mapCheck()` in a dev build re-runs the model and recomputes all four
   moving claims by another route — every stream's norms, every filament bin,
   every transfer weight against the attention matrix, and every landing
   probability against a softmax written out separately — and reports whether
-  the pass it compared against was a fresh one.
+  the pass it compared against was a fresh one. `__tourState` (arc 5, dev only)
+  publishes the tour's own state the same way and for the same reason: the
+  preset, whether reduced motion is on, whether the sheet is running itself,
+  the stop, its kind, its caption, the reveal and the readout — so a claim
+  about how long a run takes or about which stop says what can be measured
+  rather than taken.
 
 ### Instrument B — Forward-pass stepper + KV rack (Section 03)
 - Controls: STEP (advance one generated token), RUN (auto-step ~800ms), RESET.
