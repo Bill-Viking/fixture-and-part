@@ -635,13 +635,32 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
    Its height is fixed at each of the three settings and the caption clips
    rather than reflows, which is the legend's rule applied to a line that
    changes on a timer. A caption box that grew by a line would move the whole
-   drawing under it once a second. */
+   drawing under it once a second.
+
+   How many lines each setting reserves is measured rather than guessed, and
+   it is measured the way the legend's reservation is: walk every stop of a
+   real tour at that width and take the tallest caption, on the default
+   sentence and on a twenty-one-token one, then reserve one line more. The
+   caption is a fixed number of characters wrapped into whatever width the
+   setting gives it, so the narrow settings need the most lines — the sheet
+   is 1,166 px wide and the essay's column is 678.
+
+     sheet    ≥ 1200 px   used 3, reserved 4
+     column   800–1199    used 4, reserved 5
+     narrow   641–799     used 4 at 799 and 5 at 641, reserved 6
+     phone    ≤ 640 px    used 4, reserved 5   (the lead alone, not the whole
+                                                caption)
+
+   A band is reserved for its own narrowest width, which is why the narrow
+   band carries two spare lines at the top of it and one at the bottom. The
+   two column bands are one law with a boundary in it rather than two laws:
+   the same words, wrapped into a narrower box, take one more line. */
 .mr-docent{
   position:sticky;top:0;z-index:3;
   background:var(--card);
   border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);
   padding:7px 0 6px;margin-bottom:10px;
-  height:82px;overflow:hidden;
+  height:98px;overflow:hidden;
 }
 .mr-tourrow{
   display:flex;align-items:center;gap:3px;height:24px;overflow:hidden;
@@ -661,12 +680,24 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
   font-family:var(--mono);font-size:9.5px;letter-spacing:0.12em;color:var(--muted);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
-/* Three reserved lines at the sheet setting. The caption is clipped by the
+/* Four reserved lines at the sheet setting. The caption is clipped by the
    box, never wrapped by it into a taller one. */
 .mr-caption{
-  margin:0;height:48px;overflow:hidden;
+  margin:0;height:64px;overflow:hidden;
   font-family:var(--mono);font-size:11.5px;line-height:16px;
   letter-spacing:0.01em;color:var(--ink);
+}
+/* The essay's column is 678 px, and the same words take a line or two more
+   in it than they do on the sheet. The bar is taller here than at the sheet,
+   which is the right way round: the narrower the column, the more of it a
+   sentence needs. */
+@media(max-width:1199px){
+  .mr-docent{height:114px;}
+  .mr-caption{height:80px;}
+}
+@media(max-width:799px){
+  .mr-docent{height:130px;}
+  .mr-caption{height:96px;}
 }
 
 .map-screen{
@@ -1872,7 +1903,21 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
   .mr-chip,.mr-open{font-size:9px;min-width:18px;padding:0 2px;height:21px;}
   .mr-sel-label{font-size:9px;letter-spacing:0.1em;margin-right:3px;}
   .mr-chiprow{gap:2px;height:22px;}
-  .map-run-btn{margin-left:6px;padding:4px 6px;font-size:9px;}
+  /* The docent at the phone's width. Eight controls will not share 320 px
+     with a stop counter, so the counter takes a reserved line of its own
+     under them rather than being squeezed to sixteen pixels and an ellipsis,
+     which is what a single row did. The caption below is the stop's lead
+     alone and reserves five lines for the four the longest one uses. */
+  .mr-docent{height:145px;}
+  .mr-tourrow{flex-wrap:wrap;height:44px;margin-bottom:2px;}
+  .mr-play{width:116px;font-size:8.5px;letter-spacing:0.06em;}
+  .mr-step{min-width:20px;}
+  .mr-speed-label{margin-left:5px;}
+  .mr-stopcount{
+    flex:1 0 100%;text-align:left;height:18px;line-height:18px;
+    font-size:9px;letter-spacing:0.08em;
+  }
+  .mr-caption{height:80px;font-size:11px;line-height:16px;}
   .mr-openrow{justify-content:flex-start;}
   .mr-opens{font-size:9px;letter-spacing:0.06em;}
   .map-ctl-note{
@@ -2067,12 +2112,18 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
     scroll-behavior:auto !important;
   }
   .sweep{display:none;}
-  /* Instrument F's replay. The blanket rule above shortens the duration but
-     leaves the delay, and the delay is the whole animation here — so the
-     fall is turned off outright and the finished still is drawn the moment
-     RUN THE PASS is pressed: every stream, carrier and bar at its own final
-     light. */
-  .mr-fall,.mr-landing{animation:none;}
+  /* Instrument F, arc 5: the tour is a first-class stepper here rather than
+     a shortened animation. The timer never runs, so a stop is drawn at once
+     — the blanket rule above collapses the reveal's transitions to nothing —
+     and the sheet never starts running itself, which is decided in
+     JavaScript against this same query and not left to the stylesheet. These
+     two are belt and braces for that: if the ambient class were ever applied
+     under reduced motion, nothing would move. */
+  .map-screen.is-ambient .mr-sweep,
+  .map-screen.is-ambient .mr-carrier,
+  .map-screen.is-ambient .mr-landing,
+  .map-screen.is-ambient .mr-stream.is-hero .mr-halo{animation:none;}
+  .mr-sweep{display:none;}
   /* New in this pass: the candidate rows and the info popover appear at
      their final state instead of animating in. */
   .cand,.cand.is-winner,.info-pop,.kv-stack{animation:none;}
