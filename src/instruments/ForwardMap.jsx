@@ -1769,10 +1769,12 @@ export default function ForwardMap({
         </div>
 
         {/* The docent. It rides at the top of the window while the drawing —
-            which is two and a half thousand units tall — scrolls past it, so
-            the words for a stop are readable at the part of the sheet that
-            stop is about. Its height is fixed at every width and the caption
-            clips rather than reflows, so nothing here can move the page. */}
+            2,336.95 units of it at the sheet setting and 5,217.1 at the
+            phone — scrolls past, so the words for a stop are readable at the
+            part of the sheet that stop is about. Its height is fixed at each
+            band and the caption clips rather than reflows, so nothing here can
+            move the page. How many lines each band reserves is measured, and
+            the stylesheet carries the numbers. */}
         <div className="mr-docent">
           <div className="mr-tourrow">
             <button
