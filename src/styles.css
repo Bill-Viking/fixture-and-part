@@ -1922,6 +1922,9 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
   .mr-speed-label{margin-left:5px;}
   .mr-stopcount{
     flex:1 0 100%;text-align:left;height:18px;line-height:18px;
+    /* On its own line it starts at the screen's own left edge, not indented
+       off the button row above it. */
+    margin-left:0;
     font-size:9px;letter-spacing:0.08em;
   }
   .mr-caption{height:80px;font-size:11px;line-height:16px;}
