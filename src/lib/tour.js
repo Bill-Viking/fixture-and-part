@@ -198,9 +198,15 @@ export function cellWhy(cell) {
   // projections laid side by side, in that order — so a column number says
   // which of the three a weight belongs to. That is the file’s own layout.
   const third = col < totalCols / 3 ? 'query' : col < (2 * totalCols) / 3 ? 'key' : 'value'
+  // The byte on disk and the number it stands for are two different things,
+  // and the page says so everywhere else: this tensor is i8 at zero point 0,
+  // so the stored byte 236 is the quantised value −20. A readout that called
+  // −20 "the byte" would contradict the legend two inches above it.
+  const byte = value < 0 ? value + 256 : value
+  const asStored = byte === value ? '' : `, which the file stores as the byte ${byte}`
   return (
-    `Wall cell — byte ${value} at [${row}, ${col}] of ${tensor} [${totalRows}×${totalCols}]. ` +
-    `The file stores this tensor as i8 at zero point ${zeroPoint}, so the weight is scale · (q − zp) = ` +
+    `Wall cell — [${row}, ${col}] of ${tensor} [${totalRows}×${totalCols}], quantised value ${value}${asStored}. ` +
+    `The file holds this tensor as i8 at zero point ${zeroPoint}, so the weight is scale · (q − zp) = ` +
     `${scale.toPrecision(3)} · (${value} − ${zeroPoint}) = ${weight.toPrecision(4)}. Column ${col} of ${totalCols} ` +
     `falls in the ${third} projection. Brightness is the size of the weight, not its sign, and no pass changes it.`
   )

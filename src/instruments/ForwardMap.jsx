@@ -1101,9 +1101,26 @@ export default function ForwardMap({
 
   const factsFor = useCallback((name) => tensorFacts(manifest, name), [manifest])
   const partFacts = part ? factsFor(part) : null
-  const handlePart = useCallback((name) => {
-    setPart((prev) => (prev === name ? null : name))
-  }, [])
+  /**
+   * A wall plate: the tensor that wall is cut from, read out of the manifest.
+   *
+   * The plate has always toggled — press it again and the readout clears —
+   * and since arc 5 there is a second thing that can be in that box: the
+   * answer to a click on a carrier, a ray, a cell or the other plate. So the
+   * toggle is against what is actually on screen rather than against `part`
+   * alone. Pressing a plate while some other answer is showing prints the
+   * plate's own reading; pressing it again clears it. Without this a plate
+   * pressed after a cell click turned the tensor off, left the cell's words
+   * standing, and disabled the OPEN IN THE FILE beside them.
+   */
+  const handlePart = useCallback(
+    (name) => {
+      const showingThisPlate = !inspect && part === name
+      setInspect(null)
+      setPart(showingThisPlate ? null : name)
+    },
+    [inspect, part],
+  )
 
   const heroToken = sequence[hero]
   const silent = registers ? registers.find((reg) => reg && reg.kept.length === 0) : null
@@ -1364,6 +1381,19 @@ export default function ForwardMap({
     if (next?.tensor) setPart(next.tensor)
   }, [])
 
+  // An answer that names the hero is an answer about where the drawing was
+  // aimed, so re-aiming it takes that answer down rather than leaving words
+  // on screen about a carrier into a token that is no longer the hero — and
+  // for one that no longer exists, since a different hero draws different
+  // transfers. A cell, a ray and the unembedding plate say nothing about the
+  // hero and stay. A new sentence or a new pass takes all of them down.
+  useEffect(() => {
+    setInspect((v) => (v?.aimed ? null : v))
+  }, [hero])
+  useEffect(() => {
+    setInspect(null)
+  }, [n, runKey])
+
   const sayUnembed = useCallback(() => {
     say({
       kind: 'plate',
@@ -1378,6 +1408,7 @@ export default function ForwardMap({
     (tr) => {
       say({
         kind: 'carrier',
+        aimed: true,
         text: carrierWhy(tr, sequence, sequence[hero]),
         tensor: wallTensor(tr.layer),
         instrument: 'attention',
@@ -2262,6 +2293,19 @@ export default function ForwardMap({
                     : draw.xs[hero] + draw.hw[hero][reg.layer + 1] + 14
                   const y = g.bandMid[reg.layer] + 3
                   const why = silentWhy(reg, sequence)
+                  // Written once and used by both the click and the key,
+                  // because two copies of a readout are two things that can
+                  // drift apart. It is aimed: what it says is the weight
+                  // this hero sent to itself.
+                  const saySilent = () =>
+                    say({
+                      kind: 'plate',
+                      aimed: true,
+                      text: why,
+                      tensor: wallTensor(reg.layer),
+                      instrument: 'attention',
+                      letter: 'C',
+                    })
                   return (
                     // The plate says what it means when it is asked. A line
                     // reading `no transfer · self 0.59` is a fact with its
@@ -2273,25 +2317,11 @@ export default function ForwardMap({
                       role="button"
                       tabIndex={0}
                       aria-label={`why block ${reg.layer} draws no transfer`}
-                      onClick={() =>
-                        say({
-                          kind: 'plate',
-                          text: why,
-                          tensor: wallTensor(reg.layer),
-                          instrument: 'attention',
-                          letter: 'C',
-                        })
-                      }
+                      onClick={saySilent}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault()
-                          say({
-                            kind: 'plate',
-                            text: why,
-                            tensor: wallTensor(reg.layer),
-                            instrument: 'attention',
-                            letter: 'C',
-                          })
+                          saySilent()
                         }
                       }}
                     >
