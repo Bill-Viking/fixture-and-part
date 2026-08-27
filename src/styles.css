@@ -675,8 +675,15 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 }
 .mr-step{font-size:11px;line-height:1;}
 .mr-speed-label{margin-left:10px;}
+/* Left, not right. The wording here changes on every stop — "35 STOPS ·
+   1 min 48 s" becomes "STOP 2/35 · EMBED" — and a right-aligned line whose
+   length changes walks every glyph in it sideways. The box never moves and
+   the shift is invisible to the eye, but it is a real layout shift and the
+   observer scores it: 0.000050 on opening the tour and 0.000149 on a step at
+   1,280 px, measured. The drawing has met this exact fault once before, in
+   the status note this replaces, and it has the same fix. */
 .mr-stopcount{
-  flex:1 1 0;min-width:0;text-align:right;
+  flex:1 1 0;min-width:0;text-align:left;margin-left:12px;
   font-family:var(--mono);font-size:9.5px;letter-spacing:0.12em;color:var(--muted);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
