@@ -1465,48 +1465,172 @@ export default function ForwardMap({
     [windows, g],
   )
 
-  const onWallMove = (layer) => (e) => {
-    const rect = hoverRef.current
-    const hit = cellUnder(layer, e.clientX, e.clientY)
-    if (!rect || !hit) return
-    // Written straight to the element rather than through state: a hover that
-    // re-rendered the instrument would be a hover that rebuilt the fall.
-    rect.setAttribute('x', f2(g.bandX + hit.col * g.pitchX - 1))
-    rect.setAttribute('y', f2(g.bandTop[layer] + hit.row * g.pitchY - 1))
-    rect.setAttribute('width', f2(g.cellW + 2))
-    rect.setAttribute('height', f2(g.cellH + 2))
-    rect.style.display = ''
-  }
-  const onWallLeave = () => {
+  /**
+   * The cell cursor, and where it is.
+   *
+   * One outline serves both hands: the pointer writes it on every move, and
+   * the keyboard writes it on every arrow. It is written straight to the one
+   * rect rather than held in state, because a hover that went through React
+   * would rebuild the fall sixty times a second — and because the keyboard
+   * cursor and the pointer cursor being the same mark is the point.
+   */
+  const cursorRef = useRef(null)
+  /** Whether that cursor is currently drawn. */
+  const cursorOn = useRef(false)
+
+  const paintCursor = useCallback(
+    (layer, row, col) => {
+      const rect = hoverRef.current
+      if (!rect) return
+      cursorOn.current = true
+      rect.setAttribute('x', f2(g.bandX + col * g.pitchX - 1))
+      rect.setAttribute('y', f2(g.bandTop[layer] + row * g.pitchY - 1))
+      rect.setAttribute('width', f2(g.cellW + 2))
+      rect.setAttribute('height', f2(g.cellH + 2))
+      rect.style.display = ''
+    },
+    [g],
+  )
+  const hideCursor = useCallback(() => {
+    cursorOn.current = false
     if (hoverRef.current) hoverRef.current.style.display = 'none'
+  }, [])
+  // React owns this rect's four attributes and writes its own zeroes back
+  // over an imperative paint whenever the instrument re-renders for any other
+  // reason. The pointer never notices — it repaints on the next move — but a
+  // keyboard cursor sits still, so it is re-applied after every render.
+  useEffect(() => {
+    const at = cursorRef.current
+    if (at && cursorOn.current) paintCursor(at.layer, at.row, at.col)
+  })
+
+  /** Read one cell aloud, whichever hand asked. */
+  const readCell = useCallback(
+    (layer, row, col) => {
+      const wall = windows ? wallWindow(windows, wallTensor(layer)) : null
+      const name = wallTensor(layer)
+      const tensor = factsFor(name)
+      if (!wall || !tensor || tensor.scale == null) return
+      const value = wall.values[row * wall.cols + col]
+      say({
+        kind: 'cell',
+        text: cellWhy({
+          value,
+          weight: tensor.scale * (value - (tensor.zeroPoint ?? 0)),
+          row: wall.row0 + row,
+          col: wall.col0 + col,
+          tensor: tensor.display,
+          scale: tensor.scale,
+          zeroPoint: tensor.zeroPoint ?? 0,
+          totalRows: wall.totalRows,
+          totalCols: wall.totalCols,
+        }),
+        tensor: name,
+        instrument: 'file',
+        letter: 'E',
+      })
+    },
+    [windows, factsFor, say],
+  )
+
+  const onWallMove = (layer) => (e) => {
+    const hit = cellUnder(layer, e.clientX, e.clientY)
+    if (!hit) return
+    cursorRef.current = { layer, row: hit.row, col: hit.col }
+    paintCursor(layer, hit.row, hit.col)
   }
+  const onWallLeave = () => hideCursor()
   const onWallClick = (layer) => (e) => {
     const hit = cellUnder(layer, e.clientX, e.clientY)
-    const name = wallTensor(layer)
-    const tensor = factsFor(name)
-    if (!hit || !tensor || tensor.scale == null) return
+    if (!hit) return
     // The plate around this rect toggles the tensor on and off; a cell answers
     // for itself and always selects, because the next click is a different
     // byte and toggling one off to read another would be a nuisance.
     e.stopPropagation()
-    const value = hit.wall.values[hit.index]
-    say({
-      kind: 'cell',
-      text: cellWhy({
-        value,
-        weight: tensor.scale * (value - (tensor.zeroPoint ?? 0)),
-        row: hit.wall.row0 + hit.row,
-        col: hit.wall.col0 + hit.col,
-        tensor: tensor.display,
-        scale: tensor.scale,
-        zeroPoint: tensor.zeroPoint ?? 0,
-        totalRows: hit.wall.totalRows,
-        totalCols: hit.wall.totalCols,
-      }),
-      tensor: name,
-      instrument: 'file',
-      letter: 'E',
-    })
+    cursorRef.current = { layer, row: hit.row, col: hit.col }
+    readCell(layer, hit.row, hit.col)
+  }
+
+  /**
+   * The wall, from the keyboard.
+   *
+   * Every other mark on this sheet answers Enter or Space and the walls did
+   * not: a wall is drawn as a few dozen paths grouped by magnitude, so there
+   * is no cell element to focus, and 1,536 of them would be 1,536 tab stops
+   * anyway. So a wall is one tab stop with a cursor inside it — the arrows
+   * move the cursor a cell at a time, Home and End run to the ends of a row,
+   * Enter or Space reads the cell under it through the same `say()` the click
+   * uses, and Escape puts the cursor away. The outline it draws is the one
+   * the pointer draws, because it is the same rect.
+   */
+  const cellName = (layer, row, col) => {
+    const wall = windows ? wallWindow(windows, wallTensor(layer)) : null
+    if (!wall) return ''
+    return `cell [${wall.row0 + row}, ${wall.col0 + col}]`
+  }
+  const onWallFocus = (layer) => (e) => {
+    const at =
+      cursorRef.current && cursorRef.current.layer === layer
+        ? cursorRef.current
+        : { layer, row: 0, col: 0 }
+    cursorRef.current = at
+    paintCursor(layer, at.row, at.col)
+    e.currentTarget.setAttribute('aria-label', wallGridLabel(layer, at.row, at.col))
+  }
+  const onWallBlur = () => hideCursor()
+  const onWallKey = (layer) => (e) => {
+    const wall = windows ? wallWindow(windows, wallTensor(layer)) : null
+    if (!wall) return
+    const at =
+      cursorRef.current && cursorRef.current.layer === layer
+        ? cursorRef.current
+        : { layer, row: 0, col: 0 }
+    let { row, col } = at
+    switch (e.key) {
+      case 'ArrowLeft': col -= 1; break
+      case 'ArrowRight': col += 1; break
+      case 'ArrowUp': row -= 1; break
+      case 'ArrowDown': row += 1; break
+      case 'Home': col = 0; break
+      case 'End': col = wall.cols - 1; break
+      case 'Enter':
+      case ' ':
+        // The plate around this rect answers Enter too, and it is the tensor's
+        // button rather than the cell's; the cell has the focus, so the cell
+        // answers and the plate does not hear it.
+        e.preventDefault()
+        e.stopPropagation()
+        cursorRef.current = { layer, row, col }
+        paintCursor(layer, row, col)
+        readCell(layer, row, col)
+        return
+      case 'Escape':
+        e.preventDefault()
+        e.stopPropagation()
+        cursorRef.current = null
+        hideCursor()
+        return
+      default:
+        return
+    }
+    e.preventDefault()
+    e.stopPropagation()
+    row = Math.min(wall.rows - 1, Math.max(0, row))
+    col = Math.min(wall.cols - 1, Math.max(0, col))
+    cursorRef.current = { layer, row, col }
+    paintCursor(layer, row, col)
+    e.currentTarget.setAttribute('aria-label', wallGridLabel(layer, row, col))
+  }
+  const wallGridLabel = (layer, row, col) => {
+    const wall = windows ? wallWindow(windows, wallTensor(layer)) : null
+    const tensor = factsFor(wallTensor(layer))
+    const where = wall ? `, cursor at ${cellName(layer, row, col)}` : ''
+    return (
+      `the ${wall?.rows ?? 24} × ${wall?.cols ?? 64} byte window of ${
+        tensor ? tensor.display : wallTensor(layer)
+      }${where} — arrow keys move the cursor a cell at a time, Enter reads the ` +
+      `weight the byte under it stands for`
+    )
   }
 
   const readout = inspect ? inspect.text : partReadout(partFacts)
@@ -2130,9 +2254,15 @@ export default function ForwardMap({
                       y={top}
                       width={g.bandW}
                       height={g.bandH}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={wallGridLabel(l, 0, 0)}
                       onClick={onWallClick(l)}
                       onPointerMove={onWallMove(l)}
                       onPointerLeave={onWallLeave}
+                      onFocus={onWallFocus(l)}
+                      onBlur={onWallBlur}
+                      onKeyDown={onWallKey(l)}
                     />
                     <rect
                       x={f2(SW - 8 - nameW - 5)}
