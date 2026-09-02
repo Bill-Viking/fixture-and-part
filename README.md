@@ -94,8 +94,8 @@ sections above them by the time they are on screen.
 F shares more than the sequence, because it is a drawing of what the other
 five are each looking at one piece of. It reads the same selected position as
 D and the same selected layer as C, so moving either in one instrument moves
-it in the other; its steel boxes select a row in E; and the token it names at
-the bottom is the token B is about to append. Its lettered markers scroll to
+it in the other; its wall plates and its wall cells select a row in E; and the
+token it names at the bottom is the token B is about to append. Its lettered markers scroll to
 whichever instrument the part under them belongs to.
 
 Nothing on F is a second implementation of anything. The columns are norms of

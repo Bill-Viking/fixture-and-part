@@ -8,6 +8,9 @@
 // single source of the sentences the sheet says when a reader clicks a
 // carrier, a wall cell, a landing ray or one of the two plates. The tour and
 // the click-readouts say the same things because they are written here once.
+// Each of those sentences comes in two lengths — a LEAD and a detail — and
+// what a card on the drawing prints is always the lead of what the readout
+// row under it prints in full, so the two can never drift apart.
 //
 // The honesty law does not bend for any of it. Every number a caption speaks
 // is read out of the objects instrument F already has on screen — the same
@@ -209,9 +212,12 @@ export function cellWhy(cell) {
  */
 function stage(kind, ms, lead, detail, reveal) {
   // Two lengths of the same sentence, never two different sentences. The lead
-  // is what a phone has room for; the wider settings get the lead and the
-  // detail together. Splitting rather than rewriting is what keeps the short
-  // caption from quietly saying something the long one does not.
+  // is what a phone's caption has room for, and it is also what the docent's
+  // card on the drawing prints; the wider settings' caption gets the lead and
+  // the detail together. Splitting rather than rewriting is what keeps the
+  // short form from quietly saying something the long one does not — the same
+  // rule the click readouts follow, where a card prints the lead and the row
+  // under the drawing prints both.
   return { kind, ms, lead, caption: detail ? `${lead} ${detail}` : lead, reveal }
 }
 
