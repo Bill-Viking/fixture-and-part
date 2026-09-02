@@ -35,13 +35,13 @@ const q = (t) => `“${t}”`
 /**
  * The tempo of the drawing.
  *
- * Motion cannot be judged from a still, so arc 5 built three studies of it and
- * put them behind `?motion=a|b|c` for Bill to pick from — how long a stop
- * dwells, how much is said at each one, how much the sheet moves when it is
- * left alone. He ruled on 2026-09-01: the measured docent wins. Every transfer
- * and every landing bar gets its own stop, and the ambient loop is slow and
- * sparse. These are that study's own numbers, now the drawing's only ones —
- * the two losers and the switch that chose between them are gone.
+ * Motion cannot be judged from a still, so arc 5 built three studies of it for
+ * Bill to pick from — how long a stop dwells, how much is said at each one,
+ * how much the sheet moves when it is left alone. He ruled on 2026-09-01: the
+ * measured docent wins. Every transfer and every landing bar gets its own
+ * stop, and the ambient loop is slow and sparse. These are that study's own
+ * numbers, now the drawing's only ones — the two losers, and the switch that
+ * existed to choose between them, are gone.
  */
 export const MOTION = {
   // A reveal cross-fade, and the share of a fall stop spent travelling.
