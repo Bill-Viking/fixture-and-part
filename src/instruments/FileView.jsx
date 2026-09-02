@@ -1050,6 +1050,15 @@ export default function FileView({
             ))}
           </div>
         </div>
+        {/* The one invitation this instrument has to make. Bill read the
+            selected segment's box as a slider handle and tried to drag it: it
+            is a map of the file, and every piece of it wide enough to hit is
+            a button. It sits under the bar rather than in the label above it
+            because at the phone's width the label row cannot hold both this
+            sentence and its info tag without the tag dropping to a line of
+            its own. The words never change, so this line is one line at every
+            width and can move nothing. */}
+        <p className="file-bar-invite">click a piece of the bar to choose that tensor</p>
         <p className="file-bar-readout">{barReadout()}</p>
         <p className="file-bar-key">{header?.key ?? '—'}</p>
 
