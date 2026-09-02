@@ -189,6 +189,14 @@ function stage(kind, ms, lead, detail, reveal) {
  * per-block registers, the splash, the file’s own wall reading. Nothing is
  * fetched and nothing is recomputed from the model — if instrument F cannot
  * see a number, the tour cannot speak it.
+ *
+ * How many stops that comes to is a fact about the screen as well as about the
+ * sentence, because the landing is counted one bar at a time and the phone
+ * draws six bars where the wider settings draw eight: 35 stops in real mode on
+ * the default sentence above 640 px and 33 at or below it, 19 in either
+ * setting with no pass to speak of. Nothing may state that count as a
+ * constant — every place the drawing says it reads `stages.length`, and the
+ * one caption that names how many bars are coming is handed `splashN`.
  */
 export function buildTour({
   live,
@@ -205,6 +213,7 @@ export function buildTour({
   decoding,
   wall0,
   segmentCount,
+  splashN,
 }) {
   const stages = []
   const heroToken = sequence[hero] ?? '—'
@@ -391,8 +400,9 @@ export function buildTour({
         'noland',
         4000,
         `There is no distribution without a pass, so no bar is drawn.`,
-        `With the real model in hand these become this sentence’s own softmax over the whole vocabulary, top ` +
-          `eight, with the machine’s own top drawn blue and the sampler’s pick marked in amber.`,
+        `With the real model in hand these become this sentence’s own softmax over the whole vocabulary, the ` +
+          `tallest ${splashN} of them, with the machine’s own top drawn blue and the sampler’s pick marked in ` +
+          `amber.`,
         at({ segs: lastSeg, carriers, aperture: true }),
       ),
     )
