@@ -257,7 +257,11 @@ function geometryFor(compact, full) {
   // line count is measured per band by `__cardLines()`, one line over the
   // worst lead the sheet can produce at that width.
   const cardW = per(940, 470, 470)
-  const cardPad = per(14, 9, 8)
+  // The phone's padding is the column's rather than half again as much: on a
+  // 5,217-unit drawing the clear window inside a wall band is 187 units — the
+  // block below reaches a line of callout type up into it — and a four-line
+  // card with fourteen units of padding is 193.
+  const cardPad = per(9, 9, 8)
   const cardCols = Math.floor((cardW - 2 * cardPad) / (fs.leg * legAdvance))
   const cardLine = fs.leg * 1.35
   // Measured with `__cardLines()`, which wraps every lead the sheet can
@@ -267,10 +271,17 @@ function geometryFor(compact, full) {
   // line more than the worst, the way the legend and the caption are reserved.
   const cardLines = per(7, 8, 6)
   const cardH = cardLines * cardLine + 2 * cardPad + fs.leg * 0.3
+  // The tour's own card is the same box with its own reservation: the stops
+  // say less than a wall cell does, and a box reserved for the longest cell
+  // lead would be mostly empty at every stop of the tour. Measured the same
+  // way, over every stop on the default sentence and on a 21-token one.
+  const docentLines = per(4, 5, 4)
+  const docentH = docentLines * cardLine + 2 * cardPad + fs.leg * 0.3
 
   return {
     compact, fs,
     cardW, cardH, cardPad, cardCols, cardLine, cardLines,
+    docentLines, docentH,
     bandX, bandW, cols, rows, pitchX, cellW, cellH, pitchY, bandH,
     bandTop, bandMid, bandBot, stopY, lastBot, air,
     chipY, chipH, fallTop, rimY, mistY, apertureY0, apertureH, landTitleY,
@@ -397,39 +408,46 @@ function overlapArea(a, b) {
  * does. The card is clamped inside the drawing at both ends, so it can be
  * anchored to a mark at the very top or the very bottom and still be read.
  */
-function placeCard(g, anchor, avoid) {
+function placeCard(g, anchor, avoid, { prefer = 'right', height } = {}) {
   const w = g.cardW
-  const h = g.cardH
+  const h = height ?? g.cardH
   const gap = g.compact ? 30 : 16
   const top = 8
   const bottom = g.legRuleY - 12 - h
   const clampY = (y) => Math.min(Math.max(bottom, top), Math.max(top, Math.min(y, bottom)))
+  // Beside the mark, on either side and at three heights, and inside the
+  // drawing at both ends. The phone's card is most of the width of the sheet
+  // and so has little room to move sideways — but it has enough to clear the
+  // BLOCK/HEAD label a block's card would otherwise sit on, which is the one
+  // move that matters at that width.
+  const right = Math.min(SW - 8 - w, anchor.x + gap)
+  const left = Math.max(8, anchor.x - gap - w)
+  const sides = prefer === 'left' ? [left, right] : [right, left]
   const candidates = []
-  if (g.compact) {
-    // The phone's card is most of the width of the drawing, so it cannot sit
-    // beside anything: it sits under the mark, and over it near the bottom.
-    const x = Math.min(SW - 8 - w, Math.max(8, anchor.x - w / 2))
-    candidates.push(
-      { x, y: clampY(anchor.y + gap) },
-      { x, y: clampY(anchor.y - gap - h) },
-    )
-  } else {
-    const right = Math.min(SW - 8 - w, anchor.x + gap)
-    const left = Math.max(8, anchor.x - gap - w)
-    for (const y of [anchor.y - h / 2, anchor.y + gap, anchor.y - gap - h]) {
-      candidates.push({ x: right, y: clampY(y) }, { x: left, y: clampY(y) })
-    }
+  for (const y of [anchor.y - h / 2, anchor.y + gap, anchor.y - gap - h]) {
+    for (const x of sides) candidates.push({ x, y: clampY(y) })
+  }
+  const covered = (c) => {
+    let area = 0
+    for (const box of avoid) area += overlapArea({ ...c, w, h }, box)
+    return area
   }
   let best = candidates[0]
   let bestArea = Infinity
   for (const c of candidates) {
-    let area = 0
-    for (const box of avoid) area += overlapArea({ ...c, w, h }, box)
+    const area = covered(c)
     if (area === 0) return { ...c, w, h }
     if (area < bestArea) {
       bestArea = area
       best = c
     }
+  }
+  // A near miss is usually a graze — a callout for the block below reaching
+  // up into this one's band by a line of type. Slide the best candidate a
+  // little rather than throwing it across the drawing.
+  for (const dy of [-8, 8, -16, 16, -24, 24, -32, 32, -44, 44]) {
+    const nudged = { x: best.x, y: clampY(best.y + dy) }
+    if (covered(nudged) === 0) return { ...nudged, w, h }
   }
   return { ...best, w, h }
 }
@@ -776,7 +794,8 @@ const Landing = memo(function Landing({ g, draw, onInspect }) {
  * with its words would be a box that moved. It stands on a scrim in the
  * screen's own ground, like every other word painted over the picture.
  */
-function Card({ g, className, box, lines, at, elRef }) {
+function Card({ g, className, box, lines, at, elRef, rows }) {
+  const count = rows ?? g.cardLines
   const b = box ?? { x: 0, y: 0, w: g.cardW, h: g.cardH }
   // A short leader from the mark to the nearest point of the card's edge.
   const tick =
@@ -811,7 +830,7 @@ function Card({ g, className, box, lines, at, elRef }) {
         height={f2(b.h)}
         rx="2"
       />
-      {Array.from({ length: g.cardLines }, (_, i) => (
+      {Array.from({ length: count }, (_, i) => (
         <text
           key={i}
           className="mr-card-line"
@@ -1207,49 +1226,6 @@ export default function ForwardMap({
     sequence,
   ])
 
-  /**
-   * Where each transfer's KEY callout stands, and how much room it takes.
-   *
-   * Lifted out of the drawing because two things need it now: the callout
-   * itself, and the card, which must never open over one. They are the only
-   * other words floating in the dark air above the walls.
-   */
-  const callouts = useMemo(() => {
-    if (!draw) return null
-    return draw.transfers.map((tr, ci) => {
-      const x = draw.xs[tr.src]
-      const label = `${sequence[tr.src]} · ${tr.w.toFixed(4)}`
-      const key = `KEY · B${tr.layer} H${tr.head}`
-      const room = Math.max(
-        textWidth(label, g.fs.callout, TRACK.callout),
-        textWidth(key, g.fs.fine, TRACK.key),
-      )
-      // Beside the source, in the dark gap between two streams — never over
-      // one where there is a gap to sit in. The right-hand gap unless the
-      // source is the last stream, or unless that gap would put the words in
-      // the margin the wall keeps for the name of the tensor it is cut from.
-      const nameMargin = g.compact ? 300 : 250
-      const right = tr.src < n - 1 && x + draw.slot / 2 + room / 2 < SW - nameMargin
-      const lx = Math.min(
-        SW - 10 - room / 2,
-        Math.max(10 + room / 2, x + ((right ? 1 : -1) * draw.slot) / 2),
-      )
-      const ly = tr.lift - (g.compact ? 24 : 16) - tr.lane * g.fs.callout * 2.4
-      const boxY = ly - g.fs.callout * 1.05 - g.fs.fine * INK_ABOVE
-      return {
-        tr, ci, x, lx, ly, room, label, key,
-        box: {
-          x: lx - room / 2 - 5,
-          y: boxY,
-          w: room + 10,
-          h: g.fs.callout * (1.05 + INK_BELOW) + g.fs.fine * INK_ABOVE,
-        },
-      }
-    })
-  }, [draw, sequence, g, n])
-
-  const avoidBoxes = useMemo(() => (callouts ? callouts.map((c) => c.box) : []), [callouts])
-
   // What the instrument has on screen, for the console check. Dev only; the
   // bundler drops the branch in a production build.
   useEffect(() => {
@@ -1337,6 +1313,104 @@ export default function ForwardMap({
     ? `${(facts.provenance.bytes / 1e6).toFixed(1)} MB`
     : 'the'
   const count = (v) => v.toLocaleString('en-US')
+
+  /**
+   * Where each transfer's KEY callout stands, and how much room it takes.
+   *
+   * Lifted out of the drawing because two things need it now: the callout
+   * itself, and the card, which must never open over one. They are the only
+   * other words floating in the dark air above the walls.
+   */
+  const callouts = useMemo(() => {
+    if (!draw) return null
+    return draw.transfers.map((tr, ci) => {
+      const x = draw.xs[tr.src]
+      const label = `${sequence[tr.src]} · ${tr.w.toFixed(4)}`
+      const key = `KEY · B${tr.layer} H${tr.head}`
+      const room = Math.max(
+        textWidth(label, g.fs.callout, TRACK.callout),
+        textWidth(key, g.fs.fine, TRACK.key),
+      )
+      // Beside the source, in the dark gap between two streams — never over
+      // one where there is a gap to sit in. The right-hand gap unless the
+      // source is the last stream, or unless that gap would put the words in
+      // the margin the wall keeps for the name of the tensor it is cut from.
+      const nameMargin = g.compact ? 300 : 250
+      const right = tr.src < n - 1 && x + draw.slot / 2 + room / 2 < SW - nameMargin
+      const lx = Math.min(
+        SW - 10 - room / 2,
+        Math.max(10 + room / 2, x + ((right ? 1 : -1) * draw.slot) / 2),
+      )
+      const ly = tr.lift - (g.compact ? 24 : 16) - tr.lane * g.fs.callout * 2.4
+      const boxY = ly - g.fs.callout * 1.05 - g.fs.fine * INK_ABOVE
+      return {
+        tr, ci, x, lx, ly, room, label, key,
+        box: {
+          x: lx - room / 2 - 5,
+          y: boxY,
+          w: room + 10,
+          h: g.fs.callout * (1.05 + INK_BELOW) + g.fs.fine * INK_ABOVE,
+        },
+      }
+    })
+  }, [draw, sequence, g, n])
+
+  /**
+   * Every box on the drawing a card may not open over.
+   *
+   * The KEY callouts that name the transfer sources, the BLOCK/HEAD label on
+   * each wall, the tensor name and window spec on the other end of it, the
+   * RIM label, the aperture plate and the landing title. All of them are
+   * words on scrims, and a card that landed on one would put words over
+   * words. The card's placement tries its candidates against this list and
+   * takes the first that touches none of them.
+   */
+  const avoidBoxes = useMemo(() => {
+    const boxes = callouts ? callouts.map((c) => c.box) : []
+    const label = (x, y, w, h) => boxes.push({ x, y, w, h })
+    for (let l = 0; l < REAL_LAYERS; l++) {
+      const top = g.bandTop[l]
+      const regW = Math.max(
+        textWidth(`BLOCK ${l}`, g.fs.reg, TRACK.label),
+        textWidth('HEAD 00', g.fs.reg, TRACK.label),
+      )
+      label(3, top + g.fs.reg * (1 - INK_ABOVE), regW + 10, g.fs.reg * (1.2 + INK_ABOVE + INK_BELOW))
+      const nameW = textWidth('24 × 64 WINDOW · i8', g.fs.tensor, TRACK.tensor)
+      const nameY = top - (g.compact ? 34 : 24)
+      const specY = top - (g.compact ? 16 : 10)
+      label(
+        SW - 8 - nameW - 5,
+        nameY - g.fs.tensor * INK_ABOVE,
+        nameW + 10,
+        specY - nameY + g.fs.tensor * (INK_ABOVE + INK_BELOW),
+      )
+    }
+    label(
+      3,
+      g.rimY - 4 - g.fs.reg * INK_ABOVE,
+      textWidth('WTE+WPE', g.fs.reg, TRACK.label) + 10,
+      g.fs.reg * (1 + INK_ABOVE + INK_BELOW) + 6,
+    )
+    if (draw) {
+      label(draw.apertureX - apertureW / 2, g.apertureY0, apertureW, g.apertureH)
+    }
+    if (draw && draw.n > 0) {
+      const chipW = Math.min(g.compact ? 150 : 96, draw.slot - 6)
+      label(
+        draw.xs[0] - chipW / 2 - 4,
+        6,
+        draw.xs[draw.n - 1] - draw.xs[0] + chipW + 8,
+        g.chipY + g.chipH - 6,
+      )
+    }
+    label(
+      8,
+      g.landTitleY - g.fs.land * INK_ABOVE,
+      textWidth('LAST POSITION → 50,257 WORDS · TOP 8', g.fs.land, TRACK.note),
+      g.fs.land * (INK_ABOVE + INK_BELOW),
+    )
+    return boxes
+  }, [callouts, g, draw, apertureW])
 
   // --- the narrated run -----------------------------------------------------
   //
@@ -1884,6 +1958,96 @@ export default function ForwardMap({
 
   const readout = inspect ? inspect.text : partReadout(partFacts)
 
+  /**
+   * Where the docent's card stands, one fixed slot per kind of stop.
+   *
+   * The caption under the controls says what is happening; this says it again
+   * where it is happening, so the docent is pointing at the thing it is
+   * talking about rather than describing it from the top of the window. The
+   * anchor is fixed per kind — the rim label for the rim, the wall itself for
+   * anything about a block, the aperture for ln_f and the unembedding, the
+   * bars for the landing — and the placement then keeps the card off every
+   * KEY callout and every plate's words, the same way a click's card does.
+   * A block's card prefers the left of its wall, which is the side with no
+   * hero stream and no tensor plate on it.
+   */
+  const docentSlot = useMemo(() => {
+    if (!tour.active || !stop?.lead) return null
+    const cue = stop.reveal?.cue
+    let anchor = null
+    let prefer = 'right'
+    switch (stop.kind) {
+      // The sentence and the rim share the rim's own slot: they are the two
+      // stops about the top of the drawing. On the phone that strip does not
+      // exist — the chips, the rim label and the first block's callouts fill
+      // every unit between the top of the sheet and the first wall — so
+      // there the two of them take the head of the first wall instead, which
+      // is the nearest clear place to the rim there is.
+      case 'sentence':
+      case 'embed':
+        anchor = g.compact
+          ? {
+              x: 13 + textWidth('HEAD 00', g.fs.reg, TRACK.label),
+              y: g.bandMid[0],
+            }
+          : {
+              x: 13 + textWidth('WTE+WPE', g.fs.reg, TRACK.label),
+              y: g.rimY,
+            }
+        break
+      // Beside the wall, clear of its own BLOCK/HEAD label: the card starts
+      // where that label's scrim ends, so it never has to be pushed off the
+      // band to get out of the label's way.
+      case 'fall':
+      case 'head':
+      case 'transfer':
+      case 'silent':
+      case 'nopass': {
+        if (cue == null) return null
+        const regW = Math.max(
+          textWidth(`BLOCK ${cue}`, g.fs.reg, TRACK.label),
+          textWidth('HEAD 00', g.fs.reg, TRACK.label),
+        )
+        anchor = { x: 13 + regW, y: g.bandMid[cue] }
+        break
+      }
+      case 'tail':
+        anchor = { x: draw ? draw.apertureX : SW / 2, y: g.mistY }
+        prefer = 'left'
+        break
+      case 'unembed':
+      case 'noland':
+        anchor = {
+          x: draw ? draw.apertureX : SW / 2,
+          y: g.apertureY0 + g.apertureH / 2,
+        }
+        prefer = 'left'
+        break
+      // At the far end of the bars rather than the near one: the tallest bar
+      // is the first, and a card that opened beside it would stand on the one
+      // thing the stop is about. Out here it sits over the short bars' own
+      // empty air instead.
+      case 'bar':
+      case 'pick':
+        anchor = {
+          x: g.barX0 + (g.splashN - 1) * g.barPitch,
+          y: g.barBase - g.barMaxH * 0.5,
+        }
+        break
+      case 'done':
+      case 'empty':
+        anchor = { x: 8, y: g.keyY - g.fs.key * 2 }
+        break
+      default:
+        return null
+    }
+    return {
+      box: placeCard(g, anchor, avoidBoxes, { prefer, height: g.docentH }),
+      lines: wrapText(stop.lead, g.cardCols, g.docentLines),
+      at: anchor,
+    }
+  }, [tour.active, stop, g, draw, avoidBoxes])
+
   /** The card the last click pinned, if that click had somewhere to point. */
   const pinCard = useMemo(() => {
     if (!inspect?.lead || !inspect?.at) return null
@@ -2033,6 +2197,8 @@ export default function ForwardMap({
       lead: stop?.lead ?? null,
       readout,
       reveal,
+      docent: docentSlot ? { box: docentSlot.box, lines: docentSlot.lines } : null,
+      avoid: avoidBoxes,
     }
   })
 
@@ -3151,6 +3317,14 @@ export default function ForwardMap({
                 so they stand over the fall and over the walls rather than
                 under them, and each on a scrim in the screen's own ground. */}
             <Card g={g} className="is-hover" elRef={hoverCardRef} />
+            <Card
+              g={g}
+              className="is-docent"
+              rows={g.docentLines}
+              box={docentSlot?.box}
+              lines={docentSlot?.lines}
+              at={docentSlot?.at}
+            />
             <Card
               g={g}
               className="is-pinned"
