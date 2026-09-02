@@ -30,84 +30,28 @@ const pc = (v) => `${(v * 100).toFixed(1)}%`
 const q = (t) => `“${t}”`
 
 /**
- * The three motion studies.
+ * The tempo of the drawing.
  *
- * Motion cannot be judged from a still, and the parameter space here is wide:
- * how long a stop dwells, how much is said at each one, and how much the sheet
- * moves when it is left alone. These are three points in it, picked to differ
- * in kind rather than in degree, and they are selectable with `?motion=a|b|c`
- * so the choice can be made from real motion. The default is what a reader
- * gets with no querystring at all.
- *
- *   a  measured docent   every transfer and every landing bar gets its own
- *                        stop; the ambient loop is slow and sparse.
- *   b  slow cinema       the same stops, dwelt on half again as long, with a
- *                        fuller ambient loop underneath.
- *   c  brisk survey      a block is one stop rather than three, and the eight
- *                        landing bars arrive together; ambient is drift alone.
+ * Motion cannot be judged from a still, so arc 5 built three studies of it and
+ * put them behind `?motion=a|b|c` for Bill to pick from — how long a stop
+ * dwells, how much is said at each one, how much the sheet moves when it is
+ * left alone. He ruled on 2026-09-01: the measured docent wins. Every transfer
+ * and every landing bar gets its own stop, and the ambient loop is slow and
+ * sparse. These are that study's own numbers, now the drawing's only ones —
+ * the two losers and the switch that chose between them are gone.
  */
-export const MOTION_PRESETS = {
-  a: {
-    id: 'a',
-    name: 'measured docent',
-    note: 'every transfer and every bar its own stop; ambient slow and sparse',
-    dwell: 1,
-    density: 'full',
-    bars: 'each',
-    // A reveal cross-fade, and the share of a fall stop spent travelling.
-    fadeMs: 620,
-    travel: 0.72,
-    ambient: {
-      sweepMs: 11000,
-      sweepOpacity: 0.06,
-      glintOpacity: 0.1,
-      carrierMs: 9000,
-      breatheMs: 8000,
-      heroMs: 6500,
-    },
+export const MOTION = {
+  // A reveal cross-fade, and the share of a fall stop spent travelling.
+  fadeMs: 620,
+  travel: 0.72,
+  ambient: {
+    sweepMs: 11000,
+    sweepOpacity: 0.06,
+    glintOpacity: 0.1,
+    carrierMs: 9000,
+    breatheMs: 8000,
+    heroMs: 6500,
   },
-  b: {
-    id: 'b',
-    name: 'slow cinema',
-    note: 'the same stops, dwelt on half again as long; the fullest ambient loop',
-    dwell: 1.6,
-    density: 'full',
-    bars: 'each',
-    fadeMs: 1100,
-    travel: 0.8,
-    ambient: {
-      sweepMs: 7000,
-      sweepOpacity: 0.085,
-      glintOpacity: 0.16,
-      carrierMs: 5000,
-      breatheMs: 5200,
-      heroMs: 4200,
-    },
-  },
-  c: {
-    id: 'c',
-    name: 'brisk survey',
-    note: 'a block is one stop, the landing arrives at once; ambient is drift alone',
-    dwell: 0.92,
-    density: 'block',
-    bars: 'all',
-    fadeMs: 420,
-    travel: 0.6,
-    ambient: {
-      sweepMs: 14000,
-      sweepOpacity: 0.05,
-      glintOpacity: 0.07,
-      carrierMs: 0,
-      breatheMs: 0,
-      heroMs: 9000,
-    },
-  },
-}
-
-/** The preset a querystring asks for, or the default. Dev switch; prod default. */
-export function motionPresetId(search) {
-  const asked = new URLSearchParams(search ?? '').get('motion')
-  return asked && MOTION_PRESETS[asked] ? asked : 'a'
 }
 
 // ---------------------------------------------------------------------------
@@ -247,7 +191,6 @@ function stage(kind, ms, lead, detail, reveal) {
  * see a number, the tour cannot speak it.
  */
 export function buildTour({
-  preset,
   live,
   n,
   sequence,
@@ -263,8 +206,6 @@ export function buildTour({
   wall0,
   segmentCount,
 }) {
-  const p = MOTION_PRESETS[preset] ?? MOTION_PRESETS.a
-  const dwell = (base) => Math.round(base * p.dwell)
   const stages = []
   const heroToken = sequence[hero] ?? '—'
   const lastSeg = segmentCount ?? MAP_STOPS + 1
@@ -282,7 +223,7 @@ export function buildTour({
       'Type a sentence and the streams appear.',
       at({ segs: lastSeg, carriers: 99, bars: 99, aperture: true, pick: true }),
     )
-    return { stages: [only], totalMs: only.ms, presetId: p.id }
+    return { stages: [only], totalMs: only.ms }
   }
 
   // --- the sentence ---------------------------------------------------------
@@ -291,7 +232,7 @@ export function buildTour({
   stages.push(
     stage(
       'sentence',
-      dwell(4000),
+      4000,
       `Your sentence is ${n} piece${n === 1 ? '' : 's'} — ${shown}${rest} — and one of them is the hero: ` +
         `${q(heroToken)}, at position ${hero}.`,
       `Each piece gets a stream of its own. Everything the tour draws from here is aimed at that one stream, and ` +
@@ -314,7 +255,7 @@ export function buildTour({
   stages.push(
     stage(
       'embed',
-      dwell(4400),
+      4400,
       live
         ? `Each piece becomes 768 numbers — its row of the word table (WTE) plus its row of the position table ` +
             `(WPE) — and at the rim the hero’s are ${n2(field.rows[hero][0])} long.`
@@ -365,33 +306,11 @@ export function buildTour({
         : `With the real model in hand each block picks the head that sends the most attention away from the ` +
           `first piece and away from itself, and draws the hero’s own sources from it.`
 
-    if (p.density === 'block') {
-      // One stop for the whole block: the fall, the head and every transfer.
-      const kept = reg?.kept ?? []
-      let lead = `${fallLead}`
-      let detail = `${fallDetail} ${headLead} ${headDetail}`
-      if (!live) {
-        detail += ' No pass has run, so no carrier is drawn.'
-      } else if (kept.length === 0) {
-        lead = `${fallLead} ${silentLead(reg)}`
-        detail = `${fallDetail} ${headLead} ${silentDetail(reg, sequence)}`
-      } else {
-        const carried = kept
-          .map((source) => `${w4(source.w)} out of ${q(sequence[source.src])}`)
-          .join(' and ')
-        lead = `${fallLead} It carries ${carried} into the hero.`
-        detail += ' Green marks the key that matched, and a carrier’s width is its weight.'
-      }
-      carriers += kept.length
-      stages.push(stage('block', dwell(4800), lead, detail, at({ segs: l + 2, carriers, cue: l })))
-      continue
-    }
-
     stages.push(
-      stage('fall', dwell(3000), fallLead, fallDetail, at({ segs: l + 2, carriers, cue: l })),
+      stage('fall', 3000, fallLead, fallDetail, at({ segs: l + 2, carriers, cue: l })),
     )
     stages.push(
-      stage('head', dwell(3000), headLead, headDetail, at({ segs: l + 2, carriers, cue: l })),
+      stage('head', 3000, headLead, headDetail, at({ segs: l + 2, carriers, cue: l })),
     )
 
     if (!live) {
@@ -399,7 +318,7 @@ export function buildTour({
         stages.push(
           stage(
             'nopass',
-            dwell(4200),
+            4200,
             `There is no attention to draw without a pass, so no carrier is drawn anywhere on this sheet.`,
             `The walls below are still the file’s own bytes — they are real in both modes — but the green keys, ` +
               `the amber carriers and the landing all wait on the model. Load it above and this same tour speaks ` +
@@ -416,7 +335,7 @@ export function buildTour({
       stages.push(
         stage(
           'silent',
-          dwell(4200),
+          4200,
           silentLead(reg),
           silentDetail(reg, sequence),
           at({ segs: l + 2, carriers, cue: l }),
@@ -435,7 +354,7 @@ export function buildTour({
               `bloom is where the hero takes it in, and the hero runs brighter below it.`
             : `A block draws at most two, and only sources at or above ${TRANSFER_FLOOR} — everything under the ` +
               `floor is left out rather than drawn faint.`
-        stages.push(stage('transfer', dwell(3400), lead, detail, at({ segs: l + 2, carriers, cue: l })))
+        stages.push(stage('transfer', 3400, lead, detail, at({ segs: l + 2, carriers, cue: l })))
       })
     }
   }
@@ -444,7 +363,7 @@ export function buildTour({
   stages.push(
     stage(
       'tail',
-      dwell(3800),
+      3800,
       `Below the last wall every stream fades into the mist but one: the last position’s, because the landing is ` +
         `counted from that vector and from no other.`,
       `One thing happens to it that the drawing does not stop at — ln_f, the final normalisation, which rescales ` +
@@ -458,7 +377,7 @@ export function buildTour({
   stages.push(
     stage(
       'unembed',
-      dwell(4400),
+      4400,
       unembedLead(),
       unembedDetail(),
       at({ segs: lastSeg, carriers, aperture: true }),
@@ -470,23 +389,11 @@ export function buildTour({
     stages.push(
       stage(
         'noland',
-        dwell(4000),
+        4000,
         `There is no distribution without a pass, so no bar is drawn.`,
         `With the real model in hand these become this sentence’s own softmax over the whole vocabulary, top ` +
           `eight, with the machine’s own top drawn blue and the sampler’s pick marked in amber.`,
         at({ segs: lastSeg, carriers, aperture: true }),
-      ),
-    )
-  } else if (p.bars === 'all') {
-    const topIsArgmax = finalTop && splash[0].id === finalTop.id
-    stages.push(
-      stage(
-        'land',
-        dwell(4800),
-        `The ${splash.length} tallest of all 50,257: ${q(splash[0].token)} at ${pc(splash[0].p)} is the largest` +
-          `${topIsArgmax ? ', and is the machine’s own top' : ''}.`,
-        `A bar’s height is its probability and the rows of dots are how that height is counted.`,
-        at({ segs: lastSeg, carriers, bars: splash.length, aperture: true }),
       ),
     )
   } else {
@@ -502,7 +409,7 @@ export function buildTour({
           ? `A bar’s height is its probability; the rows of dots are how that height is counted.`
           : ''
       stages.push(
-        stage('bar', dwell(i === 0 ? 3400 : 1600), lead, detail, at({
+        stage('bar', i === 0 ? 3400 : 1600, lead, detail, at({
           segs: lastSeg, carriers, bars: i + 1, aperture: true,
         })),
       )
@@ -515,7 +422,7 @@ export function buildTour({
     stages.push(
       stage(
         'pick',
-        dwell(4200),
+        4200,
         `The sampler took ${q(nextToken ?? '—')}${picked ? ` at ${pc(picked.p)}` : ''}.`,
         `Temperature ${decoding.temperature}, top-k ${decoding.topK}, repetition penalty ` +
           `${decoding.repetitionPenalty}, seed ${decoding.seed}. Blue is what the machinery scored highest; amber ` +
@@ -529,7 +436,7 @@ export function buildTour({
   stages.push(
     stage(
       'done',
-      dwell(5000),
+      5000,
       live
         ? `That is one pass: the file frozen, one sentence moving through it, one next word.`
         : `That is the shape of one pass, with the walls real and the fall a schematic.`,
@@ -543,5 +450,5 @@ export function buildTour({
   )
 
   const totalMs = stages.reduce((sum, s) => sum + s.ms, 0)
-  return { stages, totalMs, presetId: p.id }
+  return { stages, totalMs }
 }

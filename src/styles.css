@@ -922,7 +922,8 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
    crossing one glints, the carriers firing in turn, the landing breathing and
    the hero's halo lifting. Nothing is recomputed and no number changes.
 
-   The tempo is the motion preset's, passed in as custom properties. */
+   The tempo comes in as custom properties, from the one MOTION block in
+   lib/tour.js. */
 .mr-sweep{opacity:0;pointer-events:none;}
 .map-screen.is-ambient .mr-sweep{
   animation:mr-sweep var(--mr-sweep-ms,11000ms) linear infinite;
@@ -967,11 +968,6 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
   0%,100%{opacity:.86;}
   50%{opacity:1;}
 }
-/* A preset can ask for part of the loop and not the rest. Preset c is the
-   drift and the glint alone: no re-firing, no breath. */
-.map-screen.is-motion-c.is-ambient .mr-carrier,
-.map-screen.is-motion-c.is-ambient .mr-landing{animation:none;}
-
 /* --- everything on the sheet answers a click -----------------------------
    The hit targets are transparent and fat, because none of the marks a reader
    wants to ask about is a shape a pointer can find: a carrier is a field of

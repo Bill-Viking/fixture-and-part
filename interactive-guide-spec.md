@@ -346,12 +346,12 @@ granular light. Redrawn in arc 4 from comp-a3; the data layer is unchanged.
   closing line says so. Measured over 60 s: 60.0 fps, mean frame 16.7 ms, p99
   16.8 ms, zero frames over 50 ms at 1,280 and at 390, and zero DOM mutations
   inside the SVG over 30 s of it.
-- **Motion studies** `?motion=a|b|c` (arc 5, dev switch, default `a`): (a)
-  measured docent — every transfer and every bar its own stop, ambient slow and
-  sparse; (b) slow cinema — the same stops dwelt on half again as long, the
-  fullest ambient loop; (c) brisk survey — a block is one stop, the landing
-  arrives at once, ambient is drift alone. The losing presets are removed once
-  the choice is made.
+- **The tempo** (arc 5). Three motion studies were built behind `?motion=a|b|c`
+  and Bill ruled on 2026-09-01: the measured docent wins — every transfer and
+  every landing bar gets its own stop, and the ambient loop is slow and sparse.
+  Its numbers are now the drawing's only ones, in the `MOTION` block of
+  `lib/tour.js`; the two losing studies and the switch that chose between them
+  are gone, and there is no dev switch left on the sheet.
 - **Nothing on the sheet is dead** (arc 5). A carrier, a landing ray, a wall
   cell and both plates each answer a click — and Enter or Space — with plain
   words in the readout under the drawing, and the sentences come from
@@ -402,8 +402,8 @@ granular light. Redrawn in arc 4 from comp-a3; the data layer is unchanged.
   every transfer weight against the attention matrix, and every landing
   probability against a softmax written out separately — and reports whether
   the pass it compared against was a fresh one. `__tourState` (arc 5, dev only)
-  publishes the tour's own state the same way and for the same reason: the
-  preset, whether reduced motion is on, whether the sheet is running itself,
+  publishes the tour's own state the same way and for the same reason:
+  whether reduced motion is on, whether the sheet is running itself,
   the stop, its kind, its caption, the reveal and the readout — so a claim
   about how long a run takes or about which stop says what can be measured
   rather than taken.
