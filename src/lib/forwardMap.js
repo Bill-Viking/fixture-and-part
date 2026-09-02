@@ -83,9 +83,22 @@ export function tensorFacts(manifest, name) {
   }
 }
 
-/** The full readout under the screen, when a steel box is clicked. */
+/**
+ * The full readout under the screen, when something on it is clicked.
+ *
+ * Its idle wording used to say "click any steel box", which is the language of
+ * two drawings ago — instrument F drew the machinery as textured steel boxes
+ * before the memory room replaced them with walls, and a reader looking at
+ * this page has never seen a steel box. It names what is actually on the
+ * screen now, and what each of those things will say.
+ */
 export function partReadout(facts) {
-  if (!facts) return 'no tensor selected — click any steel box'
+  if (!facts) {
+    return (
+      'nothing chosen yet — click a wall, a cell, a carrier, a landing bar or a plate ' +
+      'and this line says what it is'
+    )
+  }
   const parts = [
     `${facts.display} ${facts.shape} ${facts.dtype}`,
   ]
