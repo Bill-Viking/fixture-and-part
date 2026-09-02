@@ -687,7 +687,7 @@ const Streams = memo(function Streams({ g, draw }) {
  * wants to know what it is. A grained sweep is not a hit target, so the hit
  * target is a fat transparent stroke down the carrier's own centre line.
  */
-const Carriers = memo(function Carriers({ g, draw, onInspect }) {
+const Carriers = memo(function Carriers({ g, draw }) {
   return (
     <g className="mr-carriers">
       <defs>
@@ -738,25 +738,52 @@ const Carriers = memo(function Carriers({ g, draw, onInspect }) {
             <g className="mr-carrier-ink" mask={`url(#mr-behind-${tr.id})`}>
               {paths}
             </g>
-            <path
-              className="mr-carrier-hit"
-              d={tr.centre}
-              role="button"
-              tabIndex={0}
-              aria-label={tr.aria}
-              onClick={() => onInspect(tr)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault()
-                  onInspect(tr)
-                }
-              }}
-            >
-              <title>{tr.aria}</title>
-            </path>
           </g>
         )
       })}
+    </g>
+  )
+})
+
+/**
+ * The carriers' hit targets, painted after the walls rather than with them.
+ *
+ * A carrier crosses every wall band between its source and the hero, and a
+ * wall's own hit target is one transparent rect over the whole band. SVG
+ * resolves a pointer by document order, so while these paths lived inside the
+ * carrier's own group — child 383 of 5,265, against the wall rect's 4,877 —
+ * the wall took every click on a carrier that happened to be inside a band,
+ * and the sheet answered "Wall cell —" to six of six sampled clicks on
+ * carrier 0. The ink stays where it is, under the words; only the invisible
+ * targets move, so nothing about the picture changes.
+ *
+ * They keep the `mr-carrier` class and their own `--ci`, because that is what
+ * gates a carrier on the tour's own count: a target that answered before its
+ * carrier had fired would be a mark that is not there yet.
+ */
+const CarrierHits = memo(function CarrierHits({ draw, onInspect }) {
+  return (
+    <g className="mr-carrier-hits">
+      {draw.transfers.map((tr, ci) => (
+        <g key={tr.id} className="mr-carrier" style={{ '--ci': ci }}>
+          <path
+            className="mr-carrier-hit"
+            d={tr.centre}
+            role="button"
+            tabIndex={0}
+            aria-label={tr.aria}
+            onClick={() => onInspect(tr)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                onInspect(tr)
+              }
+            }}
+          >
+            <title>{tr.aria}</title>
+          </path>
+        </g>
+      ))}
     </g>
   )
 })
@@ -2960,7 +2987,7 @@ export default function ForwardMap({
               )
             })}
 
-            {draw ? <Carriers g={g} draw={draw} onInspect={inspectCarrier} /> : null}
+            {draw ? <Carriers g={g} draw={draw} /> : null}
             {draw ? (
               <g clipPath="url(#mr-front)">
                 <Streams g={g} draw={draw} />
@@ -3118,6 +3145,11 @@ export default function ForwardMap({
                 </g>
               )
             })}
+
+            {/* The carriers' hit targets, after the walls' own. A carrier
+                crosses the bands between its source and the hero, and the
+                pointer goes to whichever target is painted last. */}
+            {draw ? <CarrierHits draw={draw} onInspect={inspectCarrier} /> : null}
 
             {/* The transfers, said: a green key at the source, the weight
                 beside it, and the bloom where the hero takes it in. */}
