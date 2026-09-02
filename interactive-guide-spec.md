@@ -288,6 +288,24 @@ granular light. Redrawn in arc 4 from comp-a3; the data layer is unchanged.
   after the fall rather than before it, each on a scrim sized from its own
   measured width: a label the water runs over is not a label, and the
   stylesheet cannot see that the water is there.
+- **The drawing says fixture and part** (fix pass). The essay's section 02 is
+  called "Weights are the tooling. Activations are the workpiece", and the
+  drawing under it named neither half. Four places do now, with the water and
+  the light left underneath as flavour: the instrument's purpose line (the
+  walls are the fixture, the file's frozen tooling, one station per block; the
+  sentence is the part, one stream a word, falling through the stations; a
+  transfer is the tooling touching the part; the hero is the piece finished at
+  the last station); the token strip's label, THE PART — YOUR SENTENCE, ONE
+  STREAM EACH; CLICK ONE TO MAKE IT THE HERO; the tour's opening stop; and the
+  five legend headings, which carry the analogy above the mark's own name —
+  THE FIXTURE over THE WALLS, THE PART over THE FALL, THE TOOLING / TOUCHES
+  THE PART over THE TRANSFERS — with the essay's word set back in the legend's
+  grey so the pair reads as one heading. The headings are gutter LINES rather
+  than one string because the gutter is 188 drawing units wide and holds
+  sixteen characters of the column setting's type; measured at 1280, 1199,
+  800, 641 and 390, every line fits, the widest (TOUCHES THE PART) at 185 of
+  188 units, and they cost no height because every entry's body already
+  reserves more lines than its heading uses.
 - The sentence runs across the top as one clickable chip per token, and a
   chip carries its word. Where the sentence is long enough that a chip has
   room for fewer than three characters — around seventeen tokens — two
@@ -303,10 +321,16 @@ granular light. Redrawn in arc 4 from comp-a3; the data layer is unchanged.
   open. The open register is the same `layer` instrument C uses. OPEN A·B·C·D·E
   are real buttons that scroll to the instrument each reading came from.
 - **The narrated run** (arc 5). One pass is walked at reading speed rather than
-  replayed in a second: 35 stops on the default sentence in real mode, about
-  1 min 48 s at 1× (19 stops and 66 s illustrative, where there is less to
-  say), built by `lib/tour.js` out of the arrays instrument F already has on
-  screen. Each stop is a line of plain words with this pass's own numbers in
+  replayed in a second: on the default sentence in real mode, 35 stops and
+  1 min 48 s at 1× above 640 px and 33 stops and 1 min 45 s at or below it —
+  the landing is counted one bar at a time and the phone draws six bars where
+  the wider settings draw eight, so the length of the tour is a fact about the
+  screen as well as about the sentence. Illustrative is 19 stops and 66 s at
+  every width, because with no pass the landing is one caption rather than a
+  stop per bar. No part of the drawing states that count as a constant: every
+  place that speaks it reads `stages.length`, and the one caption that says
+  how many bars are coming is handed the geometry's own `splashN`. Built by
+  `lib/tour.js` out of the arrays instrument F already has on screen. Each stop is a line of plain words with this pass's own numbers in
   it — the rim, the fall through each block with the hero's own ‖residual‖
   either side of it, the chosen head and the share of attention it sends away
   from itself, each transfer with its weight, a silent block saying why in
@@ -321,10 +345,19 @@ granular light. Redrawn in arc 4 from comp-a3; the data layer is unchanged.
     screen — how far down the light has reached, how many carriers have fired,
     how many bars are counted, whether the aperture is drawn, whether the pick
     is marked — and every mark compares its own index against them in the
-    stylesheet. Measured with a MutationObserver over the whole SVG: one step
-    writes nothing at all, and a full 35-stop tour writes twelve attributes,
-    all of them the `class` on the six register groups as the cue moves. No
-    node is added or removed and no wall cell is touched.
+    stylesheet. Measured with a MutationObserver over the whole SVG: a full
+    35-stop tour writes twelve `class` attributes on the six register groups
+    as the cue moves, and — since the fix pass gave the docent a card on the
+    drawing — 60 to 67 more attributes on that one card as it moves from slot
+    to slot, plus a handful of text nodes inside its own `<text>` elements.
+    Nothing else in the SVG is written at all, and not one of the 9,216 wall
+    cells is touched by any of it.
+  - **The tour is 60 fps, and a stop costs at most one dropped frame.** Measured
+    quiet, 60 s of rAF timestamps with the tour's own stop index sampled at
+    every frame, real mode, 1×, two runs: 59.5 and 59.9 fps at 1280 (mean 16.80
+    and 16.68 ms, p99 16.8, max 66.7 and 33.4 ms) and 59.4 and 59.9 at 390 (max
+    50.1 and 33.4). Zero frames over 100 ms in any run at either width. Ambient
+    as the control is 60.0 fps with zero frames over 50 ms.
   - **Clicking anything pauses the tour** and is then honoured in the ordinary
     way — the hero re-aims, the register opens, the readout answers. The tour
     waits where it was; the docent's own controls are the exception.
@@ -333,9 +366,32 @@ granular light. Redrawn in arc 4 from comp-a3; the data layer is unchanged.
     buttons. Play opens the tour at its first stop and the steps move it.
   - The caption clips rather than reflows and its reservation is measured per
     band, one line over the worst stop on both the default sentence and a
-    21-token one: 4 lines on the sheet for 3 used, 5 in the column for 4, 6 in
-    the narrow column for 5, 5 on the phone for 4 (where the caption is the
-    stop's lead alone rather than the whole sentence).
+    21-token one. Re-measured after the fix pass's wording changes, counting
+    line boxes rather than scrollHeight — a clipped box's scrollHeight can
+    never read below its own reservation, so scrollHeight cannot see a caption
+    shorter than its box: 3 lines used of 4 at 1280, 4 of 5 at 1199 and 800,
+    6 of 6 at 641, 4 of 5 at 390 (where the caption is the stop's lead alone
+    rather than the whole sentence). Band for band, identical to the same walk
+    on the branch before the wording changed. The 641 band has no spare line,
+    which is a pre-existing overrun of the reserve-one-more rule rather than
+    anything the fix pass introduced; nothing clips at any width.
+  - **The docent's line stands on the drawing too** (fix pass). While the tour
+    plays or is stepped — reduced motion included — the current stop's LEAD
+    also appears as a card beside the thing it describes, so the docent is
+    pointing at what it is talking about rather than describing it from the
+    top of the window. One fixed slot per kind of stop: the sentence and the
+    rim beside the RIM label, a block's fall/head/transfer/silent stops on
+    that block's own wall starting where its BLOCK/HEAD label's scrim ends,
+    ln_f and the unembedding at the aperture, the landing at the FAR end of
+    the bars (the tallest bar is the first, and a card beside it would stand
+    on the one thing the stop is about). On the phone the top of the drawing
+    has no clear strip — the chips, the rim label and the first block's
+    callouts fill it — so the sentence and the rim take the head of the first
+    wall there. Reserved per band by the same measurement as the caption: 3
+    lines used at the sheet, 4 in the column, 3 on the phone, so 4, 5 and 4
+    reserved. Measured over 214 stops (35 at 1280, 35 at 800, 33 at 390, on
+    the default sentence and on a 21-token one): none clipped, none outside
+    the drawing, and none standing on a KEY callout or on any plate's words.
 - **Ambient — the sheet runs itself** (arc 5). Left alone for twenty seconds,
   with the figure intersecting the viewport, the tab in front and reduced
   motion off, a slow loop starts: a band of light sweeps down the fall, the
@@ -343,15 +399,64 @@ granular light. Redrawn in arc 4 from comp-a3; the data layer is unchanged.
   landing breathes. All of it is CSS animation on overlay elements that already
   exist. Any interaction stops it instantly and it resumes after idle again. It
   is the one thing in the picture that carries no number, and the drawing's
-  closing line says so. Measured over 60 s: 60.0 fps, mean frame 16.7 ms, p99
-  16.8 ms, zero frames over 50 ms at 1,280 and at 390, and zero DOM mutations
-  inside the SVG over 30 s of it.
+  closing line says so. Measured over 60 s on a quiet machine: 60.0 fps, mean
+  frame 16.67 ms, p99 16.8 ms, zero frames over 50 ms at 1,280 and at 390, and
+  two attribute writes inside the SVG over 54 s — both of them putting the
+  pointer's own cell outline and card away, and neither of them from the loop.
+  **Reading the page counts as touching it** (fix pass): the idle timer used to
+  listen for a pointer press, a key and a pointer move over the figure, and a
+  reader scrolling did none of the three — so the sheet could start running
+  itself mid-scroll. A wheel, a scroll and a touch drag now reset the same
+  clock, all three as passive listeners. Measured at 1280 in real mode with F
+  in view: 30 s of continuous scrolling and ambient never starts, where the
+  build before the fix had started it mid-scroll and was still running at the
+  end; stop scrolling and it starts at the first poll past twenty seconds.
 - **The tempo** (arc 5). Three motion studies were built behind `?motion=a|b|c`
   and Bill ruled on 2026-09-01: the measured docent wins — every transfer and
   every landing bar gets its own stop, and the ambient loop is slow and sparse.
   Its numbers are now the drawing's only ones, in the `MOTION` block of
   `lib/tour.js`; the two losing studies and the switch that chose between them
   are gone, and there is no dev switch left on the sheet.
+- **The answer appears where the click was** (fix pass). Hovering a wall cell —
+  with the pointer or with the keyboard cursor — opens a small card inside the
+  SVG beside it: the cell's quantised value and the byte the file stores, the
+  weight it stands for as `scale · (q − zp)` with the file's own scale, its
+  `[row, col]` in the whole tensor and which of the three projections that
+  column falls in. Clicking a cell, a carrier, a landing ray, the no-transfer
+  plate or the UNEMBED plate pins a card beside that mark with a short leader
+  back to it, and the full sentence still goes to the readout row. One pin at
+  a time, the next click replaces it, and Escape or a press on the screen's own
+  empty air takes the card and the row down together. The wall plate's
+  whole-tensor `<title>` is gone: a browser tooltip for the WHOLE tensor,
+  appearing only after the pointer held still, on a wall whose every cell has
+  its own answer, is what made the sheet look as though information showed up
+  on some cells and not others.
+  - The card prints a LEAD out of `lib/tour.js` — the first half of the same
+    sentence the readout row prints in full — so the card, the row and the
+    tour cannot say different things about the same mark. `cellWhy`,
+    `carrierWhy` and `rayWhy` are each a lead plus a detail now, the shape
+    `silentWhy` and `unembedWhy` already had.
+  - Fixed box per band, words clipped into it, measured by `__cardLines()`,
+    which wraps every lead the sheet can produce — all 9,216 wall cells, every
+    carrier, every ray, both plates and every stop of the tour — into that
+    band's own column count and takes the tallest. On the default sentence and
+    on a 21-token one: 5 lines used at the sheet (70 columns), 7 in the column
+    setting (45), 6 on the phone (52); reserved 6, 8 and 7. It stands on a
+    scrim in the screen's own ground, is set at the legend's size in the
+    legend's grey, is painted after the fall, stays inside the drawing, and
+    never opens over a KEY callout or a plate's words.
+  - The pointer's card is written straight to the DOM, like the cell outline
+    beside it, because a hover that went through React would rebuild the fall
+    sixty times a second.
+- **The walls answer the keyboard** (fix pass). 184 magnitude-group paths, none
+  of them focusable, and no cell element to focus even if they had been. A wall
+  is one tab stop with a roving cursor inside it — six tab stops for six walls
+  rather than 1,536 or 9,216. The arrows move the cursor a cell at a time, Home
+  and End run to the ends of a row, Enter or Space reads the cell through the
+  same `say()` the pointer's click uses, and Escape puts the cursor away. The
+  cursor IS the pointer's outline — one `mr-hover` rect, written by both hands
+  — so a cell reached by keyboard looks exactly like a cell under the pointer,
+  and neither re-renders a wall cell.
 - **Nothing on the sheet is dead** (arc 5). A carrier, a landing ray, a wall
   cell and both plates each answer a click — and Enter or Space — with plain
   words in the readout under the drawing, and the sentences come from
@@ -372,7 +477,15 @@ granular light. Redrawn in arc 4 from comp-a3; the data layer is unchanged.
 - Every wall is a button carrying that tensor's real shape, dtype, scale, zero
   point and byte count out of `fileFacts.json`, and so is the unembedding
   aperture; clicking one prints the readout under the drawing and offers to
-  open that row in instrument E. The plate's toggle is against what is on
+  open that row in instrument E. The readout row explains itself when nothing
+  is chosen (fix pass): it used to say "no tensor selected — click any steel
+  box", which is the language of two drawings ago, and it now names what is
+  actually on this screen. Both buttons beside it say what they open and what
+  would make them open, in their titles and their accessible names, and the
+  second says OPEN THE INSTRUMENT rather than OPEN — : a dash is not a word,
+  and a reader read the greyed pair as broken rather than as waiting. Both are
+  fixed width; the phone's readout reserves three lines rather than two,
+  because 305 px of row cannot hold the longest wall-cell sentence in two. The plate's toggle is against what is on
   screen, so pressing it while some other answer is showing prints the plate's
   own reading rather than turning the tensor off underneath it.
 - Three states, not two. A finished pass over the text in the box draws its own

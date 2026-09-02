@@ -74,11 +74,25 @@ import InstrumentHead from '../components/InstrumentHead.jsx'
  * time, with a line of plain words under the controls that speaks the pass's
  * own numbers; its stops, its dwells and every sentence it says come out of
  * `lib/tour.js`. And when the sheet is left alone — in view, tab visible,
- * reduced motion off — it starts running itself: a slow sweep down the fall,
- * a glint where the light crosses a wall, the carriers re-firing in turn. All
- * of that is CSS on a handful of overlay elements. Not one of the 9,216 wall
- * cells is re-rendered by any of it, which is the rule that keeps the whole
- * thing cheap enough to leave running.
+ * reduced motion off, and nobody scrolling — it starts running itself: a slow
+ * sweep down the fall, a glint where the light crosses a wall, the carriers
+ * re-firing in turn. All of that is CSS on a handful of overlay elements. Not
+ * one of the 9,216 wall cells is re-rendered by any of it, which is the rule
+ * that keeps the whole thing cheap enough to leave running.
+ *
+ * Three cards say what things are, and they are one shape. The pointer's
+ * follows the cell under it; a click pins one beside what was clicked, with a
+ * leader back to it; the tour keeps one beside whatever it is talking about.
+ * All three print a LEAD out of `lib/tour.js` — the first half of the very
+ * sentence the readout row under the drawing prints in full — so a card, the
+ * row and the tour can never say different things about the same mark. The
+ * pointer's card and the cell outline under it are written straight to the
+ * DOM rather than through state, because a hover that went through React
+ * would rebuild the fall sixty times a second.
+ *
+ * A wall is one tab stop with a cursor inside it. The arrows move the cursor
+ * a cell at a time and Enter reads the cell, through the same `say()` a click
+ * uses — six tab stops for six walls rather than one for each of 9,216 bytes.
  */
 
 /** The drawing is this many units wide at every screen width. */
