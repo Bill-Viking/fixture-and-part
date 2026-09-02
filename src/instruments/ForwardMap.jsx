@@ -1174,10 +1174,11 @@ export default function ForwardMap({
         decoding: DECODING,
         wall0,
         segmentCount: draw?.segments?.length ?? MAP_STOPS + 1,
+        splashN: g.splashN,
       }),
     [
       live, n, sequence, hero, field, run, registers, autoHeads, splash,
-      finalTop, nextToken, wall0, draw,
+      finalTop, nextToken, wall0, draw, g.splashN,
     ],
   )
   const stages = tourPlan.stages
