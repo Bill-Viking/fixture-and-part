@@ -251,17 +251,27 @@ function geometryFor(compact, full) {
   const legAdvance = per(0.6, 0.6, MONO_ADVANCE + TRACK.leg)
   const legCols = Math.floor((SW - legX - 10) / (fs.leg * legAdvance))
   const fineCols = Math.floor((SW - 18) / (fs.legFine * legAdvance))
-  // Reserved, not measured: the legend prints live numbers, so its wording
-  // changes with the sentence. A block whose height followed its own text
-  // would move everything below the figure on every keystroke. The fifth
+  // Reserved rather than fitted: the legend prints live numbers, so its
+  // wording changes with the sentence. A block whose height followed its own
+  // text would move everything below the figure on every keystroke. The fifth
   // entry is the tour and the ambient loop, which are rules of the drawing
   // like any other and are stated here rather than left to be discovered.
-  const legLines = per([8, 9, 14, 7, 6], [9, 10, 13, 8, 8], [7, 7, 9, 6, 6])
+  //
+  // Reserved is not the same as guessed. Each count is one line over the
+  // worst its own wording produces, measured by `__legendLines()` across both
+  // modes, the default sentence and a 21-token one. THE TOUR was reserved
+  // eight lines in the column setting and six on the phone, and needed nine
+  // and seven — so its last line, "…it redraws nothing and…", was cut off at
+  // every width but the sheet's. Three others met their box without a line to
+  // spare and now have one: THE PART on the phone, and the fine print under
+  // the legend in the column setting and on the phone, which was reserved
+  // four lines on the phone and needed five.
+  const legLines = per([8, 10, 14, 7, 8], [9, 10, 13, 8, 10], [7, 7, 9, 6, 7])
   const legKeyLine = compact ? fs.legKey * 1.5 : 0
   const legHeight =
     legLines.reduce((sum, l) => sum + l * legLine + legKeyLine + legGap, 0)
   const fineTop = legTop + legHeight + (compact ? 6 : 4)
-  const fineLines = compact ? 4 : 3
+  const fineLines = per(6, 4, 3)
   const H = fineTop + fineLines * (fs.legFine * 1.35) + (compact ? 20 : 14)
 
   // The card that opens beside a hover or a click, and says what that mark is.
@@ -2551,6 +2561,25 @@ export default function ForwardMap({
     () => wrapText(fine, g.fineCols, g.fineLines),
     [fine, g],
   )
+
+  // Dev only, and the same method as the caption's and the card's: the legend
+  // prints live numbers, so each entry is a reserved line count that clips
+  // rather than reflows, and the reservation has to be measured against the
+  // wording it actually has. `used` is the wrap with no ceiling on it.
+  useEffect(() => {
+    if (!import.meta.env.DEV) return
+    globalThis.__legendLines = () => ({
+      cols: g.legCols,
+      reserved: g.legLines,
+      used: legend.map(([, body]) => wrapText(body, g.legCols, 999).length),
+      heads: legend.map(([keys]) => keys.join(' / ')),
+      fine: {
+        cols: g.fineCols,
+        reserved: g.fineLines,
+        used: wrapText(fine, g.fineCols, 999).length,
+      },
+    })
+  })
 
   const openWindow = (letter, target, label) => (
     <button
