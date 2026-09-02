@@ -852,6 +852,11 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 .mr-leg-key{
   font-family:var(--mono);letter-spacing:0.12em;fill:var(--screen-text);
 }
+/* The analogy's half of a heading — THE FIXTURE above THE WALLS — is the
+   essay's word for the thing, and the mark's own name is the line that names
+   what is drawn. The essay's word is set back so the two read as one heading
+   rather than as two. */
+.mr-leg-key.is-role{fill:var(--screen-muted);}
 .mr-leg{font-family:var(--mono);letter-spacing:0.01em;fill:var(--screen-muted);}
 .mr-leg-fine{font-family:var(--mono);letter-spacing:0.01em;fill:var(--screen-muted);opacity:.82;}
 
