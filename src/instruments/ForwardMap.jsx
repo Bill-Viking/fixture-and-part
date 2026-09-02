@@ -21,10 +21,15 @@ import {
   IDLE_MS,
   MOTION,
   buildTour,
+  carrierLead,
   carrierWhy,
+  cellLead,
   cellWhy,
+  rayLead,
   rayWhy,
+  silentLead,
   silentWhy,
+  unembedLead,
   unembedWhy,
 } from '../lib/tour.js'
 import {
@@ -244,8 +249,28 @@ function geometryFor(compact, full) {
   const fineLines = compact ? 4 : 3
   const H = fineTop + fineLines * (fs.legFine * 1.35) + (compact ? 20 : 14)
 
+  // The card that opens beside a hover or a click, and says what that mark is.
+  // It prints live numbers — a byte, a weight, an attention weight, a
+  // probability — so it is a fixed box that clips, exactly as the legend and
+  // the caption are, and for the same reason: a box that grew with its words
+  // would be a box that moved. Its type is the legend's, and its reserved
+  // line count is measured per band by `__cardLines()`, one line over the
+  // worst lead the sheet can produce at that width.
+  const cardW = per(940, 470, 470)
+  const cardPad = per(14, 9, 8)
+  const cardCols = Math.floor((cardW - 2 * cardPad) / (fs.leg * legAdvance))
+  const cardLine = fs.leg * 1.35
+  // Measured with `__cardLines()`, which wraps every lead the sheet can
+  // produce — every cell of every wall, every carrier, every ray, both plates
+  // and every stop of the tour — into this band's own column count and takes
+  // the tallest: 5 used at the sheet, 7 in the column, 6 on the phone. One
+  // line more than the worst, the way the legend and the caption are reserved.
+  const cardLines = per(7, 8, 6)
+  const cardH = cardLines * cardLine + 2 * cardPad + fs.leg * 0.3
+
   return {
     compact, fs,
+    cardW, cardH, cardPad, cardCols, cardLine, cardLines,
     bandX, bandW, cols, rows, pitchX, cellW, cellH, pitchY, bandH,
     bandTop, bandMid, bandBot, stopY, lastBot, air,
     chipY, chipH, fallTop, rimY, mistY, apertureY0, apertureH, landTitleY,
@@ -353,6 +378,60 @@ function wrapText(text, cols, max) {
   const kept = lines.slice(0, max)
   kept[max - 1] = `${kept[max - 1].slice(0, Math.max(0, cols - 1))}…`
   return kept
+}
+
+/** Do two boxes overlap, and by how much? */
+function overlapArea(a, b) {
+  const w = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)
+  const h = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y)
+  return w > 0 && h > 0 ? w * h : 0
+}
+
+/**
+ * Where the card goes, given what it is talking about.
+ *
+ * Beside the mark, on whichever side there is room for it, and never over a
+ * KEY callout — those name the transfer sources and are the one other set of
+ * words that float in the dark air. The candidates are tried in order and the
+ * first clear one wins; if the air is genuinely full, the least-covered one
+ * does. The card is clamped inside the drawing at both ends, so it can be
+ * anchored to a mark at the very top or the very bottom and still be read.
+ */
+function placeCard(g, anchor, avoid) {
+  const w = g.cardW
+  const h = g.cardH
+  const gap = g.compact ? 30 : 16
+  const top = 8
+  const bottom = g.legRuleY - 12 - h
+  const clampY = (y) => Math.min(Math.max(bottom, top), Math.max(top, Math.min(y, bottom)))
+  const candidates = []
+  if (g.compact) {
+    // The phone's card is most of the width of the drawing, so it cannot sit
+    // beside anything: it sits under the mark, and over it near the bottom.
+    const x = Math.min(SW - 8 - w, Math.max(8, anchor.x - w / 2))
+    candidates.push(
+      { x, y: clampY(anchor.y + gap) },
+      { x, y: clampY(anchor.y - gap - h) },
+    )
+  } else {
+    const right = Math.min(SW - 8 - w, anchor.x + gap)
+    const left = Math.max(8, anchor.x - gap - w)
+    for (const y of [anchor.y - h / 2, anchor.y + gap, anchor.y - gap - h]) {
+      candidates.push({ x: right, y: clampY(y) }, { x: left, y: clampY(y) })
+    }
+  }
+  let best = candidates[0]
+  let bestArea = Infinity
+  for (const c of candidates) {
+    let area = 0
+    for (const box of avoid) area += overlapArea({ ...c, w, h }, box)
+    if (area === 0) return { ...c, w, h }
+    if (area < bestArea) {
+      bestArea = area
+      best = c
+    }
+  }
+  return { ...best, w, h }
 }
 
 /**
@@ -680,6 +759,72 @@ const Landing = memo(function Landing({ g, draw, onInspect }) {
     </g>
   )
 })
+
+/**
+ * The card: what the mark under the pointer, or the mark just clicked, is.
+ *
+ * Three of these are drawn and they are one shape. The pointer's follows the
+ * cell under it and is written straight to the DOM; the pinned one is the
+ * answer to the last click and stands beside what was clicked with a leader
+ * back to it; the docent's sits beside whatever the tour is talking about.
+ * All three print a LEAD out of lib/tour.js — the same first half of the
+ * sentence the row under the drawing prints in full — so the card, the row
+ * and the tour cannot say different things about the same mark.
+ *
+ * The box is a fixed size per setting and the words are clipped into it, for
+ * the reason every other live-numbered box on this sheet is: a box that grew
+ * with its words would be a box that moved. It stands on a scrim in the
+ * screen's own ground, like every other word painted over the picture.
+ */
+function Card({ g, className, box, lines, at, elRef }) {
+  const b = box ?? { x: 0, y: 0, w: g.cardW, h: g.cardH }
+  // A short leader from the mark to the nearest point of the card's edge.
+  const tick =
+    at && box
+      ? `M ${f2(at.x)} ${f2(at.y)} L ${f2(
+          Math.min(b.x + b.w, Math.max(b.x, at.x)),
+        )} ${f2(Math.min(b.y + b.h, Math.max(b.y, at.y)))}`
+      : ''
+  return (
+    <g
+      ref={elRef}
+      className={`mr-card ${className}`}
+      style={box ? undefined : { display: 'none' }}
+      aria-hidden="true"
+    >
+      <path className="mr-card-tick" d={tick} />
+      <rect
+        className="mr-card-ground"
+        x={f2(b.x)}
+        y={f2(b.y)}
+        width={f2(b.w)}
+        height={f2(b.h)}
+        rx="2"
+        fill="url(#mr-fade)"
+        opacity={SCRIM_MARK}
+      />
+      <rect
+        className="mr-card-edge"
+        x={f2(b.x)}
+        y={f2(b.y)}
+        width={f2(b.w)}
+        height={f2(b.h)}
+        rx="2"
+      />
+      {Array.from({ length: g.cardLines }, (_, i) => (
+        <text
+          key={i}
+          className="mr-card-line"
+          x={f2(b.x + g.cardPad)}
+          y={f2(b.y + g.cardPad + g.fs.leg + i * g.cardLine)}
+          style={{ fontSize: g.fs.leg }}
+        >
+          {lines ? (lines[i] ?? '') : null}
+        </text>
+      ))}
+    </g>
+  )
+}
 
 export default function ForwardMap({
   text,
@@ -1062,6 +1207,49 @@ export default function ForwardMap({
     sequence,
   ])
 
+  /**
+   * Where each transfer's KEY callout stands, and how much room it takes.
+   *
+   * Lifted out of the drawing because two things need it now: the callout
+   * itself, and the card, which must never open over one. They are the only
+   * other words floating in the dark air above the walls.
+   */
+  const callouts = useMemo(() => {
+    if (!draw) return null
+    return draw.transfers.map((tr, ci) => {
+      const x = draw.xs[tr.src]
+      const label = `${sequence[tr.src]} · ${tr.w.toFixed(4)}`
+      const key = `KEY · B${tr.layer} H${tr.head}`
+      const room = Math.max(
+        textWidth(label, g.fs.callout, TRACK.callout),
+        textWidth(key, g.fs.fine, TRACK.key),
+      )
+      // Beside the source, in the dark gap between two streams — never over
+      // one where there is a gap to sit in. The right-hand gap unless the
+      // source is the last stream, or unless that gap would put the words in
+      // the margin the wall keeps for the name of the tensor it is cut from.
+      const nameMargin = g.compact ? 300 : 250
+      const right = tr.src < n - 1 && x + draw.slot / 2 + room / 2 < SW - nameMargin
+      const lx = Math.min(
+        SW - 10 - room / 2,
+        Math.max(10 + room / 2, x + ((right ? 1 : -1) * draw.slot) / 2),
+      )
+      const ly = tr.lift - (g.compact ? 24 : 16) - tr.lane * g.fs.callout * 2.4
+      const boxY = ly - g.fs.callout * 1.05 - g.fs.fine * INK_ABOVE
+      return {
+        tr, ci, x, lx, ly, room, label, key,
+        box: {
+          x: lx - room / 2 - 5,
+          y: boxY,
+          w: room + 10,
+          h: g.fs.callout * (1.05 + INK_BELOW) + g.fs.fine * INK_ABOVE,
+        },
+      }
+    })
+  }, [draw, sequence, g, n])
+
+  const avoidBoxes = useMemo(() => (callouts ? callouts.map((c) => c.box) : []), [callouts])
+
   // What the instrument has on screen, for the console check. Dev only; the
   // bundler drops the branch in a production build.
   useEffect(() => {
@@ -1378,8 +1566,23 @@ export default function ForwardMap({
   // ordinary way — the hero re-aims, the register opens, the readout answers.
   // The tour's own controls are the exception: they are how it is driven.
   const onSheetPointerDown = (e) => {
-    if (typeof e.target?.closest === 'function' && e.target.closest('.mr-docent')) return
+    const target = e.target
+    if (typeof target?.closest !== 'function') return
+    if (target.closest('.mr-docent')) return
     setTour((t) => (t.playing ? { ...t, playing: false } : t))
+    // A press on the screen's own empty air puts the answer away. Anything
+    // that answers for itself is not empty air, and neither is the row of
+    // buttons under the drawing.
+    const answers = target.closest('button, [role="button"], a, .map-readout-row')
+    if (!answers && target.closest('.map-screen')) clearReadout()
+  }
+
+  /** Escape, anywhere in the instrument, puts the answer away. */
+  const onSheetKeyDown = (e) => {
+    if (e.key !== 'Escape') return
+    clearReadout()
+    hideCursor()
+    hideHoverCard()
   }
 
   // --- what a click on the sheet answers ------------------------------------
@@ -1389,6 +1592,20 @@ export default function ForwardMap({
     // Every readout also selects the tensor it is talking about, so OPEN IN
     // THE FILE always has somewhere to go.
     if (next?.tensor) setPart(next.tensor)
+  }, [])
+
+  /**
+   * Put the answer away.
+   *
+   * Escape, or a press on the screen's own empty air. It takes down both
+   * halves of an answer at once — the card beside the mark and the row under
+   * the drawing — because the plates' toggle already does exactly that and
+   * two ways of clearing that clear different amounts would be the same
+   * incoherence the last fix pass found.
+   */
+  const clearReadout = useCallback(() => {
+    setInspect(null)
+    setPart(null)
   }, [])
 
   // An answer that names the hero is an answer about where the drawing was
@@ -1408,18 +1625,25 @@ export default function ForwardMap({
     say({
       kind: 'plate',
       text: unembedWhy(),
+      lead: unembedLead(),
+      at: draw ? { x: draw.apertureX, y: g.apertureY0 + g.apertureH / 2 } : null,
       tensor: 'transformer.wte.weight_quantized',
       instrument: 'stepper',
       letter: 'B',
     })
-  }, [say])
+  }, [say, draw, g])
 
   const inspectCarrier = useCallback(
     (tr) => {
+      // Halfway along the carrier's own centre line: the card points at the
+      // line the reader clicked rather than at either of its ends.
+      const mid = tr.points[Math.floor(tr.points.length / 2)]
       say({
         kind: 'carrier',
         aimed: true,
         text: carrierWhy(tr, sequence, sequence[hero]),
+        lead: carrierLead(tr, sequence, sequence[hero]),
+        at: { x: mid.x, y: mid.y },
         tensor: wallTensor(tr.layer),
         instrument: 'attention',
         letter: 'C',
@@ -1435,6 +1659,8 @@ export default function ForwardMap({
       say({
         kind: 'ray',
         text: rayWhy(bar, finalTop?.token ?? null, nextToken ?? null),
+        lead: rayLead(bar, finalTop?.token ?? null, nextToken ?? null),
+        at: { x: bar.x, y: bar.top },
         tensor: 'transformer.wte.weight_quantized',
         instrument: 'stepper',
         letter: 'B',
@@ -1512,25 +1738,31 @@ export default function ForwardMap({
       const tensor = factsFor(name)
       if (!wall || !tensor || tensor.scale == null) return
       const value = wall.values[row * wall.cols + col]
+      const cell = {
+        value,
+        weight: tensor.scale * (value - (tensor.zeroPoint ?? 0)),
+        row: wall.row0 + row,
+        col: wall.col0 + col,
+        tensor: tensor.display,
+        scale: tensor.scale,
+        zeroPoint: tensor.zeroPoint ?? 0,
+        totalRows: wall.totalRows,
+        totalCols: wall.totalCols,
+      }
       say({
         kind: 'cell',
-        text: cellWhy({
-          value,
-          weight: tensor.scale * (value - (tensor.zeroPoint ?? 0)),
-          row: wall.row0 + row,
-          col: wall.col0 + col,
-          tensor: tensor.display,
-          scale: tensor.scale,
-          zeroPoint: tensor.zeroPoint ?? 0,
-          totalRows: wall.totalRows,
-          totalCols: wall.totalCols,
-        }),
+        text: cellWhy(cell),
+        lead: cellLead(cell),
+        at: {
+          x: g.bandX + (col + 0.5) * g.pitchX,
+          y: g.bandTop[layer] + (row + 0.5) * g.pitchY,
+        },
         tensor: name,
         instrument: 'file',
         letter: 'E',
       })
     },
-    [windows, factsFor, say],
+    [windows, factsFor, say, g],
   )
 
   const onWallMove = (layer) => (e) => {
@@ -1538,8 +1770,16 @@ export default function ForwardMap({
     if (!hit) return
     cursorRef.current = { layer, row: hit.row, col: hit.col }
     paintCursor(layer, hit.row, hit.col)
+    // What the cell is, beside the pointer, at once. This is what the wall's
+    // <title> used to half-do a second late and for the whole tensor.
+    const lead = cellLeadAt(layer, hit.row, hit.col)
+    if (lead) paintHoverCard(lead, cellAnchor(layer, hit.row, hit.col))
+    else hideHoverCard()
   }
-  const onWallLeave = () => hideCursor()
+  const onWallLeave = () => {
+    hideCursor()
+    hideHoverCard()
+  }
   const onWallClick = (layer) => (e) => {
     const hit = cellUnder(layer, e.clientX, e.clientY)
     if (!hit) return
@@ -1575,9 +1815,14 @@ export default function ForwardMap({
         : { layer, row: 0, col: 0 }
     cursorRef.current = at
     paintCursor(layer, at.row, at.col)
+    const lead = cellLeadAt(layer, at.row, at.col)
+    if (lead) paintHoverCard(lead, cellAnchor(layer, at.row, at.col))
     e.currentTarget.setAttribute('aria-label', wallGridLabel(layer, at.row, at.col))
   }
-  const onWallBlur = () => hideCursor()
+  const onWallBlur = () => {
+    hideCursor()
+    hideHoverCard()
+  }
   const onWallKey = (layer) => (e) => {
     const wall = windows ? wallWindow(windows, wallTensor(layer)) : null
     if (!wall) return
@@ -1609,6 +1854,8 @@ export default function ForwardMap({
         e.stopPropagation()
         cursorRef.current = null
         hideCursor()
+        hideHoverCard()
+        clearReadout()
         return
       default:
         return
@@ -1619,6 +1866,8 @@ export default function ForwardMap({
     col = Math.min(wall.cols - 1, Math.max(0, col))
     cursorRef.current = { layer, row, col }
     paintCursor(layer, row, col)
+    const lead = cellLeadAt(layer, row, col)
+    if (lead) paintHoverCard(lead, cellAnchor(layer, row, col))
     e.currentTarget.setAttribute('aria-label', wallGridLabel(layer, row, col))
   }
   const wallGridLabel = (layer, row, col) => {
@@ -1634,6 +1883,136 @@ export default function ForwardMap({
   }
 
   const readout = inspect ? inspect.text : partReadout(partFacts)
+
+  /** The card the last click pinned, if that click had somewhere to point. */
+  const pinCard = useMemo(() => {
+    if (!inspect?.lead || !inspect?.at) return null
+    return {
+      box: placeCard(g, inspect.at, avoidBoxes),
+      lines: wrapText(inspect.lead, g.cardCols, g.cardLines),
+      at: inspect.at,
+    }
+  }, [inspect, g, avoidBoxes])
+
+  /**
+   * The card that follows the pointer over a wall.
+   *
+   * Written straight to the DOM for the same reason the cell outline is: a
+   * hover that went through React would rebuild the fall sixty times a
+   * second. React renders this card's shape and never its contents, so the
+   * words and the position written here survive every re-render.
+   */
+  const hoverCardRef = useRef(null)
+  const paintHoverCard = useCallback(
+    (lead, at) => {
+      const el = hoverCardRef.current
+      if (!el) return
+      // One card at a time: the pointer's card gets out of the way of the
+      // pinned one rather than stacking on top of it.
+      if (
+        inspect?.at &&
+        Math.abs(inspect.at.x - at.x) < 0.01 &&
+        Math.abs(inspect.at.y - at.y) < 0.01
+      ) {
+        el.style.display = 'none'
+        return
+      }
+      const box = placeCard(g, at, avoidBoxes)
+      const lines = wrapText(lead, g.cardCols, g.cardLines)
+      for (const rect of el.querySelectorAll('.mr-card-ground,.mr-card-edge')) {
+        rect.setAttribute('x', f2(box.x))
+        rect.setAttribute('y', f2(box.y))
+        rect.setAttribute('width', f2(box.w))
+        rect.setAttribute('height', f2(box.h))
+      }
+      const texts = el.querySelectorAll('.mr-card-line')
+      for (let i = 0; i < texts.length; i++) {
+        texts[i].setAttribute('x', f2(box.x + g.cardPad))
+        texts[i].setAttribute('y', f2(box.y + g.cardPad + g.fs.leg + i * g.cardLine))
+        texts[i].textContent = lines[i] ?? ''
+      }
+      el.style.display = ''
+    },
+    [g, avoidBoxes, inspect],
+  )
+  const hideHoverCard = useCallback(() => {
+    if (hoverCardRef.current) hoverCardRef.current.style.display = 'none'
+  }, [])
+
+  /** The lead for one cell of one wall, or null where the file has no scale. */
+  const cellLeadAt = useCallback(
+    (layer, row, col) => {
+      const wall = windows ? wallWindow(windows, wallTensor(layer)) : null
+      const tensor = factsFor(wallTensor(layer))
+      if (!wall || !tensor || tensor.scale == null) return null
+      const value = wall.values[row * wall.cols + col]
+      return cellLead({
+        value,
+        weight: tensor.scale * (value - (tensor.zeroPoint ?? 0)),
+        row: wall.row0 + row,
+        col: wall.col0 + col,
+        tensor: tensor.display,
+        scale: tensor.scale,
+        zeroPoint: tensor.zeroPoint ?? 0,
+        totalRows: wall.totalRows,
+        totalCols: wall.totalCols,
+      })
+    },
+    [windows, factsFor],
+  )
+
+  /** Where a cell's card points: the middle of the cell itself. */
+  const cellAnchor = useCallback(
+    (layer, row, col) => ({
+      x: g.bandX + (col + 0.5) * g.pitchX,
+      y: g.bandTop[layer] + (row + 0.5) * g.pitchY,
+    }),
+    [g],
+  )
+
+  // Dev only: what the cards would have to hold. Walks every cell of every
+  // wall, every carrier, every landing ray and both plates, wraps each lead
+  // the way the card wraps it, and reports the worst line count against the
+  // reservation — the caption's own method, applied to the card.
+  useEffect(() => {
+    if (!import.meta.env.DEV) return
+    globalThis.__cardLines = () => {
+      const worst = {}
+      const note = (kind, lead) => {
+        if (!lead) return
+        const used = wrapText(lead, g.cardCols, 99).length
+        if (!worst[kind] || used > worst[kind].used) {
+          worst[kind] = { used, chars: lead.length, lead }
+        }
+      }
+      if (windows) {
+        for (let l = 0; l < REAL_LAYERS; l++) {
+          const wall = wallWindow(windows, wallTensor(l))
+          if (!wall) continue
+          for (let r = 0; r < wall.rows; r++) {
+            for (let c = 0; c < wall.cols; c++) note('cell', cellLeadAt(l, r, c))
+          }
+        }
+      }
+      for (const tr of draw?.transfers ?? []) {
+        note('carrier', carrierLead(tr, sequence, sequence[hero]))
+      }
+      for (const bar of draw?.landing?.bars ?? []) {
+        note('ray', rayLead(bar, finalTop?.token ?? null, nextToken ?? null))
+      }
+      for (const reg of registers ?? []) {
+        if (reg && reg.kept.length === 0) note('silent', silentLead(reg))
+      }
+      note('unembed', unembedLead())
+      for (const s of stages) note(`docent:${s.kind}`, s.lead)
+      return {
+        cardCols: g.cardCols,
+        reserved: g.cardLines,
+        worst,
+        max: Math.max(...Object.values(worst).map((w) => w.used)),
+      }
+    }
+  })
 
   // What the tour has on screen, for the same reason `__mapState` exists: a
   // claim about how long a run takes, or about which stop says what, can be
@@ -1806,6 +2185,7 @@ export default function ForwardMap({
       id="inst-forward-figure"
       ref={figureRef}
       onPointerDownCapture={onSheetPointerDown}
+      onKeyDown={onSheetKeyDown}
     >
       <InstrumentHead
         eyebrow="INSTRUMENT F"
@@ -2241,7 +2621,13 @@ export default function ForwardMap({
                       }
                     }}
                   >
-                    <title>{partReadout(tensor)}</title>
+                    {/* No <title> here any more. The browser's own tooltip
+                        named the whole tensor after the pointer had held
+                        still for a second, over a wall whose cells each have
+                        their own answer — which is what made readers think
+                        information showed up on some cells and not others.
+                        The card beside the pointer says what the cell is, at
+                        once; the wall's own name is printed on its plate. */}
                     {/* One rect for fifteen hundred targets. A wall is drawn
                         as a few dozen paths grouped by magnitude, so no cell
                         is an element that could be hovered; the cell under
@@ -2321,28 +2707,8 @@ export default function ForwardMap({
 
             {/* The transfers, said: a green key at the source, the weight
                 beside it, and the bloom where the hero takes it in. */}
-            {draw
-              ? draw.transfers.map((tr, ci) => {
-                  const x = draw.xs[tr.src]
-                  const label = `${sequence[tr.src]} · ${tr.w.toFixed(4)}`
-                  const key = `KEY · B${tr.layer} H${tr.head}`
-                  const room = Math.max(
-                    textWidth(label, g.fs.callout, TRACK.callout),
-                    textWidth(key, g.fs.fine, TRACK.key),
-                  )
-                  // Beside the source, in the dark gap between two streams —
-                  // never over one where there is a gap to sit in. The gap to
-                  // the right unless the source is the last stream.
-                  // The right-hand gap unless the source is the last stream,
-                  // or unless that gap would put the words in the margin the
-                  // wall keeps for the name of the tensor it is cut from.
-                  const nameMargin = compact ? 300 : 250
-                  const right = tr.src < n - 1 && x + draw.slot / 2 + room / 2 < SW - nameMargin
-                  const lx = Math.min(
-                    SW - 10 - room / 2,
-                    Math.max(10 + room / 2, x + ((right ? 1 : -1) * draw.slot) / 2),
-                  )
-                  const ly = tr.lift - (compact ? 24 : 16) - tr.lane * g.fs.callout * 2.4
+            {callouts
+              ? callouts.map(({ tr, ci, x, lx, ly, room, label, key }) => {
                   return (
                     <g
                       key={tr.id}
@@ -2443,6 +2809,8 @@ export default function ForwardMap({
                       kind: 'plate',
                       aimed: true,
                       text: why,
+                      lead: silentLead(reg),
+                      at: { x: left ? x - room / 2 : x + room / 2, y },
                       tensor: wallTensor(reg.layer),
                       instrument: 'attention',
                       letter: 'C',
@@ -2779,6 +3147,17 @@ export default function ForwardMap({
               width="0"
               height="0"
             />
+            {/* The answers, beside the things they answer for. Painted last,
+                so they stand over the fall and over the walls rather than
+                under them, and each on a scrim in the screen's own ground. */}
+            <Card g={g} className="is-hover" elRef={hoverCardRef} />
+            <Card
+              g={g}
+              className="is-pinned"
+              box={pinCard?.box}
+              lines={pinCard?.lines}
+              at={pinCard?.at}
+            />
             {fineLines.map((line, i) => (
               <text
                 key={i}
@@ -2804,22 +3183,42 @@ export default function ForwardMap({
             type="button"
             className="btn map-open-btn"
             disabled={!partFacts}
+            title={
+              partFacts
+                ? `open ${partFacts.display} in instrument E, the file`
+                : 'opens the chosen tensor in instrument E — choose a wall, a cell or a plate first'
+            }
+            aria-label={
+              partFacts
+                ? `open ${partFacts.display} in instrument E, the file`
+                : 'opens the chosen tensor in instrument E — choose a wall, a cell or a plate first'
+            }
             onClick={() => partFacts && onOpenTensor(partFacts.name)}
           >
             OPEN IN THE FILE
           </button>
+          {/* A dash is not a word. Idle, this said "OPEN —" beside a greyed
+              button and a reader read the pair as broken rather than as
+              waiting. It says what it opens, and its title says what would
+              make it open — in a box wide enough for the longest of the two
+              wordings, so neither of them moves anything. */}
           <button
             type="button"
             className="btn map-inst-btn"
             disabled={!inspect?.instrument}
+            title={
+              inspect?.instrument
+                ? `open instrument ${inspect.letter}, where this reading can be read at length`
+                : 'opens the instrument a reading came from — click something on the drawing first'
+            }
             aria-label={
               inspect?.instrument
                 ? `open instrument ${inspect.letter}, where this reading can be read at length`
-                : 'no instrument to open for this readout'
+                : 'opens the instrument a reading came from — click something on the drawing first'
             }
             onClick={() => inspect?.instrument && onOpenInstrument(inspect.instrument)}
           >
-            {`OPEN ${inspect?.letter ?? '—'}`}
+            {inspect?.letter ? `OPEN ${inspect.letter}` : 'OPEN THE INSTRUMENT'}
           </button>
         </div>
 

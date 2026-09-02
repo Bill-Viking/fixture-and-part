@@ -108,18 +108,36 @@ export function unembedWhy(vocab = 50257) {
   return `${unembedLead()} ${unembedDetail(vocab)}`
 }
 
-/** What one carrier is, in plain words, with its own weight in it. */
-export function carrierWhy(tr, sequence, heroToken) {
+/**
+ * What one carrier is, in plain words, with its own weight in it.
+ *
+ * Split the way every other answer on this sheet is split: a lead that names
+ * the thing and gives its number, and a detail that says what the number
+ * means. The card that opens beside a click shows the lead; the readout row
+ * under the drawing shows both. Two lengths of one sentence, written once, so
+ * the card, the row and the tour cannot drift apart.
+ */
+export function carrierLead(tr, sequence, heroToken) {
   return (
     `Carrier — block ${tr.layer}, head ${tr.head}. Reading the sentence up to here, this head matched the ` +
     `hero’s question against ${q(sequence[tr.src])}’s key and carried ${w4(tr.w)} of that piece’s value into ` +
-    `${q(heroToken)}’s own stream. The weight is one number out of the block’s attention softmax at the hero’s ` +
-    `row; the carrier’s width and light are that number, and the hero runs brighter below where it lands.`
+    `${q(heroToken)}’s own stream.`
   )
 }
 
+export function carrierDetail() {
+  return (
+    `The weight is one number out of the block’s attention softmax at the hero’s row; the carrier’s width and ` +
+    `light are that number, and the hero runs brighter below where it lands.`
+  )
+}
+
+export function carrierWhy(tr, sequence, heroToken) {
+  return `${carrierLead(tr, sequence, heroToken)} ${carrierDetail()}`
+}
+
 /** What one landing ray is. */
-export function rayWhy(bar, argmaxToken, pickToken) {
+export function rayLead(bar, argmaxToken, pickToken) {
   const role = bar.argmax
     ? ' It is the machine’s own top — the largest of all 50,257 — and is drawn blue.'
     : bar.pick
@@ -127,16 +145,23 @@ export function rayWhy(bar, argmaxToken, pickToken) {
       : argmaxToken
         ? ` The machine’s own top is ${q(argmaxToken)}; the sampler took ${q(pickToken ?? '—')}.`
         : ''
+  return `Landing ray — ${q(bar.token)} at ${pc(bar.p)}.${role}`
+}
+
+export function rayDetail() {
   return (
-    `Landing ray — ${q(bar.token)} at ${pc(bar.p)}. The ray is one word’s share of a softmax over the whole ` +
-    `vocabulary, counted from the last position’s vector and from no other. The bar’s height is that share ` +
-    `against the tallest bar, and the rows of dots are how the height is counted, so read the number rather ` +
-    `than the dots.${role}`
+    `The ray is one word’s share of a softmax over the whole vocabulary, counted from the last position’s ` +
+    `vector and from no other. The bar’s height is that share against the tallest bar, and the rows of dots ` +
+    `are how the height is counted, so read the number rather than the dots.`
   )
 }
 
+export function rayWhy(bar, argmaxToken, pickToken) {
+  return `${rayLead(bar, argmaxToken, pickToken)} ${rayDetail()}`
+}
+
 /** What one wall cell is: this byte, this weight, this position in the tensor. */
-export function cellWhy(cell) {
+export function cellLead(cell) {
   const { value, weight, row, col, tensor, scale, zeroPoint, totalRows, totalCols } = cell
   // The 2,304 columns of c_attn are the query, the key and the value
   // projections laid side by side, in that order — so a column number says
@@ -152,8 +177,16 @@ export function cellWhy(cell) {
     `Wall cell — [${row}, ${col}] of ${tensor} [${totalRows}×${totalCols}], quantised value ${value}${asStored}. ` +
     `The file holds this tensor as i8 at zero point ${zeroPoint}, so the weight is scale · (q − zp) = ` +
     `${scale.toPrecision(3)} · (${value} − ${zeroPoint}) = ${weight.toPrecision(4)}. Column ${col} of ${totalCols} ` +
-    `falls in the ${third} projection. Brightness is the size of the weight, not its sign, and no pass changes it.`
+    `falls in the ${third} projection.`
   )
+}
+
+export function cellDetail() {
+  return 'Brightness is the size of the weight, not its sign, and no pass changes it.'
+}
+
+export function cellWhy(cell) {
+  return `${cellLead(cell)} ${cellDetail()}`
 }
 
 // ---------------------------------------------------------------------------

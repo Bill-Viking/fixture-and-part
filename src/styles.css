@@ -1001,6 +1001,41 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
   outline:none;
 }
 
+/* --- the card ------------------------------------------------------------
+   The answer, beside the thing it answers for. Three of them are drawn — the
+   one that follows the pointer over a wall, the one a click pins beside what
+   it clicked, and the one the tour keeps beside whatever it is talking about —
+   and they are one shape. The words are the LEAD of the same sentence the row
+   under the drawing prints in full, so the card cannot say something the row
+   does not.
+
+   Everything here is inside the SVG, at a fixed viewBox, which is why a card
+   cannot move the page whatever it says. Its ground is the screen's own
+   gradient at the card's own depth in the drawing, the way every other scrim
+   on this sheet is, and its type is the legend's size and the legend's grey —
+   the near-white on this screen is reserved for the five legend keys. */
+.mr-card-ground{pointer-events:none;}
+.mr-card-edge{
+  fill:none;stroke:var(--moving-lit);stroke-opacity:.34;stroke-width:.9;
+  pointer-events:none;
+}
+.mr-card-tick{
+  fill:none;stroke:var(--moving-lit);stroke-opacity:.42;stroke-width:.9;
+  pointer-events:none;
+}
+.mr-card-line{
+  font-family:var(--mono);letter-spacing:0.01em;fill:var(--screen-muted);
+  pointer-events:none;
+}
+.mr-card{pointer-events:none;}
+/* The pointer's card has no leader: it is already at the pointer. */
+.mr-card.is-hover .mr-card-tick{display:none;}
+/* The tour's card is the one a reader is not pointing at, so it is quieter at
+   its edge and reads as part of the narration rather than as a click's
+   answer. */
+.mr-card.is-docent .mr-card-edge{stroke:var(--frozen-on-screen);stroke-opacity:.3;}
+.mr-card.is-docent .mr-card-tick{stroke:var(--frozen-on-screen);stroke-opacity:.34;}
+
 /* What the selected wall is, read out of the file's own manifest, and the
    button that opens it there. One reserved box, one fixed button. */
 .map-readout-row{
@@ -1020,7 +1055,20 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
   color:var(--ink);letter-spacing:0.02em;margin:0;
   height:30px;overflow:hidden;
 }
-.map-open-btn{flex:none;padding:5px 10px;font-size:10px;letter-spacing:0.1em;}
+/* Two selectors deep, because `.btn` is defined further down this file and
+   would otherwise win the font size and the padding at equal specificity. */
+.map-readout-row .map-open-btn{
+  flex:none;padding:5px 10px;font-size:10px;letter-spacing:0.1em;
+  white-space:nowrap;
+}
+/* Fixed width, because this button's wording changes with what is chosen —
+   OPEN THE INSTRUMENT while nothing is, OPEN E or OPEN C once something is —
+   and a button that resized would walk itself and the readout beside it. The
+   width is the longest wording's, measured at this font size. */
+.map-readout-row .map-inst-btn{
+  flex:none;width:156px;padding:5px 4px;font-size:10px;letter-spacing:0.1em;
+  white-space:nowrap;text-align:center;
+}
 
 /* --- instrument B: stepper + rack ---------------------------------------- */
 
@@ -1947,10 +1995,15 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
      row centres its contents, so a readout that grew from one line to two
      would move itself and the button under it even though the row's own
      height never changed. */
-  .map-readout-row{height:66px;flex-wrap:wrap;align-content:center;}
+  /* Three reserved lines here rather than two. The row is 305 px wide at this
+     width and the longest readouts — a wall cell's whole sentence, and the
+     idle line that names the five things a reader can click — take all three
+     of them. Reserved either way, so a readout that grows does not move the
+     buttons under it. */
+  .map-readout-row{height:82px;flex-wrap:wrap;align-content:center;}
   .map-readout{
     flex:1 1 100%;white-space:normal;overflow:hidden;text-overflow:clip;
-    height:30px;
+    height:45px;
   }
   .wrap{padding:0 18px 90px;}
   header{padding:60px 0 36px;}
