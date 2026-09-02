@@ -1044,21 +1044,42 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 /* What the selected wall is, read out of the file's own manifest, and the
    button that opens it there. One reserved box, one fixed button. */
 .map-readout-row{
-  display:flex;align-items:center;gap:10px;height:44px;margin-top:10px;
+  display:flex;align-items:center;gap:10px;height:89px;margin-top:10px;
 }
-/* Two reserved lines, always. The longest readout the map can produce —
-   `h.5.attn.c_attn.weight [768×2304] i8 · scale … · zero point 0 · 1,769,472
-   bytes` — does not fit the room this row leaves beside the button at 1280,
-   so on one line it ellipsized away the byte count, which is half of what the
-   readout is for. Two lines hold every wording at every width; the box is the
-   height of both of them whether one is used or two, so a readout that grows
-   does not move the button under it. */
+/* Reserved per breakpoint band, from the longest sentence a click on the
+   drawing can print rather than from the longest tensor name. Two lines held
+   every tensor name at every width, which is what this box used to be
+   measured against — but the row's real job since arc 5 is to answer a click,
+   and a wall cell's answer is around 360 characters. Measured as LINE BOXES
+   over a clone of this element by `__readoutLines()`, which walks every cell
+   of every wall, every carrier, every ray, both plates and the idle line:
+   worst 4 lines at this band's own narrowest, 1200 px, so five are reserved.
+   Reserved either way, so a readout that grows moves nothing. */
 .map-readout{
   flex:1 1 auto;min-width:0;
   display:flex;align-items:center;
   font-family:var(--mono);font-size:10.5px;line-height:15px;
   color:var(--ink);letter-spacing:0.02em;margin:0;
-  height:30px;overflow:hidden;
+  height:75px;overflow:hidden;
+}
+/* Below the breakout the figure is the essay's own column, and a readout
+   that shared its line with two buttons had 368 px of it: a wall cell's
+   answer took seven lines there and eleven at 641. It takes the whole width
+   here, the way it already did on the phone, and the buttons drop under it —
+   four lines used of five reserved at 1199 and at 800. */
+@media(max-width:1199px){
+  .map-readout-row{height:112px;flex-wrap:wrap;align-content:center;}
+  .map-readout{
+    flex:1 1 100%;white-space:normal;overflow:hidden;text-overflow:clip;
+    height:75px;
+  }
+}
+/* The column keeps shrinking with the window below 760 px, so this band is
+   reserved from its own narrowest edge, 641 px: five lines used, six
+   reserved. */
+@media(max-width:799px){
+  .map-readout-row{height:127px;}
+  .map-readout{height:90px;}
 }
 /* Two selectors deep, because `.btn` is defined further down this file and
    would otherwise win the font size and the padding at equal specificity. */
@@ -2006,15 +2027,13 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
      row centres its contents, so a readout that grew from one line to two
      would move itself and the button under it even though the row's own
      height never changed. */
-  /* Three reserved lines here rather than two. The row is 305 px wide at this
-     width and the longest readouts — a wall cell's whole sentence, and the
-     idle line that names the five things a reader can click — take all three
-     of them. Reserved either way, so a readout that grows does not move the
-     buttons under it. */
-  .map-readout-row{height:82px;flex-wrap:wrap;align-content:center;}
+  /* The phone's row. Three lines held the idle line and nothing else: a wall
+     cell's answer takes eight of them at 320 px of width. Measured the same
+     way as every other band and reserved one line over the worst. */
+  .map-readout-row{height:172px;flex-wrap:wrap;align-content:center;}
   .map-readout{
     flex:1 1 100%;white-space:normal;overflow:hidden;text-overflow:clip;
-    height:45px;
+    height:135px;
   }
   .wrap{padding:0 18px 90px;}
   header{padding:60px 0 36px;}
@@ -2175,6 +2194,9 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
 /* Narrower than a phone. The inspector's two prose lines drop one step so
    they still fit the height reserved for them at this breakpoint. */
 @media(max-width:380px){
+  /* Narrower still: at 320 px a wall cell's answer runs to eleven lines. */
+  .map-readout-row{height:217px;}
+  .map-readout{height:180px;}
   .kv-inspector{height:408px;}
   .kv-goes,.kv-prov{font-size:9.5px;}
 }

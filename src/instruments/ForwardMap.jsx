@@ -23,6 +23,7 @@ import {
   buildTour,
   carrierLead,
   carrierWhy,
+  cellDetail,
   cellLead,
   cellWhy,
   rayLead,
@@ -2297,6 +2298,90 @@ export default function ForwardMap({
         worst,
         max: Math.max(...Object.values(worst).map((w) => w.used)),
       }
+    }
+  })
+
+  // Dev only: what the readout row under the drawing would have to hold.
+  // The row is a fixed height that clips, exactly as the caption and the
+  // legend are, so its reservation has to be measured from the longest
+  // sentence any click on the sheet can print — which is a wall cell's, at
+  // around 350 characters. Every cell of every wall, every carrier, every
+  // ray, both plates and the idle line are wrapped into the row's own width
+  // by the browser rather than by a column count, because this row is HTML
+  // and its font is the page's mono rather than the drawing's units. The
+  // measurement is line BOXES over a clone of the row: a clipped box's
+  // scrollHeight can never read below its own height, so scrollHeight cannot
+  // see a readout that is shorter than its reservation.
+  useEffect(() => {
+    if (!import.meta.env.DEV) return
+    globalThis.__readoutLines = () => {
+      const row = document.querySelector('.map-readout')
+      if (!row) return null
+      const probe = row.cloneNode(false)
+      probe.style.position = 'absolute'
+      probe.style.left = '-10000px'
+      probe.style.top = '0'
+      probe.style.display = 'block'
+      probe.style.height = 'auto'
+      probe.style.overflow = 'visible'
+      probe.style.width = `${row.clientWidth}px`
+      row.parentNode.appendChild(probe)
+      const measure = (text) => {
+        probe.textContent = text
+        const r = document.createRange()
+        r.selectNodeContents(probe)
+        const tops = new Set()
+        for (const rect of r.getClientRects()) {
+          if (rect.height > 1) tops.add(Math.round(rect.top * 2) / 2)
+        }
+        return tops.size
+      }
+      const said = []
+      const note = (kind, text) => { if (text) said.push({ kind, text }) }
+      if (windows) {
+        for (let l = 0; l < REAL_LAYERS; l++) {
+          const wall = wallWindow(windows, wallTensor(l))
+          if (!wall) continue
+          for (let r = 0; r < wall.rows; r++) {
+            for (let c = 0; c < wall.cols; c++) {
+              const lead = cellLeadAt(l, r, c)
+              if (lead) note('cell', `${lead} ${cellDetail()}`)
+            }
+          }
+        }
+      }
+      for (const tr of draw?.transfers ?? []) {
+        note('carrier', carrierWhy(tr, sequence, sequence[hero]))
+      }
+      for (const bar of draw?.landing?.bars ?? []) {
+        note('ray', rayWhy(bar, finalTop?.token ?? null, nextToken ?? null))
+      }
+      for (const reg of registers ?? []) {
+        if (reg && reg.kept.length === 0) note('silent', silentWhy(reg, sequence))
+      }
+      note('unembed', unembedWhy())
+      note('idle', partReadout(null))
+      for (let l = 0; l < REAL_LAYERS; l++) {
+        note('plate', partReadout(factsFor(wallTensor(l))))
+      }
+      note('plate', partReadout(factsFor('transformer.wte.weight_quantized')))
+      // Only the longest of each kind is worth a line-box measurement, and
+      // the row is set in a monospace face, so length orders width exactly.
+      const byKind = {}
+      for (const s of said) {
+        if (!byKind[s.kind] || s.text.length > byKind[s.kind].text.length) byKind[s.kind] = s
+      }
+      const worst = {}
+      let max = 0
+      for (const [kind, s] of Object.entries(byKind)) {
+        const used = measure(s.text)
+        worst[kind] = { used, chars: s.text.length, text: s.text }
+        if (used > max) max = used
+      }
+      const cs = getComputedStyle(row)
+      const reserved = Math.round(parseFloat(cs.height) / parseFloat(cs.lineHeight))
+      probe.remove()
+      return { width: row.clientWidth, reserved, max, counted: said.length, worst }
     }
   })
 
