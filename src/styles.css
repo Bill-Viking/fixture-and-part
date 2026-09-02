@@ -991,8 +991,15 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
   pointer-events:none;
 }
 /* A wall has to look like something you can touch, because it is: the whole
-   band is a hit area and the cursor says which one. */
+   band is a hit area and the cursor says which one. It is also one tab stop —
+   the cells inside it are reached with the arrow keys rather than with 1,536
+   more of them — so it has to show where the keyboard is. */
 .mr-plate-hit{cursor:crosshair;}
+.mr-plate-hit:focus-visible{
+  fill:var(--moving);fill-opacity:.05;
+  stroke:var(--moving-lit);stroke-opacity:.55;stroke-width:1.4;
+  outline:none;
+}
 
 /* What the selected wall is, read out of the file's own manifest, and the
    button that opens it there. One reserved box, one fixed button. */
