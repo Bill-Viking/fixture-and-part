@@ -353,9 +353,10 @@ granular light. Redrawn in arc 4 from comp-a3; the data layer is unchanged.
     stylesheet. Measured with a MutationObserver taking EVERY record over the
     whole SVG — attributes, children and character data, with old values —
     walking all 35 stops at 1280 in real mode on the default sentence, and
-    deterministic across two runs: 143 records in all. Twelve are the `class`
-    attribute on the six register groups as the cue moves. The other 131 are
-    the docent's ONE card moving from slot to slot: 48 `y`, 12 `x`, 9 `d` and
+    deterministic across two runs: 143 records in all (a second harness on
+    the same commit counts 161; they count the card's records differently and
+    agree on the shape). Twelve are the `class` attribute on the six register
+    groups as the cue moves. The rest (131 or 149) are the docent's ONE card moving from slot to slot: 48 `y`, 12 `x`, 9 `d` and
     10 ground/edge writes, 44 character-data writes inside its own `<text>`
     elements and 18 child changes as its line count changes. Nothing else in
     the SVG is written at all, and not one of the 9,216 wall cells is touched
