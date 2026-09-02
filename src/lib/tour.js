@@ -212,12 +212,13 @@ export function cellWhy(cell) {
  */
 function stage(kind, ms, lead, detail, reveal) {
   // Two lengths of the same sentence, never two different sentences. The lead
-  // is what a phone's caption has room for, and it is also what the docent's
-  // card on the drawing prints; the wider settings' caption gets the lead and
-  // the detail together. Splitting rather than rewriting is what keeps the
-  // short form from quietly saying something the long one does not — the same
-  // rule the click readouts follow, where a card prints the lead and the row
-  // under the drawing prints both.
+  // is what a phone's caption has room for; the wider settings' caption gets
+  // the lead and the detail together. Splitting rather than rewriting is what
+  // keeps the short form from quietly saying something the long one does not —
+  // the same rule the click readouts follow, where a card prints the lead and
+  // the row under the drawing prints both. The tour itself puts no card on the
+  // drawing: its words are in the bar, and the sheet carries the marker on the
+  // block it is talking about.
   return { kind, ms, lead, caption: detail ? `${lead} ${detail}` : lead, reveal }
 }
 

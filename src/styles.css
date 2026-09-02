@@ -1007,12 +1007,18 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 }
 
 /* --- the card ------------------------------------------------------------
-   The answer, beside the thing it answers for. Three of them are drawn — the
-   one that follows the pointer over a wall, the one a click pins beside what
-   it clicked, and the one the tour keeps beside whatever it is talking about —
-   and they are one shape. The words are the LEAD of the same sentence the row
-   under the drawing prints in full, so the card cannot say something the row
-   does not.
+   The answer, beside the thing it answers for. Two of them are drawn — the one
+   that follows the pointer over a wall and the one a click pins beside what it
+   clicked — and they are one shape. The words are the LEAD of the same
+   sentence the row under the drawing prints in full, so the card cannot say
+   something the row does not.
+
+   There was a third until 2026-09-02: the tour stood one beside whatever the
+   stop was talking about. It covered the picture it was pointing at, and a
+   click during a paused tour pinned a second card on top of it. The tour's
+   words are in the sticky bar above the drawing and always were; the drawing
+   carries the marker on the block the tour is on and no card of the tour's
+   own. A card on this sheet is a click's answer now, and nothing else.
 
    Everything here is inside the SVG, at a fixed viewBox, which is why a card
    cannot move the page whatever it says. Its ground is the screen's own
@@ -1035,11 +1041,6 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 .mr-card{pointer-events:none;}
 /* The pointer's card has no leader: it is already at the pointer. */
 .mr-card.is-hover .mr-card-tick{display:none;}
-/* The tour's card is the one a reader is not pointing at, so it is quieter at
-   its edge and reads as part of the narration rather than as a click's
-   answer. */
-.mr-card.is-docent .mr-card-edge{stroke:var(--frozen-on-screen);stroke-opacity:.3;}
-.mr-card.is-docent .mr-card-tick{stroke:var(--frozen-on-screen);stroke-opacity:.34;}
 
 /* What the selected wall is, read out of the file's own manifest, and the
    button that opens it there. One reserved box, one fixed button. */

@@ -289,19 +289,15 @@ function geometryFor(compact, full) {
   const cardPad = per(6, 9, 8)
   const cardCols = Math.floor((cardW - 2 * cardPad) / (fs.leg * legAdvance))
   const cardLine = fs.leg * 1.35
-  // Measured with `__cardLines()`, which wraps every lead the sheet can
-  // produce — every cell of every wall, every carrier, every ray, both plates
-  // and every stop of the tour — into this band's own column count and takes
-  // the tallest: 5 used at the sheet, 7 in the column, 6 on the phone. One
-  // line more than the worst, the way the legend and the caption are reserved.
+  // Measured with `__cardLines()`, which wraps every lead a click on the sheet
+  // can produce — every cell of every wall, every carrier, every ray and both
+  // plates — into this band's own column count and takes the tallest: 5 used
+  // at the sheet, 7 in the column, 6 on the phone. One line more than the
+  // worst, the way the legend and the caption are reserved. The tour's stops
+  // are no longer among them: the tour says its words in the sticky bar and
+  // marks the block it is on, and puts no card on the drawing at all.
   const cardLines = per(7, 8, 6)
   const cardH = cardLines * cardLine + 2 * cardPad + fs.leg * 0.3
-  // The tour's own card is the same box with its own reservation: the stops
-  // say less than a wall cell does, and a box reserved for the longest cell
-  // lead would be mostly empty at every stop of the tour. Measured the same
-  // way, over every stop on the default sentence and on a 21-token one.
-  const docentLines = per(4, 5, 4)
-  const docentH = docentLines * cardLine + 2 * cardPad + fs.leg * 0.3
 
   // How much air a card leaves around the words it may not stand on. The
   // boxes it avoids are the scrims those words sit on, and a scrim is 0.85 of
@@ -316,7 +312,6 @@ function geometryFor(compact, full) {
   return {
     compact, fs, cardSlack,
     cardW, cardH, cardPad, cardCols, cardLine, cardLines,
-    docentLines, docentH,
     bandX, bandW, cols, rows, pitchX, cellW, cellH, pitchY, bandH,
     bandTop, bandMid, bandBot, stopY, lastBot, air,
     chipY, chipH, fallTop, rimY, mistY, apertureY0, apertureH, landTitleY,
@@ -872,13 +867,20 @@ const Landing = memo(function Landing({ g, draw, onInspect }) {
 /**
  * The card: what the mark under the pointer, or the mark just clicked, is.
  *
- * Three of these are drawn and they are one shape. The pointer's follows the
+ * Two of these are drawn and they are one shape. The pointer's follows the
  * cell under it and is written straight to the DOM; the pinned one is the
  * answer to the last click and stands beside what was clicked with a leader
- * back to it; the docent's sits beside whatever the tour is talking about.
- * All three print a LEAD out of lib/tour.js — the same first half of the
- * sentence the row under the drawing prints in full — so the card, the row
+ * back to it. Both print a LEAD out of lib/tour.js — the same first half of
+ * the sentence the row under the drawing prints in full — so the card, the row
  * and the tour cannot say different things about the same mark.
+ *
+ * The tour used to have a third. It stood beside whatever the stop was
+ * talking about, and it was taken off the drawing on 2026-09-02: it obscured
+ * the picture it was pointing at, and a click during a paused tour could pin
+ * a second card on top of it. The tour's words live in the sticky bar over
+ * the drawing, where they always did; what the drawing carries is the marker
+ * on the block the tour is on. So a card on the sheet is a click's answer and
+ * nothing else, and one card system cannot stand on another.
  *
  * The box is a fixed size per setting and the words are clipped into it, for
  * the reason every other live-numbered box on this sheet is: a box that grew
@@ -2109,105 +2111,6 @@ export default function ForwardMap({
 
   const readout = inspect ? inspect.text : partReadout(partFacts)
 
-  /**
-   * Where the docent's card stands, one fixed slot per kind of stop.
-   *
-   * The caption under the controls says what is happening; this says it again
-   * where it is happening, so the docent is pointing at the thing it is
-   * talking about rather than describing it from the top of the window. The
-   * anchor is fixed per kind — the rim label for the rim, the wall itself for
-   * anything about a block, the aperture for ln_f and the unembedding, the
-   * bars for the landing — and the placement then keeps the card off every
-   * KEY callout and every plate's words, the same way a click's card does.
-   * A block's card prefers the left of its wall, which is the side with no
-   * hero stream and no tensor plate on it.
-   */
-  const docentSlot = useMemo(() => {
-    if (!tour.active || !stop?.lead) return null
-    const cue = stop.reveal?.cue
-    let anchor = null
-    let prefer = 'right'
-    switch (stop.kind) {
-      // The sentence and the rim share the rim's own slot: they are the two
-      // stops about the top of the drawing. On the phone that strip does not
-      // exist — the chips, the rim label and the first block's callouts fill
-      // every unit between the top of the sheet and the first wall — so
-      // there the two of them take the head of the first wall instead, which
-      // is the nearest clear place to the rim there is.
-      case 'sentence':
-      case 'embed':
-        anchor = g.compact
-          ? {
-              x: 13 + textWidth('HEAD 00', g.fs.reg, TRACK.label),
-              y: g.bandMid[0],
-            }
-          : {
-              x: 13 + textWidth('WTE+WPE', g.fs.reg, TRACK.label),
-              y: g.rimY,
-            }
-        break
-      // Beside the wall, clear of its own BLOCK/HEAD label: the card starts
-      // where that label's scrim ends, so it never has to be pushed off the
-      // band to get out of the label's way.
-      case 'fall':
-      case 'head':
-      case 'transfer':
-      case 'silent':
-      case 'nopass': {
-        if (cue == null) return null
-        const regW = Math.max(
-          textWidth(`BLOCK ${cue}`, g.fs.reg, TRACK.label),
-          textWidth('HEAD 00', g.fs.reg, TRACK.label),
-        )
-        anchor = { x: 13 + regW, y: g.bandMid[cue] }
-        break
-      }
-      case 'tail':
-        anchor = { x: draw ? draw.apertureX : SW / 2, y: g.mistY }
-        prefer = 'left'
-        break
-      case 'unembed':
-      case 'noland':
-        anchor = {
-          x: draw ? draw.apertureX : SW / 2,
-          y: g.apertureY0 + g.apertureH / 2,
-        }
-        prefer = 'left'
-        break
-      // At the far end of the bars rather than the near one: the tallest bar
-      // is the first, and a card that opened beside it would stand on the one
-      // thing the stop is about. Out here it sits over the short bars' own
-      // empty air instead.
-      case 'bar':
-      case 'pick':
-        anchor = {
-          x: g.barX0 + (g.splashN - 1) * g.barPitch,
-          y: g.barBase - g.barMaxH * 0.5,
-        }
-        break
-      // The last stop stands where the tour ended rather than under it. Its
-      // old slot was the key line's own y at the left edge, which is words:
-      // it opened squarely on the bar labels, their percentages and the key
-      // that says which bar is which. The landing's stops already have a slot
-      // in the short bars' empty air at the far end, and the closing line
-      // belongs in the same place.
-      case 'done':
-      case 'empty':
-        anchor = {
-          x: g.barX0 + (g.splashN - 1) * g.barPitch,
-          y: g.barBase - g.barMaxH * 0.5,
-        }
-        break
-      default:
-        return null
-    }
-    return {
-      box: placeCard(g, anchor, avoidBoxes, { prefer, height: g.docentH }),
-      lines: wrapText(stop.lead, g.cardCols, g.docentLines),
-      at: anchor,
-    }
-  }, [tour.active, stop, g, draw, avoidBoxes])
-
   /** The card the last click pinned, if that click had somewhere to point. */
   const pinCard = useMemo(() => {
     if (!inspect?.lead || !inspect?.at) return null
@@ -2328,7 +2231,6 @@ export default function ForwardMap({
         if (reg && reg.kept.length === 0) note('silent', silentLead(reg))
       }
       note('unembed', unembedLead())
-      for (const s of stages) note(`docent:${s.kind}`, s.lead)
       return {
         cardCols: g.cardCols,
         reserved: g.cardLines,
@@ -2441,7 +2343,6 @@ export default function ForwardMap({
       lead: stop?.lead ?? null,
       readout,
       reveal,
-      docent: docentSlot ? { box: docentSlot.box, lines: docentSlot.lines } : null,
       avoid: avoidBoxes,
     }
   })
@@ -3597,16 +3498,10 @@ export default function ForwardMap({
             />
             {/* The answers, beside the things they answer for. Painted last,
                 so they stand over the fall and over the walls rather than
-                under them, and each on a scrim in the screen's own ground. */}
+                under them, and each on a scrim in the screen's own ground.
+                Two of them, and both belong to the pointer: the tour's own
+                card came off the drawing on 2026-09-02. */}
             <Card g={g} className="is-hover" elRef={hoverCardRef} />
-            <Card
-              g={g}
-              className="is-docent"
-              rows={g.docentLines}
-              box={docentSlot?.box}
-              lines={docentSlot?.lines}
-              at={docentSlot?.at}
-            />
             <Card
               g={g}
               className="is-pinned"
