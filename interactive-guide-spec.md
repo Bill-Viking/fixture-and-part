@@ -302,10 +302,15 @@ granular light. Redrawn in arc 4 from comp-a3; the data layer is unchanged.
   THE PART over THE TRANSFERS — with the essay's word set back in the legend's
   grey so the pair reads as one heading. The headings are gutter LINES rather
   than one string because the gutter is 188 drawing units wide and holds
-  sixteen characters of the column setting's type; measured at 1280, 1199,
-  800, 641 and 390, every line fits, the widest (TOUCHES THE PART) at 185 of
-  188 units, and they cost no height because every entry's body already
-  reserves more lines than its heading uses.
+  sixteen characters of the column setting's type; measured with
+  `getComputedTextLength`, the widest line (TOUCHES THE PART) is 184.28 units
+  of 188 at 641, 184.24 at 800 and at 1199, and 109.41 at 1280, where the type
+  is smaller. The phone has NO gutter — the legend body starts at x 8 there,
+  not 196 — so the headings are not gutter lines at that width at all: they
+  render as one joined line of the legend itself, THE TOOLING · TOUCHES THE
+  PART · THE TRANSFERS, 893.92 units of 1,166. They cost no height at any
+  width, because every entry's body already reserves more lines than its
+  heading uses.
 - The sentence runs across the top as one clickable chip per token, and a
   chip carries its word. Where the sentence is long enough that a chip has
   room for fewer than three characters — around seventeen tokens — two
@@ -345,13 +350,16 @@ granular light. Redrawn in arc 4 from comp-a3; the data layer is unchanged.
     screen — how far down the light has reached, how many carriers have fired,
     how many bars are counted, whether the aperture is drawn, whether the pick
     is marked — and every mark compares its own index against them in the
-    stylesheet. Measured with a MutationObserver over the whole SVG: a full
-    35-stop tour writes twelve `class` attributes on the six register groups
-    as the cue moves, and — since the fix pass gave the docent a card on the
-    drawing — 60 to 67 more attributes on that one card as it moves from slot
-    to slot, plus a handful of text nodes inside its own `<text>` elements.
-    Nothing else in the SVG is written at all, and not one of the 9,216 wall
-    cells is touched by any of it.
+    stylesheet. Measured with a MutationObserver taking EVERY record over the
+    whole SVG — attributes, children and character data, with old values —
+    walking all 35 stops at 1280 in real mode on the default sentence, and
+    deterministic across two runs: 143 records in all. Twelve are the `class`
+    attribute on the six register groups as the cue moves. The other 131 are
+    the docent's ONE card moving from slot to slot: 48 `y`, 12 `x`, 9 `d` and
+    10 ground/edge writes, 44 character-data writes inside its own `<text>`
+    elements and 18 child changes as its line count changes. Nothing else in
+    the SVG is written at all, and not one of the 9,216 wall cells is touched
+    by any of it.
   - **The tour is 60 fps, and a stop costs at most one dropped frame.** Measured
     quiet, 60 s of rAF timestamps with the tour's own stop index sampled at
     every frame, real mode, 1×, two runs: 59.5 and 59.9 fps at 1280 (mean 16.80
@@ -370,11 +378,11 @@ granular light. Redrawn in arc 4 from comp-a3; the data layer is unchanged.
     line boxes rather than scrollHeight — a clipped box's scrollHeight can
     never read below its own reservation, so scrollHeight cannot see a caption
     shorter than its box: 3 lines used of 4 at 1280, 4 of 5 at 1199 and 800,
-    6 of 6 at 641, 4 of 5 at 390 (where the caption is the stop's lead alone
-    rather than the whole sentence). Band for band, identical to the same walk
-    on the branch before the wording changed. The 641 band has no spare line,
-    which is a pre-existing overrun of the reserve-one-more rule rather than
-    anything the fix pass introduced; nothing clips at any width.
+    5 of 6 at 641, 4 of 5 at 390 (where the caption is the stop's lead alone
+    rather than the whole sentence). The worst stop is `sentence` at every
+    width but the phone, where it is `embed`. Every band has its spare line
+    and nothing clips at any width — a fix pass had recorded 641 as using all
+    six of its six, and that does not reproduce.
   - **The docent's line stands on the drawing too** (fix pass). While the tour
     plays or is stepped — reduced motion included — the current stop's LEAD
     also appears as a card beside the thing it describes, so the docent is
@@ -387,11 +395,30 @@ granular light. Redrawn in arc 4 from comp-a3; the data layer is unchanged.
     on the one thing the stop is about). On the phone the top of the drawing
     has no clear strip — the chips, the rim label and the first block's
     callouts fill it — so the sentence and the rim take the head of the first
-    wall there. Reserved per band by the same measurement as the caption: 3
-    lines used at the sheet, 4 in the column, 3 on the phone, so 4, 5 and 4
-    reserved. Measured over 214 stops (35 at 1280, 35 at 800, 33 at 390, on
-    the default sentence and on a 21-token one): none clipped, none outside
-    the drawing, and none standing on a KEY callout or on any plate's words.
+    wall there. The closing stop takes the landing's own slot as well — its
+    first slot was the key line's own y at the left edge, which is words.
+    Reserved per band by the same measurement as the caption: 3 lines used at
+    the sheet, 4 in the column, 3 on the phone, so 4, 5 and 4 reserved.
+    Measured over 268 stops — 35 and 33 at each of 1280, 800 and 641, and 33
+    and 31 at 390, on the default sentence and on the 21-token one below —
+    with a bbox sweep over EVERY `<text>` in the SVG rather than over the
+    placement's own avoid list: none clipped, none outside the drawing, none
+    overlapping any text at all.
+    The list a card may not open over is the six KEY callouts, every
+    BLOCK/HEAD label, every tensor name and window spec, the RIM label, the
+    aperture plate, the landing title, the token strip, the top line that
+    names the sentence, every silent register's `no transfer · self …` plate,
+    the whole landing label strip (every bar's word, its percentage and the
+    sampler's mark), the line saying the landing is the last word's alone, and
+    the key line — plus, on the phone, its second line. Each of those boxes is
+    the scrim its words stand on, and a scrim is 0.85 of the type size above
+    the baseline where a glyph's bounding box reaches further, so the
+    placement gives every box that much slack — 6 drawing units on the phone,
+    4 elsewhere — and the near-miss ladder is a scan outward from the slot's
+    own candidate in two-unit steps. The phone's card padding is 6 units
+    rather than 9 to pay for the slack: the one window the phone has for the
+    sentence and the rim is the head of the first wall, 190 units between the
+    tensor spec above it and block 1's key callout below, and the card is 177.
 - **Ambient — the sheet runs itself** (arc 5). Left alone for twenty seconds,
   with the figure intersecting the viewport, the tab in front and reduced
   motion off, a slow loop starts: a band of light sweeps down the fall, the
@@ -411,8 +438,8 @@ granular light. Redrawn in arc 4 from comp-a3; the data layer is unchanged.
   in view: 30 s of continuous scrolling and ambient never starts, where the
   build before the fix had started it mid-scroll and was still running at the
   end; stop scrolling and it starts at the first poll past twenty seconds.
-- **The tempo** (arc 5). Three motion studies were built behind `?motion=a|b|c`
-  and Bill ruled on 2026-09-01: the measured docent wins — every transfer and
+- **The tempo** (arc 5). Three motion studies were built for Bill to pick
+  from and he ruled on 2026-09-01: the measured docent wins — every transfer and
   every landing bar gets its own stop, and the ambient loop is slow and sparse.
   Its numbers are now the drawing's only ones, in the `MOTION` block of
   `lib/tour.js`; the two losing studies and the switch that chose between them
@@ -461,7 +488,13 @@ granular light. Redrawn in arc 4 from comp-a3; the data layer is unchanged.
   cell and both plates each answer a click — and Enter or Space — with plain
   words in the readout under the drawing, and the sentences come from
   `lib/tour.js`, which is also where the tour's captions come from, so the two
-  cannot contradict each other. A carrier names its block, head, source, real
+  cannot contradict each other. Each mark answers where the pointer actually
+  is: SVG resolves a pointer by document order, and a carrier crosses every
+  wall band between its source and the hero, so the carriers' hit paths are
+  drawn in their own group AFTER the walls and their plates — the ink stays
+  under the words, only the invisible targets moved. Before that, all 13 of 39
+  sampled points along carrier 0 that fall inside a band had the wall's hit
+  rect topmost and six of six clicks there answered for a wall cell. A carrier names its block, head, source, real
   weight and what the weight is; a ray names its word, its share and whether it
   is the machine's top or the sampler's pick; a wall cell turns its own byte
   back into a weight — `scale · (q − zp)` with the file's own scale — and names
@@ -484,8 +517,19 @@ granular light. Redrawn in arc 4 from comp-a3; the data layer is unchanged.
   would make them open, in their titles and their accessible names, and the
   second says OPEN THE INSTRUMENT rather than OPEN — : a dash is not a word,
   and a reader read the greyed pair as broken rather than as waiting. Both are
-  fixed width; the phone's readout reserves three lines rather than two,
-  because 305 px of row cannot hold the longest wall-cell sentence in two. The plate's toggle is against what is on
+  fixed width. The row's own height is reserved per breakpoint band from the
+  LONGEST sentence a click can print — a landing ray's is 380 characters, a
+  carrier's 362, a wall cell's 359 — measured as line boxes by
+  `__readoutLines()`, which walks every cell of all six walls, every carrier,
+  every ray, both plates and the idle line and measures the longest of each
+  kind against a clone of the row at the row's own width. Two lines held every
+  tensor NAME, which is what the box used to be measured against, and clipped
+  the answers: three lines needed at 1280, seven at 800, eleven at 641. Below
+  the breakout the readout now takes the whole width and the buttons drop
+  under it, the way the phone's row already worked. Used / reserved: 3-4 of 5
+  at and above 1200, 4 of 5 from 800 to 1199, 5 of 6 from 641 to 799, 5-8 of 9
+  from 381 to 640, 11 of 12 at 380 and below. Nothing clips at 1280, 1200,
+  1199, 800, 799, 641, 640, 480, 390, 360 or 320. The plate's toggle is against what is on
   screen, so pressing it while some other answer is showing prints the plate's
   own reading rather than turning the tensor off underneath it.
 - Three states, not two. A finished pass over the text in the box draws its own
@@ -505,9 +549,15 @@ granular light. Redrawn in arc 4 from comp-a3; the data layer is unchanged.
   number are the aperture outline, the bloom around the light, and the sweep
   that travels down the sheet while it is running itself. Its five entries have
   reserved line counts, because the numbers in it change with the sentence and
-  a legend that reflowed would move the page. The fifth entry (arc 5) is what
-  makes the drawing taller than arc 4's at every breakpoint: 2,336.95 units at
-  the sheet against 2,238.75, and 5,217.1 at the phone against 4,919.
+  a legend that reflowed would move the page. Each count is one line over the
+  worst its own wording produces, measured by `__legendLines()` in both modes
+  on the default sentence and on a 21-token one. THE TOUR used to be one line
+  short below 1200 px and cut off its own last line; so did the fine print on
+  the phone. The fifth entry (arc 5) and those reservations are what make the
+  drawing taller than arc 4's at every breakpoint: the viewBox attribute reads
+  `0 0 1166 2351.6499999999996` at the sheet against arc 4's 2,238.75,
+  `0 0 1166 3187.3` in the column setting, and `0 0 1166 5406.4` at the phone
+  against 4,919.
 - The lens whisper of arc 3 is not part of this drawing. Instrument D presents
   the same seven depths as a table, which is where they can be read.
 - `__mapCheck()` in a dev build re-runs the model and recomputes all four
