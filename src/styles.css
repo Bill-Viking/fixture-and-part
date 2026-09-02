@@ -1789,9 +1789,15 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
   font-family:var(--mono);font-size:10px;line-height:14px;color:var(--muted);
   text-align:center;overflow:hidden;white-space:nowrap;
 }
+/* Static words, one reserved line, at every width. */
+.file-bar-invite{
+  font-family:var(--mono);font-size:10px;line-height:15px;height:15px;
+  color:var(--muted);letter-spacing:0.02em;margin:7px 0 0;
+  overflow:hidden;white-space:nowrap;
+}
 .file-bar-readout{
   font-family:var(--mono);font-size:10px;line-height:15px;height:15px;
-  color:var(--ink);letter-spacing:0.02em;margin:7px 0 0;
+  color:var(--ink);letter-spacing:0.02em;margin:3px 0 0;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .file-bar-key{
