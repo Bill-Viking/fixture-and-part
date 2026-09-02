@@ -914,9 +914,19 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
   transition:opacity var(--mr-fade,600ms) ease-out;
 }
 /* The register the tour is speaking about is lifted exactly the way an opened
-   one is. It is a cue about where to look and changes no reading. */
+   one is. It is a cue about where to look and changes no reading.
+
+   Since 2026-09-02 this IS the tour's mark on the drawing: the card that used
+   to stand beside each stop is gone, the words are in the bar above, and what
+   the sheet says is which block the words are about. So the line has to be
+   seen at every width, and one drawing unit is one pixel only at the sheet.
+   The width comes in as a custom property set once per setting, exactly as the
+   grain's stroke does, and it is amber because the tour is the moving part
+   passing through — the frozen blue is the wall a reader has opened. Where a
+   reader has opened the very block the tour is on, this rule wins: same
+   specificity, later in the file. */
 .mr-reg.is-cued .mr-reg-frame{
-  stroke:var(--moving);stroke-width:1;stroke-opacity:.5;
+  stroke:var(--moving);stroke-width:var(--mr-cue-w,1);stroke-opacity:.5;
 }
 
 /* --- running itself ------------------------------------------------------

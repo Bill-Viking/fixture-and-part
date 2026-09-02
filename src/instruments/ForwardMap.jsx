@@ -331,6 +331,14 @@ function geometryFor(compact, full) {
     grain: per(2.4, 1.1, 0.6),
     grainWidth: per(1.75, 1.75, 1.05),
     grainWidthHero: per(2, 2, 1.2),
+    // The lit edge that says which block the tour is on, in the drawing's own
+    // units, for the same reason the grain's stroke is: a line drawn one unit
+    // wide is one pixel at the sheet, 0.58 of one in the column and 0.29 on
+    // the phone, which is the mark all but disappearing at the width the card
+    // it replaced used to be doing the work at. About a rendered pixel at
+    // every setting — 1166/342 on the phone, 1166/678 in the column, 1166/1166
+    // at the sheet.
+    cueWidth: per(3.4, 1.7, 1),
     H,
   }
 }
@@ -2702,6 +2710,10 @@ export default function ForwardMap({
             // reads at 0.58 px a unit is a third too heavy at one.
             '--mr-grain-w': String(g.grainWidth),
             '--mr-grain-w-hero': String(g.grainWidthHero),
+            // The tour's marker, by the same rule. It is set once per setting
+            // and never per stop: what moves the marker from block to block is
+            // the cue class, and this only decides how heavy the line is.
+            '--mr-cue-w': String(g.cueWidth),
             // The whole of the tour's state, as five numbers the stylesheet
             // compares each mark against. Nothing below re-renders to reveal:
             // the marks read these and decide for themselves.
