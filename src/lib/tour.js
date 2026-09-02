@@ -269,16 +269,19 @@ export function buildTour({
   }
 
   // --- the sentence ---------------------------------------------------------
+  // The opening stop says the analogy the essay's own section title makes —
+  // weights are the tooling, activations are the workpiece — because the
+  // drawing is that sentence drawn, and it used to name neither half.
   const shown = sequence.slice(0, 3).map(q).join(', ')
   const rest = n > 3 ? `, and ${n - 3} more` : ''
   stages.push(
     stage(
       'sentence',
       4000,
-      `Your sentence is ${n} piece${n === 1 ? '' : 's'} — ${shown}${rest} — and one of them is the hero: ` +
-        `${q(heroToken)}, at position ${hero}.`,
-      `Each piece gets a stream of its own. Everything the tour draws from here is aimed at that one stream, and ` +
-        `clicking a different chip re-aims the whole drawing.`,
+      `The walls are the fixture and your sentence is the part falling through it: ${n} ` +
+        `piece${n === 1 ? '' : 's'}, one of them the hero — ${q(heroToken)} at position ${hero}.`,
+      `The pieces are ${shown}${rest}, and each gets a stream of its own. Everything the tour draws from here ` +
+        `is aimed at the hero's stream, and clicking a different chip re-aims the whole drawing.`,
       at({}),
     ),
   )

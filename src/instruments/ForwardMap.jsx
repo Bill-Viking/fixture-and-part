@@ -2302,12 +2302,24 @@ export default function ForwardMap({
           tourPlan.totalMs,
         )} at 1×, and the line under the controls says what is happening at each one in this pass’s own numbers. The steps move a stop either way, and clicking anything on the sheet pauses the tour and then honours the click. With reduced motion on there is no animation and no timer at all: play opens the tour at its first stop and the steps walk it. Left alone for twenty seconds — in view, tab in front, reduced motion off — the sheet runs itself: a sweep of light travels down the fall, the walls glint where it crosses them, and the carriers fire again in turn. That sweep is the one mark in the picture that carries no number; it redraws nothing and changes no value.`
 
+    // The headings name the essay's own analogy before they name the mark:
+    // section 02 is called "Weights are the tooling. Activations are the
+    // workpiece", and until now the drawing never said fixture or part.
+    //
+    // On the two wider settings a heading sits in a 188-unit gutter beside
+    // its own body, which holds sixteen characters of the column setting's
+    // type — so the headings are written as gutter LINES rather than as one
+    // string, and the analogy takes the line above the mark's own name. They
+    // cost no height: each entry's body reserves more lines than its heading
+    // uses. On the phone the heading has the whole width to itself, so it is
+    // one line there.
+    const head = (...lines) => (compact ? [lines.join(' · ')] : lines)
     return [
-      ['THE WALLS', walls],
-      ['THE FALL', fall],
-      ['THE TRANSFERS', transfers],
-      ['THE LANDING', landing],
-      ['THE TOUR', tourLine],
+      [head('THE FIXTURE', 'THE WALLS'), walls],
+      [head('THE PART', 'THE FALL'), fall],
+      [head('THE TOOLING', 'TOUCHES THE PART', 'THE TRANSFERS'), transfers],
+      [head('THE LANDING'), landing],
+      [head('THE TOUR'), tourLine],
     ]
   }, [
     compact, wall0, tensor0, fileSize, n, g, draw, live, field, plan, heroToken,
@@ -2317,7 +2329,7 @@ export default function ForwardMap({
 
   const legendLines = useMemo(
     () =>
-      legend.map(([key, body], i) => [key, wrapText(body, g.legCols, g.legLines[i])]),
+      legend.map(([keys, body], i) => [keys, wrapText(body, g.legCols, g.legLines[i])]),
     [legend, g],
   )
 
@@ -2356,7 +2368,7 @@ export default function ForwardMap({
       <InstrumentHead
         eyebrow="INSTRUMENT F"
         title="The forward pass, live"
-        purpose="Six frozen walls of the file’s own weight bytes, and your sentence falling through them as light. The sentence is the only moving thing in the picture: attention picks a source in green, carries its value in amber, and leaves the last word rich enough to say what comes next."
+        purpose="The walls are the fixture: the file’s own frozen tooling, one station for each of the six blocks. Your sentence is the part — one stream for each word, falling through the stations. A transfer is the tooling touching the part: attention picks a source in green and carries its value in amber. The hero is the piece finished at the last station, rich enough to say what comes next."
         note={
           <LoadNote
             label={
@@ -3030,11 +3042,11 @@ export default function ForwardMap({
             <text className="mr-note" x="8" y={g.fs.note + 6} style={{ fontSize: g.fs.note }}>
               {compact
                 ? numberedChips
-                  ? 'THE SENTENCE — ONE STREAM EACH, BY POSITION'
-                  : 'THE SENTENCE — ONE STREAM EACH'
+                  ? 'THE PART — ONE STREAM EACH, BY POSITION'
+                  : 'THE PART — ONE STREAM EACH'
                 : numberedChips
-                  ? 'THE SENTENCE — ONE STREAM EACH, NUMBERED BY POSITION; CLICK ONE TO MAKE IT THE HERO'
-                  : 'THE SENTENCE — ONE STREAM EACH; CLICK ONE TO MAKE IT THE HERO'}
+                  ? 'THE PART — YOUR SENTENCE, ONE STREAM EACH, NUMBERED BY POSITION; CLICK ONE TO MAKE IT THE HERO'
+                  : 'THE PART — YOUR SENTENCE, ONE STREAM EACH; CLICK ONE TO MAKE IT THE HERO'}
             </text>
             {draw
               ? draw.xs.map((x, i) => {
@@ -3269,23 +3281,25 @@ export default function ForwardMap({
             {(() => {
               let y = g.legTop
               const out = []
-              legendLines.forEach(([key, lines], i) => {
-                out.push(
-                  <text
-                    key={`k${key}`}
-                    className="mr-leg-key"
-                    x="8"
-                    y={y}
-                    style={{ fontSize: g.fs.legKey }}
-                  >
-                    {key}
-                  </text>,
-                )
+              legendLines.forEach(([keys, lines], i) => {
+                keys.forEach((line, ki) => {
+                  out.push(
+                    <text
+                      key={`k${keys[0]}-${ki}`}
+                      className={ki === keys.length - 1 ? 'mr-leg-key' : 'mr-leg-key is-role'}
+                      x="8"
+                      y={y + ki * g.legLine}
+                      style={{ fontSize: g.fs.legKey }}
+                    >
+                      {line}
+                    </text>,
+                  )
+                })
                 if (compact) y += g.legKeyLine
                 lines.forEach((line, li) => {
                   out.push(
                     <text
-                      key={`${key}-${li}`}
+                      key={`${keys[0]}-${li}`}
                       className="mr-leg"
                       x={g.legX}
                       y={y}
