@@ -275,7 +275,7 @@ function geometryFor(compact, full) {
   // 5,217-unit drawing the clear window inside a wall band is 187 units — the
   // block below reaches a line of callout type up into it — and a four-line
   // card with fourteen units of padding is 193.
-  const cardPad = per(9, 9, 8)
+  const cardPad = per(6, 9, 8)
   const cardCols = Math.floor((cardW - 2 * cardPad) / (fs.leg * legAdvance))
   const cardLine = fs.leg * 1.35
   // Measured with `__cardLines()`, which wraps every lead the sheet can
@@ -292,8 +292,18 @@ function geometryFor(compact, full) {
   const docentLines = per(4, 5, 4)
   const docentH = docentLines * cardLine + 2 * cardPad + fs.leg * 0.3
 
+  // How much air a card leaves around the words it may not stand on. The
+  // boxes it avoids are the scrims those words sit on, and a scrim is 0.85 of
+  // the type size above the baseline where a glyph's own bounding box reaches
+  // a little further; without this the card lands flush against a scrim and
+  // still clips the tops of the letters. Six units on the phone is the number
+  // that clears the block-1 key callout in the one window the phone's card
+  // has — the head of the first wall — with the card at its own reserved
+  // height.
+  const cardSlack = per(6, 4, 4)
+
   return {
-    compact, fs,
+    compact, fs, cardSlack,
     cardW, cardH, cardPad, cardCols, cardLine, cardLines,
     docentLines, docentH,
     bandX, bandW, cols, rows, pitchX, cellW, cellH, pitchY, bandH,
@@ -441,9 +451,22 @@ function placeCard(g, anchor, avoid, { prefer = 'right', height } = {}) {
   for (const y of [anchor.y - h / 2, anchor.y + gap, anchor.y - gap - h]) {
     for (const x of sides) candidates.push({ x, y: clampY(y) })
   }
+  // The boxes a card must clear are built from the scrims the words stand on,
+  // and a scrim is the ink the design wants covered — 0.85 of the type size
+  // above the baseline — where a glyph's own bounding box reaches a little
+  // further than that. A card placed flush against a scrim therefore still
+  // grazes the letters by a unit or two, which a bbox sweep sees and a reader
+  // sees as words touching. Give every box that much slack, in the drawing's
+  // own units, so "clear" means clear of the glyphs and not of the scrim.
+  const slack = g.cardSlack
   const covered = (c) => {
     let area = 0
-    for (const box of avoid) area += overlapArea({ ...c, w, h }, box)
+    const me = { x: c.x, y: c.y, w, h }
+    for (const box of avoid) {
+      area += overlapArea(me, {
+        x: box.x - slack, y: box.y - slack, w: box.w + 2 * slack, h: box.h + 2 * slack,
+      })
+    }
     return area
   }
   let best = candidates[0]
@@ -457,12 +480,28 @@ function placeCard(g, anchor, avoid, { prefer = 'right', height } = {}) {
     }
   }
   // A near miss is usually a graze — a callout for the block below reaching
-  // up into this one's band by a line of type. Slide the best candidate a
-  // little rather than throwing it across the drawing.
-  for (const dy of [-8, 8, -16, 16, -24, 24, -32, 32, -44, 44]) {
-    const nudged = { x: best.x, y: clampY(best.y + dy) }
-    if (covered(nudged) === 0) return { ...nudged, w, h }
+  // up into this one's band by a line of type, or a landing label three per
+  // cent under the card's bottom edge. Slide outward from the candidate the
+  // slot chose rather than throwing the card across the drawing: the first
+  // clear position wins, so the card lands as near its own slot as the words
+  // on the sheet allow. The scan is bounded, and if the air is genuinely full
+  // the least-covered candidate still stands.
+  for (const side of sides) {
+    for (let step = 1; step <= 200; step++) {
+      for (const dy of [-step * 2, step * 2]) {
+        const scanned = { x: side, y: clampY(candidates[0].y + dy) }
+        const area = covered(scanned)
+        if (area === 0) return { ...scanned, w, h }
+        if (area < bestArea) {
+          bestArea = area
+          best = scanned
+        }
+      }
+    }
   }
+  // Genuinely nowhere clear. Then the least-covered position anything above
+  // tried, rather than the least-covered of the six first guesses: a card
+  // that has to graze something should graze the least of it.
   return { ...best, w, h }
 }
 
@@ -1423,8 +1462,68 @@ export default function ForwardMap({
       textWidth('LAST POSITION → 50,257 WORDS · TOP 8', g.fs.land, TRACK.note),
       g.fs.land * (INK_ABOVE + INK_BELOW),
     )
+    // The line under the landing title that says the landing is the last
+    // word's alone, or that it is waiting on a pass. It is a full sentence at
+    // the left edge and a card that stood on it would hide the one caveat the
+    // landing has.
+    label(
+      8,
+      g.landTitleY + g.fs.quiet * (1.45 - INK_ABOVE),
+      textWidth(
+        'the landing is the last word’s alone; XXXXXXXXXXXXXXX is the hero, so it stands back',
+        g.fs.quiet,
+        TRACK.quiet,
+      ),
+      g.fs.quiet * (INK_ABOVE + INK_BELOW),
+    )
+    // The landing's own words: every bar's token, every bar's percentage and
+    // the sampler's mark under it. One box over the whole strip rather than
+    // one a bar, because the strip is a single line of type and a card that
+    // cleared five of eight labels would still be standing on the landing.
+    label(
+      g.barX0 - g.barPitch / 2,
+      g.barBase + g.fs.prob * (1 - INK_ABOVE) + 6,
+      g.splashN * g.barPitch,
+      g.fs.prob * INK_ABOVE + g.fs.probp + 18 + g.fs.probp * INK_BELOW + 8,
+    )
+    // The key that says which bar is the machine's own top and which the
+    // sampler took — and, on the phone, the second line that states the whole
+    // sampler setting. These are the landing's legend and the `done` stop
+    // used to open squarely on top of them.
+    label(
+      8,
+      g.keyY - g.fs.key * INK_ABOVE,
+      SW - 16,
+      g.keyY2 - g.keyY + g.fs.key * (INK_ABOVE + INK_BELOW),
+    )
+    // The line across the very top that names the sentence.
+    label(8, 6 - g.fs.note * (INK_ABOVE - 1), SW - 16, g.fs.note * (INK_ABOVE + INK_BELOW))
+    // A block that draws no transfer says so beside the hero, in the middle
+    // of its own band — which is exactly where a card about that block, or
+    // about the mist below it, wants to stand.
+    if (draw && registers) {
+      for (const reg of registers) {
+        if (!reg || reg.kept.length > 0) continue
+        const room = textWidth(
+          `no transfer · self ${reg.selfWeight.toFixed(2)}`,
+          g.fs.quiet,
+          TRACK.quiet,
+        )
+        const left = draw.xs[hero] - draw.hw[hero][reg.layer + 1] - 14 - room > 8
+        const x = left
+          ? draw.xs[hero] - draw.hw[hero][reg.layer + 1] - 14
+          : draw.xs[hero] + draw.hw[hero][reg.layer + 1] + 14
+        const y = g.bandMid[reg.layer] + 3
+        label(
+          left ? x - room - 5 : x - 5,
+          y - g.fs.quiet * INK_ABOVE,
+          room + 10,
+          g.fs.quiet * (INK_ABOVE + INK_BELOW),
+        )
+      }
+    }
     return boxes
-  }, [callouts, g, draw, apertureW])
+  }, [callouts, g, draw, apertureW, registers, hero])
 
   // --- the narrated run -----------------------------------------------------
   //
@@ -2048,9 +2147,18 @@ export default function ForwardMap({
           y: g.barBase - g.barMaxH * 0.5,
         }
         break
+      // The last stop stands where the tour ended rather than under it. Its
+      // old slot was the key line's own y at the left edge, which is words:
+      // it opened squarely on the bar labels, their percentages and the key
+      // that says which bar is which. The landing's stops already have a slot
+      // in the short bars' empty air at the far end, and the closing line
+      // belongs in the same place.
       case 'done':
       case 'empty':
-        anchor = { x: 8, y: g.keyY - g.fs.key * 2 }
+        anchor = {
+          x: g.barX0 + (g.splashN - 1) * g.barPitch,
+          y: g.barBase - g.barMaxH * 0.5,
+        }
         break
       default:
         return null
