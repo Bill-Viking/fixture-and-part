@@ -19,11 +19,10 @@ import {
 } from '../lib/forwardMap.js'
 import {
   IDLE_MS,
-  MOTION_PRESETS,
+  MOTION,
   buildTour,
   carrierWhy,
   cellWhy,
-  motionPresetId,
   rayWhy,
   silentWhy,
   unembedWhy,
@@ -720,13 +719,6 @@ export default function ForwardMap({
   const [tour, setTour] = useState({ active: false, index: 0, playing: false, speed: 1 })
   /** Whether the sheet is currently running itself. */
   const [ambient, setAmbient] = useState(false)
-  /** The motion study in force. A dev switch; with no querystring, preset a. */
-  const preset = useMemo(
-    () => motionPresetId(typeof window === 'undefined' ? '' : window.location.search),
-    [],
-  )
-  const motion = MOTION_PRESETS[preset]
-
   const figureRef = useRef(null)
   const svgRef = useRef(null)
   const hoverRef = useRef(null)
@@ -1168,7 +1160,6 @@ export default function ForwardMap({
   const tourPlan = useMemo(
     () =>
       buildTour({
-        preset,
         live,
         n,
         sequence,
@@ -1185,7 +1176,7 @@ export default function ForwardMap({
         segmentCount: draw?.segments?.length ?? MAP_STOPS + 1,
       }),
     [
-      preset, live, n, sequence, hero, field, run, registers, autoHeads, splash,
+      live, n, sequence, hero, field, run, registers, autoHeads, splash,
       finalTop, nextToken, wall0, draw,
     ],
   )
@@ -1293,7 +1284,7 @@ export default function ForwardMap({
   const travelMs =
     reveal.front < frontWas.current
       ? 260
-      : Math.max(120, Math.round((stop.ms * motion.travel) / tour.speed))
+      : Math.max(120, Math.round((stop.ms * MOTION.travel) / tour.speed))
   useEffect(() => {
     frontWas.current = reveal.front
   })
@@ -1507,7 +1498,6 @@ export default function ForwardMap({
   useEffect(() => {
     if (!import.meta.env.DEV) return
     globalThis.__tourState = {
-      preset,
       reduced,
       ambient,
       active: tour.active,
@@ -1839,7 +1829,7 @@ export default function ForwardMap({
         </div>
 
         <div
-          className={`map-screen screen is-motion-${preset}${ambient ? ' is-ambient' : ''}`}
+          className={`map-screen screen${ambient ? ' is-ambient' : ''}`}
           style={{
             aspectRatio: `${SW} / ${g.H}`,
             // The stroke of a grain, in the drawing's own units. It belongs to
@@ -1855,18 +1845,18 @@ export default function ForwardMap({
             '--mr-bars': String(reveal.bars),
             '--mr-aperture': String(reveal.aperture),
             '--mr-pick': String(reveal.pick),
-            '--mr-fade': `${Math.round(motion.fadeMs / tour.speed)}ms`,
+            '--mr-fade': `${Math.round(MOTION.fadeMs / tour.speed)}ms`,
             '--mr-travel': `${travelMs}ms`,
-            // The ambient loop's own tempo, one preset at a time.
+            // The ambient loop's own tempo.
             // How far the sweep travels: the whole drawing, plus its own
             // depth, so it enters from above the sheet and leaves below it.
             '--mr-sweep-to': `${f2(g.H + g.bandH * 2.4)}px`,
-            '--mr-sweep-ms': `${motion.ambient.sweepMs}ms`,
-            '--mr-sweep-op': String(motion.ambient.sweepOpacity),
-            '--mr-glint-op': String(motion.ambient.glintOpacity),
-            '--mr-carrier-ms': `${motion.ambient.carrierMs}ms`,
-            '--mr-breathe-ms': `${motion.ambient.breatheMs}ms`,
-            '--mr-hero-ms': `${motion.ambient.heroMs}ms`,
+            '--mr-sweep-ms': `${MOTION.ambient.sweepMs}ms`,
+            '--mr-sweep-op': String(MOTION.ambient.sweepOpacity),
+            '--mr-glint-op': String(MOTION.ambient.glintOpacity),
+            '--mr-carrier-ms': `${MOTION.ambient.carrierMs}ms`,
+            '--mr-breathe-ms': `${MOTION.ambient.breatheMs}ms`,
+            '--mr-hero-ms': `${MOTION.ambient.heroMs}ms`,
           }}
         >
           <svg
