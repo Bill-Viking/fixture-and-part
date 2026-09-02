@@ -1299,7 +1299,8 @@ export default function ForwardMap({
   //
   // Three conditions, all of them checked rather than assumed: the figure is
   // on screen, the tab is in front, and nobody has touched anything for a
-  // while. Reduced motion removes the whole path.
+  // while — where touching includes scrolling, which is what a reader
+  // reading actually does. Reduced motion removes the whole path.
 
   const idleAt = useRef(Date.now())
   const inView = useRef(false)
@@ -1331,13 +1332,27 @@ export default function ForwardMap({
     const el = figureRef.current
     const bump = () => {
       idleAt.current = Date.now()
-      setAmbient(false)
+      // The functional form so that the common case — a reader who is not
+      // idle and never was — bails out of React without a render. Scrolling
+      // fires this many times a second.
+      setAmbient((on) => (on ? false : on))
     }
     const onHidden = () => {
       if (document.hidden) setAmbient(false)
     }
+    // Reading is interacting. The first version of this listened for a
+    // pointer press, a key and a pointer move over the figure, and a reader
+    // scrolling down the page did none of the three — so the sheet could
+    // start running itself under a pointer that had not moved because the
+    // hand on it was on a trackpad, mid-scroll. A wheel, a scroll and a touch
+    // drag are the same signal as a pointer move and are counted as one.
+    // All three are passive: this listener only reads the clock.
+    const passive = { capture: true, passive: true }
     window.addEventListener('pointerdown', bump, true)
     window.addEventListener('keydown', bump, true)
+    window.addEventListener('wheel', bump, passive)
+    window.addEventListener('scroll', bump, passive)
+    window.addEventListener('touchmove', bump, passive)
     el?.addEventListener('pointermove', bump)
     document.addEventListener('visibilitychange', onHidden)
     const id = setInterval(() => {
@@ -1351,6 +1366,9 @@ export default function ForwardMap({
       clearInterval(id)
       window.removeEventListener('pointerdown', bump, true)
       window.removeEventListener('keydown', bump, true)
+      window.removeEventListener('wheel', bump, passive)
+      window.removeEventListener('scroll', bump, passive)
+      window.removeEventListener('touchmove', bump, passive)
       el?.removeEventListener('pointermove', bump)
       document.removeEventListener('visibilitychange', onHidden)
     }
