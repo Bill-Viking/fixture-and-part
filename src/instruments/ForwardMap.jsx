@@ -2451,11 +2451,15 @@ export default function ForwardMap({
     const samplerSettings =
       `(temperature ${DECODING.temperature}, top-k ${DECODING.topK}, repetition penalty ` +
       `${DECODING.repetitionPenalty}, seed ${DECODING.seed})`
+    // Both phrases are followed by "and carries the amber mark", so the aside
+    // has to close: the sampled one closes with its bracket, and the greedy
+    // one borrows the same bracket rather than trailing a dash into the rest
+    // of the sentence.
     const tookCompact = greedy
-      ? 'is what greedy decoding took — the top word every time, no temperature and no draw'
+      ? 'is what greedy decoding took (the top word every time — no temperature, no draw)'
       : `is what the sampler took ${samplerSettings}`
     const tookWide = greedy
-      ? 'is what greedy decoding took — the top word every time, with no temperature, no top-k and no draw'
+      ? 'is what greedy decoding took (the top word every time — no temperature, no top-k, no draw)'
       : `is what the shipped sampler took ${samplerSettings}`
     const sameTrace = greedy
       ? 'same input → same trace, every time.'
