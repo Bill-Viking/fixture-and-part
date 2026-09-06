@@ -2,7 +2,7 @@ lane: F&P
 written: 2026-09-06T06:48-07:00
 by: ACT — Exocortex/Mac: hub day 12 — button up Mac→Dell · captured by hub
 on: MAC
-head: PIN
+head: b382d17
 status_updated: 2026-09-06T06:48-07:00
 where: the moth built on branch the-moth, verified; awaiting "merge and deploy"
 next: bill
