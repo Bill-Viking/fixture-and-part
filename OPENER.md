@@ -2,7 +2,7 @@ lane: F&P
 written: 2026-09-06T09:47-07:00
 by: ACT — F&P: merge + deploy the moth (Dell)
 on: DELL
-head: PENDING
+head: 31e3de8
 status_updated: 2026-09-06T09:47-07:00
 where: the moth is merged, deployed and live; the honest pass is next
 next: bill
