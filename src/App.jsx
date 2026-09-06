@@ -178,6 +178,22 @@ export default function App() {
   // than on runReady alone.
   const ranKey =
     isReal && runReady && realBase?.text === text ? runKey : null
+  // And so does instrument B, for a stronger reason than what it prints.
+  //
+  // In that debounce window `runReady` is true — the run matches the ids the
+  // OLD tokenization produced, and typing has already cleared the generated
+  // tail — so a STEP pressed there passed every gate and committed a token
+  // chosen for the sentence that is no longer in the box. A moment later the
+  // new tokenization landed underneath it and the pick was sitting on the end
+  // of a sentence it was never scored against. It was reachable by hand: type
+  // and hit STEP inside a tenth of a second.
+  //
+  // So B waits for the run that belongs to the current text — the shortlist,
+  // the pick worked out from it, and the commit itself, which re-checks this
+  // rather than trusting the button it was reached from. The window is short
+  // enough that the honest thing to show in it is the note the instrument
+  // already has for "the machine has not caught up with the box".
+  const stepPending = isReal && sequenceIds.length > 0 && !ranKey
 
   const clearLens = useCallback(() => {
     lensCancel.current?.()
@@ -400,7 +416,7 @@ export default function App() {
 
   const underCap = generated.length < MAX_GENERATED
   const canStep = isReal
-    ? runReady && realRun.candidates.length > 0 && underCap
+    ? Boolean(ranKey) && realRun.candidates.length > 0 && underCap
     : baseTokens.length > 0 && underCap
 
   // The shortlist STEP will pick from. Same inputs as the step itself, so the
@@ -413,18 +429,22 @@ export default function App() {
   // The draw is a pure function of the seed and of how many tokens have been
   // generated, so naming the winner up front cannot disagree with the step
   // that follows — the shortlist marks exactly the row STEP appends.
+  //
+  // Read from `ranKey` rather than `runReady`: a pick worked out from the
+  // previous sentence's run is not this sentence's pick, however finished
+  // that run is.
   const pick = useMemo(
     () =>
-      isReal && runReady && underCap
+      isReal && ranKey && underCap
         ? chooseNext(realRun, sequenceIds, decode, generated.length)
         : null,
-    [isReal, runReady, realRun, sequenceIds, decode, generated.length, underCap],
+    [isReal, ranKey, realRun, sequenceIds, decode, generated.length, underCap],
   )
   const realCandidates = useMemo(() => {
-    if (!isReal || !runReady || !underCap) return []
+    if (!isReal || !ranKey || !underCap) return []
     if (!pick) return realRun.candidates
     return realRun.candidates.map((c) => ({ ...c, wins: c.id === pick.id }))
-  }, [isReal, runReady, underCap, realRun, pick])
+  }, [isReal, ranKey, underCap, realRun, pick])
   const candidates = isReal ? realCandidates : toyCandidates
   const scriptedNext = useMemo(
     () => !isReal && isScriptedStep(wordTokens, generated),
@@ -433,7 +453,10 @@ export default function App() {
 
   const handleStep = useCallback(() => {
     if (isReal) {
-      if (!runReady || !pick) return
+      // Checked again here rather than trusting the disabled button: the
+      // keyboard, the auto-run loop and a click landing in the same frame as
+      // a keystroke all reach this without passing through `canStep`.
+      if (!ranKey || !pick) return
       const next = pick
       setGenerated((prev) =>
         prev.length >= MAX_GENERATED ? prev : [...prev, next.token],
@@ -449,7 +472,7 @@ export default function App() {
       return token === null ? prev : [...prev, token]
     })
     setStepTick((t) => t + 1)
-  }, [isReal, runReady, pick, wordTokens])
+  }, [isReal, ranKey, pick, wordTokens])
 
   const handleReset = useCallback(() => {
     setGenerated([])
@@ -583,7 +606,10 @@ export default function App() {
         kvSelection={kvSelection}
         real={isReal}
         vectors={isReal && runReady ? realRun : null}
-        pending={realPending}
+        // `stepPending`, not `realPending`: B's shortlist is now empty for the
+        // debounce window as well, and without this the empty list would print
+        // "generation cap reached" — the one message that is false there.
+        pending={stepPending}
         modelStatus={modelStatus}
         progress={progress}
         onLoad={handleLoad}
