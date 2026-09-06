@@ -957,6 +957,11 @@ export default function ForwardMap({
   real,
   run,
   nextToken,
+  // Which rule instrument B is running: 'sampled' or 'greedy'. The same value
+  // B is handed, so the drawing cannot narrate a decoder the reader has
+  // switched off — with GREEDY selected there is no temperature, no top-k, no
+  // penalty and no seed, and the sheet says none of them.
+  decode = 'sampled',
   pending,
   stepTick,
   modelStatus,
@@ -1525,7 +1530,7 @@ export default function ForwardMap({
       g.fs.quiet * (INK_ABOVE + INK_BELOW),
     )
     // The landing's own words: every bar's token, every bar's percentage and
-    // the sampler's mark under it. One box over the whole strip rather than
+    // the decoder's amber mark under it. One box over the whole strip rather than
     // one a bar, because the strip is a single line of type and a card that
     // cleared five of eight labels would still be standing on the landing.
     label(
@@ -1535,9 +1540,10 @@ export default function ForwardMap({
       g.fs.prob * INK_ABOVE + g.fs.probp + 18 + g.fs.probp * INK_BELOW + 8,
     )
     // The key that says which bar is the machine's own top and which the
-    // sampler took — and, on the phone, the second line that states the whole
-    // sampler setting. These are the landing's legend and the `done` stop
-    // used to open squarely on top of them.
+    // decoder took — and, on the phone, the second line that states the rule
+    // it ran under: the sampler's four settings, or the one word GREEDY when
+    // the reader has selected that instead. These are the landing's legend and
+    // the `done` stop used to open squarely on top of them.
     label(
       8,
       g.keyY - g.fs.key * INK_ABOVE,
@@ -1595,13 +1601,14 @@ export default function ForwardMap({
         finalTop,
         nextToken,
         decoding: DECODING,
+        decode,
         wall0,
         segmentCount: draw?.segments?.length ?? MAP_STOPS + 1,
         splashN: g.splashN,
       }),
     [
       live, n, sequence, hero, field, run, registers, autoHeads, splash,
-      finalTop, nextToken, wall0, draw, g.splashN,
+      finalTop, nextToken, decode, wall0, draw, g.splashN,
     ],
   )
   const stages = tourPlan.stages
@@ -1893,15 +1900,15 @@ export default function ForwardMap({
       if (!bar) return
       say({
         kind: 'ray',
-        text: rayWhy(bar, finalTop?.token ?? null, nextToken ?? null),
-        lead: rayLead(bar, finalTop?.token ?? null, nextToken ?? null),
+        text: rayWhy(bar, finalTop?.token ?? null, nextToken ?? null, decode),
+        lead: rayLead(bar, finalTop?.token ?? null, nextToken ?? null, decode),
         at: { x: bar.x, y: bar.top },
         tensor: 'transformer.wte.weight_quantized',
         instrument: 'stepper',
         letter: 'B',
       })
     },
-    [say, draw, finalTop, nextToken],
+    [say, draw, finalTop, nextToken, decode],
   )
 
   /** Which cell of a wall a pointer is over, in the tensor's own coordinates. */
@@ -2233,7 +2240,7 @@ export default function ForwardMap({
         note('carrier', carrierLead(tr, sequence, sequence[hero]))
       }
       for (const bar of draw?.landing?.bars ?? []) {
-        note('ray', rayLead(bar, finalTop?.token ?? null, nextToken ?? null))
+        note('ray', rayLead(bar, finalTop?.token ?? null, nextToken ?? null, decode))
       }
       for (const reg of registers ?? []) {
         if (reg && reg.kept.length === 0) note('silent', silentLead(reg))
@@ -2301,7 +2308,7 @@ export default function ForwardMap({
         note('carrier', carrierWhy(tr, sequence, sequence[hero]))
       }
       for (const bar of draw?.landing?.bars ?? []) {
-        note('ray', rayWhy(bar, finalTop?.token ?? null, nextToken ?? null))
+        note('ray', rayWhy(bar, finalTop?.token ?? null, nextToken ?? null, decode))
       }
       for (const reg of registers ?? []) {
         if (reg && reg.kept.length === 0) note('silent', silentWhy(reg, sequence))
@@ -2428,19 +2435,49 @@ export default function ForwardMap({
       ? `${finalTop.token} at ${((splash.find((s) => s.id === finalTop.id)?.p ?? 0) * 100).toFixed(1)}%`
       : ''
     const pickBar = splash?.find((s) => s.token === nextToken)
+    // What the amber mark is, in the words of the rule instrument B is
+    // actually running. Greedy has no settings to state: printing a
+    // temperature under a rule that never reaches for one would be describing
+    // machinery that is switched off, which is the same offence as inventing
+    // a number.
+    //
+    // The determinism the two can honestly claim differs as well. The pass is
+    // the same either way — same sentence, same walls, same landing — but the
+    // sampled draw is a function of the seed AND of how many tokens have
+    // already been generated, and the penalty charges the tokens the sequence
+    // has already used. So "every time" is greedy's to claim and not the
+    // sampler's.
+    const greedy = decode === 'greedy'
+    const samplerSettings =
+      `(temperature ${DECODING.temperature}, top-k ${DECODING.topK}, repetition penalty ` +
+      `${DECODING.repetitionPenalty}, seed ${DECODING.seed})`
+    // Both phrases are followed by "and carries the amber mark", so the aside
+    // has to close: the sampled one closes with its bracket, and the greedy
+    // one borrows the same bracket rather than trailing a dash into the rest
+    // of the sentence.
+    const tookCompact = greedy
+      ? 'is what greedy decoding took (the top word every time — no temperature, no draw)'
+      : `is what the sampler took ${samplerSettings}`
+    const tookWide = greedy
+      ? 'is what greedy decoding took (the top word every time — no temperature, no top-k, no draw)'
+      : `is what the shipped sampler took ${samplerSettings}`
+    const sameTrace = greedy
+      ? 'same input → same trace, every time.'
+      : 'same input → same trace, at the same seed and the same step of the generation.'
+    const SameTrace = `${sameTrace[0].toUpperCase()}${sameTrace.slice(1)}`
     const landing = !live
       ? compact
         ? `The last position’s vector against all 50,257 words. It needs a pass — load the real model and the bars are this sentence’s own softmax.`
         : `Where the last position’s vector meets all 50,257 words. There is no distribution without a pass, so no bar is drawn: load the real model and the bars become this sentence’s own softmax, top ${g.splashN}.`
       : compact
-        ? `The last position’s alone, and the last position’s stream is the one that reaches it${draw?.landingHere ? ' — the hero here' : ', dimmed — the hero is earlier'}. The ${g.splashN} bars are this pass’s own softmax over all 50,257 words. ${argmaxLine} is the machine’s own top, drawn blue; ${pickBar ? `${pickBar.token} at ${(pickBar.p * 100).toFixed(1)}%` : (nextToken ?? '—')} is what the sampler took (temperature ${DECODING.temperature}, top-k ${DECODING.topK}, repetition penalty ${DECODING.repetitionPenalty}, seed ${DECODING.seed}) and carries the amber mark. Same input → same trace, every time.`
+        ? `The last position’s alone, and the last position’s stream is the one that reaches it${draw?.landingHere ? ' — the hero here' : ', dimmed — the hero is earlier'}. The ${g.splashN} bars are this pass’s own softmax over all 50,257 words. ${argmaxLine} is the machine’s own top, drawn blue; ${pickBar ? `${pickBar.token} at ${(pickBar.p * 100).toFixed(1)}%` : (nextToken ?? '—')} ${tookCompact} and carries the amber mark. ${SameTrace}`
         : `It is the last position’s alone, and the last position’s own stream is the one that reaches it — ${
             draw?.landingHere
               ? 'which is where the hero is'
               : 'so an earlier hero leaves it standing back, its own fall ending in the mist with the rest'
           }. The ${g.splashN} bars are this pass’s own softmax over all 50,257 words, top ${g.splashN}, counted from the last position’s vector and from nothing else. ${argmaxLine} is the machine’s own top and is drawn blue; ${
             pickBar ? `${pickBar.token} at ${(pickBar.p * 100).toFixed(1)}%` : (nextToken ?? '—')
-          } is what the shipped sampler took (temperature ${DECODING.temperature}, top-k ${DECODING.topK}, repetition penalty ${DECODING.repetitionPenalty}, seed ${DECODING.seed}) and carries the amber mark. A bar’s height is its probability and the rows of dots are how that height is counted. Chance appears nowhere above it: same input → same trace, every time.`
+          } ${tookWide} and carries the amber mark. A bar’s height is its probability and the rows of dots are how that height is counted. Chance appears nowhere above it: ${sameTrace}`
 
     // The tour and the ambient loop are rules of this drawing like any other,
     // so they are stated here rather than left to be found. What they change
@@ -2477,7 +2514,7 @@ export default function ForwardMap({
   }, [
     compact, wall0, tensor0, fileSize, n, g, draw, live, field, plan, heroToken,
     autoHeads, block, headPick, silent, sequence, splash, finalTop, nextToken,
-    numberedChips, stages.length, tourPlan.totalMs,
+    decode, numberedChips, stages.length, tourPlan.totalMs,
   ])
 
   const legendLines = useMemo(
@@ -3434,8 +3471,12 @@ export default function ForwardMap({
                   <tspan className="k-blue">■</tspan>
                   {` ${finalTop.token} BLUE — THE MACHINE’S OWN TOP · `}
                   <tspan className="k-amber">▲</tspan>
-                  {` AMBER MARK — THE SAMPLER TOOK ${nextToken ?? '—'}`}
+                  {decode === 'greedy'
+                    ? ` AMBER MARK — GREEDY TOOK ${nextToken ?? '—'}`
+                    : ` AMBER MARK — THE SAMPLER TOOK ${nextToken ?? '—'}`}
                 </>
+              ) : decode === 'greedy' ? (
+                'BLUE — THE MACHINE’S OWN TOP · AMBER MARK — WHAT GREEDY TAKES'
               ) : (
                 'BLUE — THE MACHINE’S OWN TOP · AMBER MARK — THE SAMPLER’S PICK'
               )}
@@ -3447,7 +3488,9 @@ export default function ForwardMap({
                 y={g.keyY2}
                 style={{ fontSize: g.fs.key }}
               >
-                {`TEMP ${DECODING.temperature} · TOP-K ${DECODING.topK} · REP-PEN ${DECODING.repetitionPenalty} · SEED ${DECODING.seed}`}
+                {decode === 'greedy'
+                  ? 'GREEDY — THE TOP WORD, EVERY TIME'
+                  : `TEMP ${DECODING.temperature} · TOP-K ${DECODING.topK} · REP-PEN ${DECODING.repetitionPenalty} · SEED ${DECODING.seed}`}
               </text>
             ) : null}
 

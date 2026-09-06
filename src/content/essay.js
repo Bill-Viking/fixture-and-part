@@ -164,6 +164,12 @@ export const sections = [
         type: 'p',
         html: 'The cortex does not process your visual world so much as render it. Feedback connections in visual cortex outnumber feedforward ones: the model generates the expected scene, and the retina&rsquo;s main contribution is the diff — prediction error. What you consciously see is the render, patched. The blind spot is painted over every waking second; vision goes dark during every saccade and you perceive no gap; peripheral vision is low-resolution and nearly colorless yet feels uniformly sharp, because the sharpness is inferred rather than sensed. Dreams are the clincher — the same cortex generating full scenes with the retina contributing nothing. Memory regenerates the past, perception regenerates the present, and the seamless continuous self is the one production whose seams the renderer never shows you.',
       },
+      {
+        type: 'callout',
+        variant: 'warm',
+        label: 'SPECIMEN — THE MOTH',
+        html: 'This page&rsquo;s human author, in a hall at home: &ldquo;I thought I saw a moth high up on the wall; for maybe ten seconds I stared at it, convinced it was a moth, and went to get the vacuum. When I came back and looked again I thought wait&hellip; and it snapped into place that it was just a picture hanger.&rdquo; The paragraph above, lived once. The eye had a hard dark outline and little else — a brass hook, dark in the morning light against a white wall — and the outline fit the render well enough that ten seconds of staring produced no diff to patch it with; the moth stood for as long as the look lasted. What changed it was not a harder look but a gap: the next look was a fresh pass, from a new distance with an errand in hand, and it did not drift toward the hanger — it snapped whole. Nobody measured what did the work, but the account has the shape of section 03&rsquo;s seam from the human side: the fix came with a new look, not a longer one, and the successor inherited the hall and not the moth. Dreams, in the same account, are the renderer at play, stored patterns run through new situations with the eyes shut. The model has the seam without the surprise: run the same sentence through the same file again, the same way on the same machine, and it lands where it landed, because nothing on its side of the gap has changed.',
+      },
     ],
   },
   {

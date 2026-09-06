@@ -139,14 +139,28 @@ export function carrierWhy(tr, sequence, heroToken) {
   return `${carrierLead(tr, sequence, heroToken)} ${carrierDetail()}`
 }
 
-/** What one landing ray is. */
-export function rayLead(bar, argmaxToken, pickToken) {
+/**
+ * What one landing ray is.
+ *
+ * `decode` is the rule instrument B is actually running, and it is a
+ * parameter rather than a constant because the reader can change it: with
+ * GREEDY selected the amber mark is not a draw at all, and a sentence that
+ * said "the sampler took" would be describing a rule that is switched off.
+ * Nothing else about the ray changes with the mode — the bar, its height and
+ * its share are the pass's, not the decoder's.
+ */
+export function rayLead(bar, argmaxToken, pickToken, decode = 'sampled') {
+  const greedy = decode === 'greedy'
+  const took = greedy ? 'greedy decoding took' : 'the sampler took'
+  const amber = greedy
+    ? ' It is what greedy decoding took — the top word every time — and it carries the amber mark.'
+    : ' It is what the sampler took, and it carries the amber mark.'
   const role = bar.argmax
     ? ' It is the machine’s own top — the largest of all 50,257 — and is drawn blue.'
     : bar.pick
-      ? ' It is what the sampler took, and it carries the amber mark.'
+      ? amber
       : argmaxToken
-        ? ` The machine’s own top is ${q(argmaxToken)}; the sampler took ${q(pickToken ?? '—')}.`
+        ? ` The machine’s own top is ${q(argmaxToken)}; ${took} ${q(pickToken ?? '—')}.`
         : ''
   return `Landing ray — ${q(bar.token)} at ${pc(bar.p)}.${role}`
 }
@@ -159,8 +173,8 @@ export function rayDetail() {
   )
 }
 
-export function rayWhy(bar, argmaxToken, pickToken) {
-  return `${rayLead(bar, argmaxToken, pickToken)} ${rayDetail()}`
+export function rayWhy(bar, argmaxToken, pickToken, decode = 'sampled') {
+  return `${rayLead(bar, argmaxToken, pickToken, decode)} ${rayDetail()}`
 }
 
 /** What one wall cell is: this byte, this weight, this position in the tensor. */
@@ -208,7 +222,7 @@ export function cellWhy(cell) {
  *   bars      how many landing bars have been counted
  *   cue       the block to look at, lit at its frame, or null
  *   aperture  whether the unembedding plate is drawn
- *   pick      whether the sampler’s mark is drawn
+ *   pick      whether the decoder’s amber mark is drawn
  */
 function stage(kind, ms, lead, detail, reveal) {
   // Two lengths of the same sentence, never two different sentences. The lead
@@ -251,11 +265,17 @@ export function buildTour({
   finalTop,
   nextToken,
   decoding,
+  decode = 'sampled',
   wall0,
   segmentCount,
   splashN,
 }) {
   const stages = []
+  // Which rule instrument B is running right now. The reader can switch it,
+  // and illustrative mode is pinned to greedy, so the tour asks rather than
+  // assumes: with greedy selected there is no temperature, no top-k, no
+  // penalty and no draw, and none of the four may be spoken.
+  const greedy = decode === 'greedy'
   const heroToken = sequence[hero] ?? '—'
   const lastSeg = segmentCount ?? MAP_STOPS + 1
   // Every reveal below is written out of this running state, so a stage can
@@ -444,8 +464,8 @@ export function buildTour({
         4000,
         `There is no distribution without a pass, so no bar is drawn.`,
         `With the real model in hand these become this sentence’s own softmax over the whole vocabulary, the ` +
-          `tallest ${splashN} of them, with the machine’s own top drawn blue and the sampler’s pick marked in ` +
-          `amber.`,
+          `tallest ${splashN} of them, with the machine’s own top drawn blue and ` +
+          `${greedy ? 'what greedy decoding takes' : 'the sampler’s pick'} marked in amber.`,
         at({ segs: lastSeg, carriers, aperture: true }),
       ),
     )
@@ -469,17 +489,31 @@ export function buildTour({
     })
   }
 
-  // --- the sampler ----------------------------------------------------------
+  // --- the decoder ----------------------------------------------------------
+  //
+  // Two rules, and the reader chooses which one is running. Greedy has no
+  // settings to state, so this stop states none; sampled has four, and the
+  // determinism it can honestly claim is narrower than greedy's — the draw is
+  // a function of the seed AND of how many tokens have already been generated,
+  // and the penalty charges the tokens the sequence has already used.
   if (live && splash) {
     const picked = splash.find((s) => s.token === nextToken)
+    const at_ = picked ? ` at ${pc(picked.p)}` : ''
     stages.push(
       stage(
         'pick',
         4200,
-        `The sampler took ${q(nextToken ?? '—')}${picked ? ` at ${pc(picked.p)}` : ''}.`,
-        `Temperature ${decoding.temperature}, top-k ${decoding.topK}, repetition penalty ` +
-          `${decoding.repetitionPenalty}, seed ${decoding.seed}. Blue is what the machinery scored highest; amber ` +
-          `is what the draw actually took. Same sentence, same seed, same word, every time.`,
+        greedy
+          ? `Greedy decoding took ${q(nextToken ?? '—')}${at_} — the top word every time.`
+          : `The sampler took ${q(nextToken ?? '—')}${at_}.`,
+        greedy
+          ? `No temperature, no top-k, no penalty, no draw: the rule is take the highest and nothing else. Blue ` +
+            `is what the machinery scored highest; amber is what STEP will append. Same sentence, same word, ` +
+            `every time — which on a six-block model is also how it talks itself into a loop.`
+          : `Temperature ${decoding.temperature}, top-k ${decoding.topK}, repetition penalty ` +
+            `${decoding.repetitionPenalty}, seed ${decoding.seed}. Blue is what the machinery scored highest; ` +
+            `amber is what the draw actually took. Same sentence, same seed, same step of the generation — same ` +
+            `word; the draw moves with the step, and the penalty charges the tokens already used.`,
         at({ segs: lastSeg, carriers, bars: splash.length, aperture: true, pick: true }),
       ),
     )
