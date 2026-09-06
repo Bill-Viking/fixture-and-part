@@ -1,24 +1,29 @@
 lane: F&P
-written: 2026-09-06T06:48-07:00
-by: ACT — Exocortex/Mac: hub day 12 — button up Mac→Dell · captured by hub
-on: MAC
-head: b382d17
-status_updated: 2026-09-06T06:48-07:00
-where: the moth built on branch the-moth, verified; awaiting "merge and deploy"
+written: 2026-09-06T09:47-07:00
+by: ACT — F&P: merge + deploy the moth (Dell)
+on: DELL
+head: PENDING
+status_updated: 2026-09-06T09:47-07:00
+where: the moth is merged, deployed and live; the honest pass is next
 next: bill
 depends_on: nothing
-open_in: D:\Projects\fixture-and-part on the DELL · fresh Claude session (clone from GitHub first if the folder is missing)
-model: OPUS · EXTRA for merge + deploy (mechanical; the branch is verified). The honest-pass draft that follows is judgment — a FABLE sitting with one flagged Max turn; open it fresh after the deploy is confirmed.
+open_in: D:\Projects\fixture-and-part on the DELL · fresh Claude session
+model: FABLE · EXTRA, with ONE flagged Max turn for the draft itself. This sitting has to decide what fourteen groups of claims should say — that is judgment, not mechanics, so it opens on Fable. Do NOT run the draft at Extra; flag the Max turn and wait for Bill's dial.
+remaining: 2 sittings
 ---
 read the project status/memory first. You are the F&P lane (FIXTURE⊕PART) on the DELL (home). DEPENDS ON: nothing — this lane rides GitHub.
 
-Ritual in one line of receipts: clock (Get-Date -Format "dddd yyyy-MM-dd HH:mm"); `python sync.py pull` from ~\orchestrator-sync; in D:\Projects\fixture-and-part run `git fetch origin`, `git log -1 origin/main` and confirm `origin/the-moth` exists (tip 8ab5620) — if the folder is missing, first `git clone https://github.com/Bill-Viking/fixture-and-part.git` into D:\Projects, then `npm install`; one-writer check (no other ACT — F&P session); title yourself `ACT — F&P: merge + deploy the moth (Dell)`. Read STATUS.md ## Now (the HANDOFF CAPTURE block first) and the ## To do item ASTRA FINDINGS FIX PASS; the project memory index if present.
+Ritual in one line of receipts: clock (Get-Date -Format "dddd yyyy-MM-dd HH:mm"); `python sync.py pull` from ~\orchestrator-sync; in D:\Projects\fixture-and-part run `git fetch origin` and confirm main is at the head pinned above; one-writer check (`python tools\who-is-live.py --pen` in the hub folder, and no other ACT — F&P session); title yourself `ACT — F&P: the honest pass (Dell)`. Read STATUS.md ## Now, then the ## To do items in this order: the honest pass, the honest-pass finding under it, then ASTRA FINDINGS FIX PASS. Read the project memory index; `project-state.md` is long, read it in full.
 
 Deliver WHERE WE ARE first, plain words, Sal register:
-- Arc goal: "the moth" — the specimen for the perception half of the seam thread — lands on the page as a callout at the end of section 08, then the honest pass tightens the essay's claims to what the evidence shows.
-- Already happened: ✅ the moth ruled and its words approved (hybrid of the lane's and Astra's wording) · ✅ Astra's whole-page review filed and triaged · ✅ the callout built by an Opus builder on branch the-moth, six commits, verified by the Mac lane (text exact, build clean, stepper and reduced-motion checks pass).
-- Right now: nothing merged; main and origin at ec68daf; the-moth at 8ab5620 on GitHub. Not yet done: Bill's own look at the page, and the phone-width landing sentence in real mode.
-- Bill's next move: look at the page on the dev server if he wants to, then say "merge and deploy".
-- Machine's next move: fast-forward main to the-moth, run the dev server, read section 08 off the live page, deploy the way STATUS/README say this project deploys, confirm with a fresh fetch. Then hand back for the honest pass (a Max draft turn — flag it, do not run it at Extra).
+- Arc goal: the honest pass. Astra read the whole essay and found fourteen groups of claims that say more than the evidence behind them does, quoted verbatim in `openai/ASTRA-FINDINGS-FP-2026-09-05.md`. Bill ruled yes to the arc. The job is to decide, group by group, what each claim should say instead — then write it.
+- Already happened: ✅ the moth ruled, its words approved, built, merged and DEPLOYED 2026-09-06 (main f0a626f, gh-pages acc2e78, live and verified byte-exact) · ✅ Astra's findings filed and each one checked against the code · ✅ the phone-width real-mode check that had been open is now done and passes.
+- Right now: nothing is in flight. The tree is clean, main and origin agree, the live page matches. The honest pass has not been started.
+- Bill's next move: say go, and set the dial when this session flags the Max turn.
+- Machine's next move: read the fourteen groups against the code that backs them, propose the rewording group by group for Bill's ruling, then draft.
 
-STOP for Bill's word before merging. Close per the ritual: STATUS ## Now updated, OPENER.md rewritten, commit + push, retitle ARCH.
+One finding from the deploy sitting belongs to this arc and is written up as its own ## To do item: instrument F tells the reader greedy takes "the top word, every time" while the same sheet shows it taking the second bar. Both are true — the code drops whitespace-only pieces and <|endoftext|> in both decoding modes, and instrument B says so on its label while instrument F never mentions it. Fold it into the honest pass rather than patching it alone.
+
+Two standing cautions for any build or deploy this sitting does. Deploy from the Dell through PowerShell, never the Bash tool — Git Bash mangles VITE_BASE and ships a page whose bundle 404s (memory `dell-deploy-git-bash-trap`; gate is in STATUS ## Important). And deploy only on Bill's word, as this project always has.
+
+STOP for Bill's go before writing anything into the essay. Close per the ritual: STATUS ## Now updated, OPENER.md rewritten, commit + push, retitle ARCH.
