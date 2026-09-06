@@ -442,7 +442,7 @@ export default function Stepper({
           className="teach dim"
           show={real ? 'b' : 'a'}
           a="every new token scans the whole rack. racked rows are byte-identical before and after — nothing above the newest row ever changes."
-          b="every new token scans the whole rack, and racked rows never change. greedy STEP takes the top token every time, which is how a six-block model talks itself into a loop; sampled STEP draws instead, and charges the tokens it has already used."
+          b="every new token scans the whole rack. In a real deployment the racked rows are stored once and never change; this page re-runs the whole sentence each step, and the file&rsquo;s own rounding can nudge an old row by a hair. greedy STEP takes the top token every time, which is how a six-block model talks itself into a loop; sampled STEP draws instead, and charges the tokens it has already used."
         />
       </div>
 
