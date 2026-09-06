@@ -83,13 +83,35 @@ function MiniLegend({ visible }) {
 const FILE_DEFAULT_TENSOR = 'transformer.wte.weight_quantized'
 
 /**
+ * Whether the reader has asked for no animation. Asked, not assumed — and
+ * guarded, because a test environment or an old browser may have no
+ * matchMedia at all, in which case the honest answer is "not asked for".
+ */
+function prefersReducedMotion() {
+  return (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  )
+}
+
+/**
  * Scrolls one instrument into view. The lettered markers on instrument F's
  * drawing are windows onto the instrument each part belongs to, and this is
  * what opening one does.
+ *
+ * The stylesheet already forces `scroll-behavior:auto` under reduced motion,
+ * but an explicit `behavior` in the options object beats the stylesheet — so
+ * the jump has to ask for itself. Instrument F asks the same question about
+ * its own tour and its ambient loop.
  */
 function scrollToInstrument(name) {
   const node = document.getElementById(`inst-${name}`)
-  if (node) node.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  if (!node) return
+  node.scrollIntoView({
+    behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+    block: 'start',
+  })
 }
 
 /** Where instrument C points when a real tokenization is first built. */
