@@ -640,6 +640,10 @@ export default function App() {
           // reaches forty deep and the list shows four.
           pick?.token ?? candidates.find((c) => c.wins)?.token ?? null
         }
+        // The same value instrument B is given, so the drawing narrates the
+        // rule the reader actually selected rather than the shipped default.
+        // Illustrative mode is pinned to greedy for the same reason B is.
+        decode={isReal ? decode : 'greedy'}
         pending={realPending}
         stepTick={stepTick}
         modelStatus={modelStatus}
