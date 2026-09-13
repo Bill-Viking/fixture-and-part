@@ -394,6 +394,64 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
   to{opacity:1;transform:none;}
 }
 
+/* --- claim marks (the honest pass) ---------------------------------------
+   A small word set into the prose — EVIDENCE, THEORY or ANALOGY — saying
+   what kind of claim the sentence before it makes, and opening the note and
+   the source behind it.
+
+   Green, and green for a reason the colour law already gives: --keys is
+   searchable metadata, the thing you look a fact up by, and a citation is
+   exactly that. It is not the frozen blue of the machinery or the amber of
+   a value in flight.
+
+   The mark is inline TEXT and nothing about it may change size. Hover and
+   focus change only its colour; open adds a background, and a background has
+   no height. It is set at the callout label's own size and tracking, so it
+   reads as a label in the sentence rather than as a word of it. The prose
+   line box is 28.05 px at 17 px/1.65 and the mark's own leading box is
+   11.5 px, well inside it — measured, not assumed: every structural box on
+   the page is byte-identical with the marks styled and unstyled. */
+.claim-mark{
+  font-family:var(--mono);font-size:11.5px;letter-spacing:0.14em;
+  line-height:1;vertical-align:baseline;
+  color:var(--keys);background:none;border:0;padding:0;
+  cursor:pointer;
+  /* An underline rather than a border: a border-bottom on an inline-block
+     adds a pixel to the box, and this must add none. */
+  text-decoration:underline;
+  text-decoration-thickness:1px;
+  text-underline-offset:3px;
+  transition:color .15s ease,background-color .15s ease;
+}
+.claim-mark:hover{color:var(--ink);}
+.claim-mark:focus-visible{color:var(--ink);}
+.claim-mark[aria-expanded="true"]{color:var(--keys);background:var(--keys-tint);}
+
+/* The note. Everything structural is .info-pop's — fixed, portalled, placed
+   by the one placement law — and this adds only what a longer body and a
+   list of sources need. */
+.claim-pop{
+  max-width:300px;
+  border-color:var(--keys);
+}
+/* The kind is already in caps in the text, and the title under it is a plain
+   phrase in sentence case. Uppercasing the line would shout the phrase too. */
+.claim-pop .info-pop-title{
+  color:var(--keys);text-transform:none;
+  font-size:10px;letter-spacing:0.1em;
+}
+.claim-sources{
+  list-style:none;margin-top:8px;
+  font-size:10.5px;line-height:1.55;
+}
+.claim-sources li{margin-top:5px;}
+.claim-pop a{
+  color:var(--keys);text-decoration:underline;text-underline-offset:2px;
+  /* A citation is a long line with no spaces in the url's half of it. */
+  overflow-wrap:anywhere;
+}
+.claim-pop a:hover{color:var(--ink);}
+
 /* --- mode switch (UI chrome: ink and muted, never a data colour) -------- */
 
 /* Three rows, each a fixed height. Loading, finishing, failing and toggling
