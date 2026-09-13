@@ -7,6 +7,7 @@ import GlassPass from './instruments/GlassPass.jsx'
 import ForwardMap from './instruments/ForwardMap.jsx'
 import FileView from './instruments/FileView.jsx'
 import ModeControl from './components/ModeControl.jsx'
+import ClaimNotes from './components/ClaimNotes.jsx'
 import {
   DEFAULT_SENTENCE,
   MAX_GENERATED,
@@ -28,10 +29,22 @@ import {
 } from './lib/realModel.js'
 import { readLens } from './lib/logitLens.js'
 
+/**
+ * A block of the essay's prose, which is written as HTML and rendered as
+ * HTML.
+ *
+ * The `__html` object is memoised, and that is load-bearing rather than
+ * tidiness. React compares this prop by identity, not by the string inside
+ * it, so a fresh object literal on every render means every paragraph on the
+ * page has its innerHTML written again on every state change — measured:
+ * 155 childList records under one scroll, with the eighteen claim marks
+ * among the nodes thrown away and rebuilt, losing the accessible names they
+ * had been given. Memoised on the string, React skips all of it and the
+ * prose is written once.
+ */
 function Html({ as: Tag = 'p', html, className }) {
-  return (
-    <Tag className={className} dangerouslySetInnerHTML={{ __html: html }} />
-  )
+  const inner = useMemo(() => ({ __html: html }), [html])
+  return <Tag className={className} dangerouslySetInnerHTML={inner} />
 }
 
 function Callout({ label, html, variant }) {
@@ -768,6 +781,12 @@ export default function App() {
         ))}
 
         <Html as="div" className="foot" html={footerHtml} />
+
+        {/* The claim marks are written into the prose above and rendered as
+            raw HTML, so they have no component of their own. This is the one
+            that answers all of them: one delegated listener, one note open at
+            a time. It draws nothing here — the note is portalled to <body>. */}
+        <ClaimNotes />
       </div>
     </>
   )
