@@ -53,6 +53,10 @@ src/main.jsx
 src/App.jsx                        section shell + shared instrument state
 src/content/essay.js               all prose, per section, verbatim
 src/content/explainers.js          the copy behind the "?" badges
+src/content/claimNotes.js          the notes behind the essay's 18 claim marks
+                                   — what each EVIDENCE / THEORY / ANALOGY
+                                   claim rests on, and its sources; driven by
+                                   components/ClaimNotes.jsx, mounted once
 src/content/fileFacts.json         the model file, read ahead of time
 src/instruments/FileView.jsx       E — the file            FIG.1     (section 01)
 src/instruments/Tokenizer.jsx      A — tokenizer strip     FIG.2     (section 02)
@@ -66,8 +70,10 @@ src/instruments/GlassPass.jsx      D — residual stream + logit lens
                                                            FIG.6     (section 04)
 src/lib/forwardMap.js              F — the architecture, band by band, and the
                                    three scalars per pass the drawing moves on
-src/components/                    LoadNote, ModeControl, InfoTag, TeachPair,
-                                   KVInspector, ReadingLine
+src/components/                    LoadNote, ModeControl, InfoTag, ClaimNotes,
+                                   TeachPair, KVInspector, ReadingLine;
+                                   usePopoverPlacement is the one placement
+                                   law the two popovers share
 src/lib/toyModel.js                Phase 1 heuristics
 src/lib/realModel.js               transformers.js and distilgpt2, imported
                                    only when the reader asks for the real model

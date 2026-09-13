@@ -592,6 +592,20 @@ granular light. Redrawn in arc 4 from comp-a3; the data layer is unchanged.
 ### Static sections
 01, 05–10 keep essay prose. The Section 09 duo cards and the two callouts port as-is. Add a fixed mini-legend naming the three roles and their colours, which appears once instruments are on screen.
 
+### Claim marks (the honest pass, 2026-09-12)
+
+The essay's claims about brains and models are not all the same kind of thing, and the page now says which is which. A **claim mark** is a small word set into the prose right after such a claim, naming what stands behind it:
+
+- **EVIDENCE** — a study measured this. The note says what was measured, on whom or what, and what the measurement does not reach.
+- **THEORY** — a named account that fits the results and is still argued over.
+- **ANALOGY** — a comparison, offered as a comparison and nothing more.
+
+Eighteen of them: twelve EVIDENCE, four THEORY, two ANALOGY. They are written into the prose in `src/content/essay.js` as `<button type="button" class="claim-mark" data-claim="<id>">KIND</button>`, so they come through `dangerouslySetInnerHTML` as static DOM; the notes behind them are `src/content/claimNotes.js`, one entry per id.
+
+**Style.** `--keys` green, because the colour law makes green searchable metadata and a citation is that; mono at the callout label's size (11.5 px, 0.14em tracking); a 1 px underline offset 3 px. Hover and focus change the colour only; an open mark takes a `--keys-tint` background. Nothing about the mark changes size in any state — it is inline text inside a prose line box and it must move nothing.
+
+**Behaviour.** `ClaimNotes` is mounted once in `App.jsx` and drives one popover for all eighteen: one delegated click listener, one walk at mount that gives each mark its accessible name from its own note. The note is portalled to `<body>` and fixed, placed by `usePopoverPlacement` — the same law as the "?" badge. One note at a time; opening a second closes the first. The note is a `role="dialog"` that takes focus when it opens, so Tab walks its sources; Escape closes it and hands focus back to the mark; a click outside closes it. A mark whose id has no note stays inert and warns in a dev build. `__claimCheck()` in a dev build returns `{marks, notes, missing, orphan}`.
+
 ## 5. Phasing & acceptance
 
 **Phase 1 (must ship first, no ML dependency):**
@@ -608,6 +622,8 @@ granular light. Redrawn in arc 4 from comp-a3; the data layer is unchanged.
 ## 6. Copy rules
 
 Sentence case. Plain verbs. Labels label ("STEP", "RESET", "cache entries"), never sell. Any illustrative (non-real) number is marked "illustrative." Keep the essay's voice: precise, engineer-to-engineer, no exclamation points.
+
+**A claim note.** Sentence case and plain verbs, as everywhere else. One to three sentences saying what the source actually showed — what was measured, on how many, and where the result stops — and no more than that: a note may not restate the essay's claim, and it may not reach further than its source does. Where the source is narrower than the sentence it marks, the note says so in the same breath. Every url is fetched and read before it goes in, and the reading is kept (`design/honest-pass/SOURCES-DIGEST.md`); where a free full text exists the link goes there rather than to the publisher's wall. A note that cannot be written from the source is a sign the sentence is wrong, not that the note should be softened.
 
 ## 7. Repo shape
 
