@@ -173,7 +173,14 @@ export default function ClaimNotes() {
   const label = noteLabel(note)
 
   return createPortal(
+    // Keyed on the note, and that is a measurement rather than a habit.
+    // Without the key React keeps one <div> and moves it from the first
+    // mark's position to the second's, which is a fixed element changing
+    // place: a real layout shift, and the observer scored it at 0.279807 at
+    // 1280 px. Keyed, the first dialog is removed and the second inserted —
+    // neither is a shift — and the same action reads 0.000000.
     <div
+      key={openId}
       id={popId}
       role="dialog"
       aria-label={label}
