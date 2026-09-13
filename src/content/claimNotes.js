@@ -32,6 +32,7 @@ export const claimNotes = {
     body: 'people were taught to fear a picture, then given a reminder and the drug propranolol. the fear was erased only when the reminder carried a surprise — a shock expected and not delivered — and was untouched when the reminder matched what they already knew. recall alone does not always reopen a memory, and old, strong memories resist.',
     sources: [
       { label: 'Sevenster, Beckers & Kindt 2013 · Prediction error governs pharmacologically induced amnesia for learned fear', url: 'https://pubmed.ncbi.nlm.nih.gov/23413355/' },
+      { label: 'Kindt, Soeter & Sevenster 2014 · Disrupting reconsolidation of fear memory in humans by a noradrenergic β-blocker (the lab’s protocol; names the drug)', url: 'https://pubmed.ncbi.nlm.nih.gov/25549103/' },
     ],
   },
   rat: {
@@ -112,7 +113,7 @@ export const claimNotes = {
   saccade: {
     kind: 'evidence',
     title: 'what a saccade switches off',
-    body: 'during a saccade, sensitivity drops sharply for the coarse, fast-motion pathway and not at all for the fine, color-carrying one, so the eye is muted in flight, not dark. in a study of people looking around real scenes, most failed to notice when nearly all the color outside the centre of their gaze was drained away — the periphery’s color is thin, and its fullness is filled in. and in lucid dreamers the eyes tracked a dreamed target as smoothly as a seen one, with no image on the retina to follow.',
+    body: 'during a saccade, sensitivity drops sharply for the coarse, fast-motion pathway and not at all for the fine, color-carrying one, so the eye is muted in flight, not dark. in a study of people looking around real scenes, up to a third failed to notice when nearly all the color outside the centre of their gaze was drained away — the periphery’s color is thin, and its fullness is filled in. and in lucid dreamers the eyes tracked a dreamed target as smoothly as a seen one, with no image on the retina to follow.',
     sources: [
       { label: 'Burr, Morrone & Ross 1994 · Selective suppression of the magnocellular visual pathway during saccadic eye movements', url: 'https://www.nature.com/articles/371511a0' },
       { label: 'Cohen, Botch & Robertson 2020 · The limits of color awareness during active, real-world vision', url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC7306755/' },
