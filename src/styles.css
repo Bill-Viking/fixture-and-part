@@ -374,8 +374,10 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 .info-tag[aria-expanded="true"]{color:var(--frozen);border-color:var(--frozen);background:var(--frozen-tint);}
 .counter .info-tag{margin-left:8px;}
 
-/* Portalled to <body> and fixed, so no parent overflow can clip it and
-   opening it cannot move anything on the page. */
+/* Portalled to <body>, so no parent overflow can clip it and opening it
+   cannot move anything on the page. Fixed here because the "?" badge's
+   popover stays with the viewport while the page scrolls under it; the claim
+   note overrides this to absolute and stays with its sentence instead. */
 .info-pop{
   position:fixed;z-index:40;
   background:var(--card);border:1px solid var(--frozen);border-radius:4px;
@@ -429,10 +431,18 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 .claim-mark:focus-visible{color:var(--ink);}
 .claim-mark[aria-expanded="true"]{color:var(--keys);background:var(--keys-tint);}
 
-/* The note. Everything structural is .info-pop's — fixed, portalled, placed
-   by the one placement law — and this adds only what a longer body and a
-   list of sources need. */
+/* The note. Portalled and placed by the one placement law, like the badge's
+   popover — but ABSOLUTE rather than fixed, set in document coordinates, so
+   it scrolls away with the sentence it belongs to rather than following the
+   reader down the page. That is a reading decision first: the note answers
+   one sentence, and it should leave when that sentence does. It is also the
+   only way it can cost nothing. A fixed box re-placed on every scroll event
+   is a box that moves, and the observer scored one long jump with a note
+   open at 0.528663 at 390 px and 0.105526 at 1280; this one has no scroll
+   listener at all and the same jump reads 0.000000.
+   The rest is what a longer body and a list of sources need. */
 .claim-pop{
+  position:absolute;
   max-width:300px;
   border-color:var(--keys);
 }

@@ -30,7 +30,10 @@ function noteLabel(note) {
  * would be two answers to one question.
  *
  * Nothing here can move the page. The popover is portalled to <body> and
- * fixed, placed by the page's one placement law; the mark is inline text
+ * positioned ABSOLUTELY, in document coordinates: placed by the page's one
+ * placement law against the viewport at the moment it opens, then written
+ * down as a page position, so it scrolls away with the sentence it belongs
+ * to instead of chasing the reader down the page. The mark is inline text
  * whose box does not change on hover, on focus or when its note is open —
  * the open state is a background, and a background has no size.
  */
@@ -43,7 +46,12 @@ export default function ClaimNotes() {
   const markRef = useRef(null)
   const popRef = useRef(null)
   const popId = useId()
-  const pos = usePopoverPlacement(openId, markRef, popRef, POP_WIDTH)
+  // `follow: false`: the note is anchored in the page, not in the viewport.
+  // It is placed once, at open; no scroll listener ever moves it again, and
+  // a reflow only carries it along under its own mark.
+  const pos = usePopoverPlacement(openId, markRef, popRef, POP_WIDTH, {
+    follow: false,
+  })
 
   const clearMark = useCallback((mark) => {
     if (!mark) return
@@ -138,8 +146,8 @@ export default function ClaimNotes() {
 
   // Focus moves into the dialog once it has been placed, so Tab walks its
   // sources and Escape comes back to the mark. `preventScroll`, because the
-  // box is fixed and already in view: scrolling to it would move the page
-  // under a reader who only asked what the sentence was standing on.
+  // box was just placed inside the viewport: scrolling to it would move the
+  // page under a reader who only asked what the sentence was standing on.
   useEffect(() => {
     if (!openId) return
     popRef.current?.focus({ preventScroll: true })
@@ -175,10 +183,10 @@ export default function ClaimNotes() {
   return createPortal(
     // Keyed on the note, and that is a measurement rather than a habit.
     // Without the key React keeps one <div> and moves it from the first
-    // mark's position to the second's, which is a fixed element changing
-    // place: a real layout shift, and the observer scored it at 0.279807 at
-    // 1280 px. Keyed, the first dialog is removed and the second inserted —
-    // neither is a shift — and the same action reads 0.000000.
+    // mark's position to the second's, which is one box changing place: a
+    // real layout shift, and the observer scored it at 0.279807 at 1280 px.
+    // Keyed, the first dialog is removed and the second inserted — neither
+    // is a shift — and the same action reads 0.000000.
     <div
       key={openId}
       id={popId}
