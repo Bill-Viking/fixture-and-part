@@ -2,7 +2,7 @@ lane: F&P
 written: 2026-09-12T20:05-07:00
 by: ACT — F&P: the honest pass (Dell)
 on: DELL
-head: 4062d13
+head: 79f715d
 status_updated: 2026-09-12T20:05-07:00
 where: the honest pass is live; nothing in flight; the next arc is not chosen
 next: bill
