@@ -266,7 +266,19 @@ function geometryFor(compact, full) {
   // spare and now have one: THE PART on the phone, and the fine print under
   // the legend in the column setting and on the phone, which was reserved
   // four lines on the phone and needed five.
-  const legLines = per([8, 10, 14, 7, 8], [9, 10, 13, 8, 10], [7, 7, 9, 6, 7])
+  //
+  // THE LANDING was raised in the honest pass, and for the reason the law
+  // exists: the entry says what the amber mark is in the words of the rule
+  // instrument B is running, and greedy's wording grew — it now says the top
+  // word is taken once whitespace-only pieces and the end mark are set aside.
+  // Measured with `__legendLines()` under BOTH rules, which matters here
+  // because the shipped default is sampled and a reservation read in the
+  // default state never sees greedy's sentence at all: the phone went from
+  // six lines to eight against seven reserved, which clipped, and the column
+  // from seven to eight against eight, which met its box with nothing to
+  // spare. Both are nine now; the sheet's worst is five against six and is
+  // unchanged.
+  const legLines = per([8, 10, 14, 9, 8], [9, 10, 13, 9, 10], [7, 7, 9, 6, 7])
   const legKeyLine = compact ? fs.legKey * 1.5 : 0
   const legHeight =
     legLines.reduce((sum, l) => sum + l * legLine + legKeyLine + legGap, 0)
@@ -2456,10 +2468,10 @@ export default function ForwardMap({
     // one borrows the same bracket rather than trailing a dash into the rest
     // of the sentence.
     const tookCompact = greedy
-      ? 'is what greedy decoding took (the top word every time — no temperature, no draw)'
+      ? 'is what greedy decoding took (the top word every time once whitespace-only pieces and the end mark are set aside — instrument B&rsquo;s own skip — no temperature, no draw)'
       : `is what the sampler took ${samplerSettings}`
     const tookWide = greedy
-      ? 'is what greedy decoding took (the top word every time — no temperature, no top-k, no draw)'
+      ? 'is what greedy decoding took (the top word every time once whitespace-only pieces and the end mark are set aside — instrument B&rsquo;s own skip — no temperature, no top-k, no draw)'
       : `is what the shipped sampler took ${samplerSettings}`
     const sameTrace = greedy
       ? 'same input → same trace, every time.'
@@ -3489,7 +3501,7 @@ export default function ForwardMap({
                 style={{ fontSize: g.fs.key }}
               >
                 {decode === 'greedy'
-                  ? 'GREEDY — THE TOP WORD, EVERY TIME'
+                  ? 'GREEDY — THE TOP WORD, WHITESPACE SKIPPED'
                   : `TEMP ${DECODING.temperature} · TOP-K ${DECODING.topK} · REP-PEN ${DECODING.repetitionPenalty} · SEED ${DECODING.seed}`}
               </text>
             ) : null}

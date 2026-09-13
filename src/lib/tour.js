@@ -153,7 +153,7 @@ export function rayLead(bar, argmaxToken, pickToken, decode = 'sampled') {
   const greedy = decode === 'greedy'
   const took = greedy ? 'greedy decoding took' : 'the sampler took'
   const amber = greedy
-    ? ' It is what greedy decoding took — the top word every time — and it carries the amber mark.'
+    ? ' It is what greedy decoding took — the top word every time, whitespace skipped — and it carries the amber mark.'
     : ' It is what the sampler took, and it carries the amber mark.'
   const role = bar.argmax
     ? ' It is the machine’s own top — the largest of all 50,257 — and is drawn blue.'
@@ -504,7 +504,7 @@ export function buildTour({
         'pick',
         4200,
         greedy
-          ? `Greedy decoding took ${q(nextToken ?? '—')}${at_} — the top word every time.`
+          ? `Greedy decoding took ${q(nextToken ?? '—')}${at_} — the top word every time, whitespace skipped.`
           : `The sampler took ${q(nextToken ?? '—')}${at_}.`,
         greedy
           ? `No temperature, no top-k, no penalty, no draw: the rule is take the highest and nothing else. Blue ` +
