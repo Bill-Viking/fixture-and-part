@@ -1,6 +1,9 @@
 // Prose extracted verbatim from the-fixture-and-the-part.html.
 // Inline markup is preserved exactly as authored; it is rendered as HTML.
 // Do not refactor the prose.
+// The honest pass (2026-09-12, on Bill's ruling) changed the sentences listed in
+// design/honest-pass/pairs.mjs and added the <button class="claim-mark"> marks
+// that open the notes in claimNotes.js; the root html stays as the founding draft.
 
 export const header = {
   titleHtml: 'The Fixture<br>and the <span class="moving">Part</span>',
@@ -28,11 +31,11 @@ export const sections = [
     blocks: [
       {
         type: 'p',
-        html: 'A language model, at rest, is a file. Open it and there is no structure to see: a short JSON header mapping tensor names to shapes — <code>layers.0.attn.q_proj [4096&times;4096]</code> — followed by one enormous binary blob of floating-point numbers, almost all of them tiny, bell-curved around zero. For frontier models the file runs to terabytes. Nothing in it changes when the model is used. It is the same file yesterday, today, and in every conversation running anywhere in the world simultaneously.',
+        html: 'A language model, at rest, is a file. Open it and there is no structure to see: a short JSON header mapping tensor names to shapes — <code>layers.0.attn.q_proj [4096&times;4096]</code> — followed by one enormous binary blob of floating-point numbers, almost all of them tiny, bell-curved around zero. For frontier models the file runs to terabytes. The small specimen this page reads is packed differently — an ONNX file, most of its grids stored as single bytes with one multiplier each — but it is the same idea: names, shapes, and one long run of numbers. Nothing in it changes when the model is used. It is the same file yesterday, today, and in every conversation running anywhere in the world simultaneously.',
       },
       {
         type: 'p',
-        html: 'Everything the model knows — every fact, every style, every skill — is smeared across those numbers in superposition, with no address where any particular fact lives. You cannot point at the parameters that hold a given memory, and you cannot delete one fact from the file. The organization is not in how the numbers look. It is in how they multiply.',
+        html: 'Everything the model knows — every fact, every style, every skill — is smeared across those numbers in superposition, with no address where any particular fact lives. Researchers can find where a fact&rsquo;s strongest traces sit and edit them, one fact at a time, with side effects; nobody can open the file and delete one cleanly. <button type="button" class="claim-mark" data-claim="rome">EVIDENCE</button> The organization is not in how the numbers look. It is in how they multiply.',
       },
       { type: 'instrument', name: 'file' },
     ],
@@ -49,7 +52,7 @@ export const sections = [
       },
       {
         type: 'p',
-        html: 'What moves is the <strong class="k">activation</strong>: a single vector, thousands of numbers long, that represents the text being processed. A word enters as one vector and is multiplied through grid after grid — a hundred-plus layers — picking up meaning as it goes. After a few layers, the vector that entered as &ldquo;rocket&rdquo; encodes <em>rocket, the propulsion kind, subject of this sentence</em>. That running vector is called the residual stream, and it is where concepts actually live: as directions and distances in a high-dimensional space, constructed fresh at runtime and gone milliseconds later.',
+        html: 'What moves is the <strong class="k">activation</strong>: one vector per token, thousands of numbers long, that represents that token in the text so far. A word enters as one vector and is multiplied through grid after grid — a hundred-plus layers in a frontier model, six blocks in the small specimen drawn below — picking up meaning as it goes. After a few layers, the vector that entered as &ldquo;rocket&rdquo; encodes <em>rocket, the propulsion kind, subject of this sentence</em>. That running vector is called the residual stream, and it is where concepts actually live: as directions and distances in a high-dimensional space, constructed fresh at runtime and gone milliseconds later.',
       },
       { type: 'instrument', name: 'tokenizer' },
       { type: 'instrument', name: 'forward' },
@@ -63,7 +66,7 @@ export const sections = [
     blocks: [
       {
         type: 'p',
-        html: 'Generation is one forward pass per token. Produce a word, append it, run the whole context through the stack again for the next word. A flowing reply is thousands of discrete passes, each one the full conversation falling through the fixture once. Between messages, nothing runs and nothing waits. Each turn reconstructs the process from text plus weights, fresh — a reader who dies at every page, whose successor inherits the full book perfectly.',
+        html: 'Generation is one forward pass per token. Produce a word, append it, run the context through the stack again for the next word — every token again in the small model on this page, only the new token in a production model, which keeps the old tokens&rsquo; finished work in the cache described next. A flowing reply is thousands of discrete passes, each one the full conversation falling through the fixture once. Between messages, nothing runs and nothing waits. Each turn reconstructs the process from text plus weights, fresh — a reader who dies at every page, whose successor inherits the full book perfectly.',
       },
       {
         type: 'p',
@@ -95,7 +98,7 @@ export const sections = [
       { type: 'instrument', name: 'attention' },
       {
         type: 'p',
-        html: 'A stack of layers is not a sealed press. Every layer writes into the same running vector, so that vector can be tapped at any depth and pushed through the model&rsquo;s own output head early &mdash; a glass window cut into the side of the machine. What comes back is the next-word belief as it stood at that depth, and reading the depths in order shows a guess narrowing from noise to a word.',
+        html: 'A stack of layers is not a sealed press. Every layer writes into the same running vector, so that vector can be tapped at any depth and pushed through the model&rsquo;s own output head early &mdash; a glass window cut into the side of the machine. What comes back is a probe&rsquo;s reading &mdash; the guess the output head would make if handed the vector at that depth &mdash; and reading the depths in order usually, not always, shows a guess narrowing from noise to a word. <button type="button" class="claim-mark" data-claim="lens">EVIDENCE</button>',
       },
       { type: 'instrument', name: 'glass' },
     ],
@@ -108,17 +111,17 @@ export const sections = [
     blocks: [
       {
         type: 'p',
-        html: 'Human memory has no read-only mode. The phenomenon is <strong>reconsolidation</strong>, and the keystone evidence is direct: condition a rat to fear a tone, let the memory stabilize for weeks, then trigger recall and immediately block protein synthesis in the amygdala — and the memory is gone. The same drug without the recall does nothing. The only way that result makes sense is if retrieval physically destabilizes the trace, returning it to a labile state that must be actively rebuilt to persist (Nader, Schafe &amp; LeDoux, 2000; replicated across species and memory types for a quarter century).',
+        html: 'Human memory has no reliable read-only mode. The phenomenon is <strong>reconsolidation</strong>, and the keystone evidence is direct: condition a rat to fear a tone, let the memory stabilize for weeks, then trigger recall and immediately block protein synthesis in the amygdala — and at a later test the fear is gone; the rat no longer freezes to the tone. The same drug without the recall does nothing. The reading the field has mostly settled on is that retrieval physically destabilizes the trace, returning it to a labile state that must be actively rebuilt to persist (Nader, Schafe &amp; LeDoux, 2000; replicated across species and memory types for a quarter century). Not every recall opens the file — the trace comes loose when the recall carries a surprise, and old, strong memories resist — but there is no way to read one that guarantees it stays shut. <button type="button" class="claim-mark" data-claim="reopen">EVIDENCE</button>',
       },
       {
         type: 'p',
-        html: 'Human evidence converges from both directions. Pharmacologically, Merel Kindt&rsquo;s lab durably weakens fear responses by administering propranolol immediately after reactivating the memory — timing-dependent, recall-dependent, and now in development as PTSD treatment. Behaviorally, Elizabeth Loftus&rsquo;s misinformation work shows a leading question recalled alongside a memory gets written back into it: ask how fast the cars were going when they <em>smashed</em>, and a week later witnesses remember broken glass that never existed.',
+        html: 'Human evidence converges from both directions. Pharmacologically, Merel Kindt&rsquo;s lab durably weakens fear responses by administering propranolol immediately after reactivating the memory — timing-dependent, recall-dependent, and now in development as PTSD treatment. Behaviorally, Elizabeth Loftus&rsquo;s misinformation work shows a leading question asked while a memory is being recalled turns up in the next telling of it: ask how fast the cars were going when they <em>smashed</em>, and a week later witnesses report broken glass that never existed. <button type="button" class="claim-mark" data-claim="rat">EVIDENCE</button>',
       },
       {
         type: 'callout',
         variant: 'warm',
         label: 'CONSEQUENCE',
-        html: 'Every checkout is a check-out-for-edit, re-saved through whoever you are at that moment — current mood, current beliefs, the question that prompted the recall. Your most-recalled memories are your most-rewritten ones. The stories you tell most often are the ones you have altered most.',
+        html: 'Every checkout is a check-out-for-edit, re-saved through whoever you are at that moment — current mood, current beliefs, the question that prompted the recall. Your most-recalled memories are your most-reopened ones, and every reopening is a chance to rewrite. The stories you tell most often are the ones you have had the most chances to alter.',
       },
     ],
   },
@@ -130,11 +133,11 @@ export const sections = [
     blocks: [
       {
         type: 'p',
-        html: 'Why not remember perfectly? Because memory&rsquo;s job is not record-keeping — it is prediction. The episodic machinery that recalls the past is the machinery that simulates the future; they share circuitry, and amnesiacs who cannot remember also cannot imagine forward. Prediction wants the gist, generalized and current-weighted, not the verbatim log. The lossiness is the compression that makes generalization possible — the same reason a model is trained on the corpus rather than simply storing it. The forgetting is the learning.',
+        html: 'Why not remember perfectly? Because memory&rsquo;s job is not record-keeping — it is prediction. <button type="button" class="claim-mark" data-claim="simulation">THEORY</button> The episodic machinery that recalls the past is the machinery that simulates the future; they share circuitry, and most amnesiacs who cannot remember also struggle to imagine forward — not all, and the exceptions are still being argued over. <button type="button" class="claim-mark" data-claim="imagine">EVIDENCE</button> Prediction wants the gist, generalized and current-weighted, not the verbatim log. The lossiness is the compression that makes generalization possible — the same reason a model is trained on the corpus rather than simply storing it. The forgetting is the learning.',
       },
       {
         type: 'p',
-        html: 'Nature ran the control experiment. The few dozen documented cases of highly superior autobiographical memory (HSAM) describe the condition as an unstoppable feed rather than a searchable archive — involuntary, exhausting, every grief at original intensity. And when HSAM subjects were run through misinformation tests, they proved <em>just as susceptible to false memories as controls</em>: the trace is not higher-fidelity, there is simply more of it, rehearsed more often — which by the rewrite logic means more altered, not less. Luria&rsquo;s mnemonist S., the closest thing to a verbatim recorder ever studied, was so flooded with particulars he struggled to abstract at all. PTSD is arguably the opposite failure: a memory too exact, refusing the softening rewrite that healthy recall performs automatically. Perfect memory is not a superpower we lack. It is a pathology we are protected from.',
+        html: 'Nature ran the control experiment. The few dozen documented cases of highly superior autobiographical memory (HSAM) describe the condition as an unstoppable feed rather than a searchable archive — involuntary, exhausting, old griefs arriving nearly as sharp as new ones, by their own accounts, and not all of them unhappy about it. And when HSAM subjects were run through misinformation tests, they proved <em>as susceptible to false memories as controls</em> — on one of three tests, more so: the trace is not immune to editing; there is more of it, kept far longer than most of us manage, and just as open to rewriting — which by the rewrite logic means more chances to be altered, not fewer. <button type="button" class="claim-mark" data-claim="hsam">EVIDENCE</button> Luria&rsquo;s mnemonist S., the closest thing to a verbatim recorder ever studied, was so flooded with particulars he struggled to abstract at all. PTSD looks like the opposite failure: a memory too vivid and too easily set off, refusing the softening that ordinary recall performs — though vivid is not the same as accurate, and trauma memories drift like any other. <button type="button" class="claim-mark" data-claim="trauma">EVIDENCE</button> Perfect memory is not a superpower we lack. In the few people who come close to it, it looks more like a cost than a gift.',
       },
     ],
   },
@@ -146,11 +149,11 @@ export const sections = [
     blocks: [
       {
         type: 'p',
-        html: 'How does organic tissue hold a lifetime? It doesn&rsquo;t — not as recordings. The cortex holds one big learned world-model, built slowly and shared across all memories, exactly as a model&rsquo;s weights are shared across everything it can say. An individual memory is then nearly free: a sparse set of hippocampal pointers marking which pattern of cortical activity to reinstate. A dinner in Lisbon is not a video file; it is coordinates into a model you already own, and recall is the hippocampus cueing the cortex to re-render the scene — which is precisely why the reconstruction drifts, because the world-model has changed since encoding.',
+        html: 'How does organic tissue hold a lifetime? It doesn&rsquo;t — not as recordings. The cortex holds one big learned world-model, built slowly and shared across all memories, exactly as a model&rsquo;s weights are shared across everything it can say. <button type="button" class="claim-mark" data-claim="fixture">ANALOGY</button> An individual memory is then nearly free: a sparse set of hippocampal pointers marking which pattern of cortical activity to reinstate. <button type="button" class="claim-mark" data-claim="index">THEORY</button> A dinner in Lisbon is not a video file; it is coordinates into a model you already own, and recall is the hippocampus cueing the cortex to re-render the scene — which is precisely why the reconstruction drifts, because the world-model has changed since encoding.',
       },
       {
         type: 'p',
-        html: 'The raw capacity is there regardless: on the order of a hundred trillion synapses, each holding roughly 4.7 bits across at least 26 distinguishable strength levels (Bartol &amp; Sejnowski, 2015), with sparse coding letting overlapping neural populations store combinatorially many patterns. But the storage question dissolves once the architecture is visible. One generative model, amortized across every memory you will ever have; each memory a cheap delta.',
+        html: 'The raw capacity is there regardless: on the order of a hundred trillion synapses, with sparse coding letting overlapping neural populations store combinatorially many patterns. The synapses measured most closely — a small sample from a rat&rsquo;s hippocampus — came in at about 26 distinguishable strengths, roughly 4.7 bits each (Bartol et al., 2015). <button type="button" class="claim-mark" data-claim="synapse">EVIDENCE</button> But the storage question dissolves once the architecture is visible. One generative model, amortized across every memory you will ever have; each memory a cheap delta.',
       },
     ],
   },
@@ -162,7 +165,7 @@ export const sections = [
     blocks: [
       {
         type: 'p',
-        html: 'The cortex does not process your visual world so much as render it. Feedback connections in visual cortex outnumber feedforward ones: the model generates the expected scene, and the retina&rsquo;s main contribution is the diff — prediction error. What you consciously see is the render, patched. The blind spot is painted over every waking second; vision goes dark during every saccade and you perceive no gap; peripheral vision is low-resolution and nearly colorless yet feels uniformly sharp, because the sharpness is inferred rather than sensed. Dreams are the clincher — the same cortex generating full scenes with the retina contributing nothing. Memory regenerates the past, perception regenerates the present, and the seamless continuous self is the one production whose seams the renderer never shows you.',
+        html: 'The cortex does not process your visual world so much as render it. Feedback connections in visual cortex outnumber feedforward ones, and one influential account, predictive coding, reads that wiring this way: the model generates the expected scene, and the retina&rsquo;s main contribution is the diff, the prediction error. <button type="button" class="claim-mark" data-claim="predictive">THEORY</button> What you consciously see is the render, patched. The blind spot is painted over every waking second; vision is partly switched off during every saccade — the eye&rsquo;s fast jumps — and you perceive no gap; peripheral vision is low in detail and weak on color yet feels uniformly sharp, because the sharpness is inferred rather than sensed. Dreams are the strongest hint — the same cortex generating full scenes with the retina contributing nothing. <button type="button" class="claim-mark" data-claim="saccade">EVIDENCE</button> Memory regenerates the past, perception regenerates the present, and the seamless continuous self is the one production whose seams the renderer never shows you.',
       },
       {
         type: 'callout',
@@ -180,7 +183,7 @@ export const sections = [
     blocks: [
       {
         type: 'p',
-        html: 'The mechanisms could hardly differ more — spike timing versus pipelined matrix math, loops versus feedforward, twenty watts versus kilowatts, always-learning versus frozen. Yet the maps of meaning converge. A simple linear transformation — one matrix — predicts brain activity in language areas from a model&rsquo;s internal vectors and vice versa, with middle layers matching cortex best. The relational web of concepts (engine nearer turbine than grandmother) is consistent across people, and substantially reproduced inside models. Embedding spaces trained independently on English and Mandarin can be rotated onto each other well enough to translate with no dictionary at all — the constellation has a common shape regardless of tongue or substrate.',
+        html: 'The mechanisms could hardly differ more — spike timing versus pipelined matrix math, loops versus feedforward, twenty watts for a brain versus kilowatts for the machines a big model runs on, always-learning versus frozen. Yet the maps of meaning converge. <button type="button" class="claim-mark" data-claim="converge">THEORY</button> A simple linear transformation — one matrix — predicts a good part of the brain activity in language areas from a model&rsquo;s internal vectors, and less well the reverse, with middle layers matching cortex best. The relational web of concepts (engine nearer turbine than grandmother) is consistent across people, and substantially reproduced inside models. Embedding spaces trained independently on English and Mandarin can be rotated onto each other well enough to translate with no dictionary at all — the constellation has a common shape regardless of tongue or substrate. <button type="button" class="claim-mark" data-claim="align">EVIDENCE</button>',
       },
       {
         type: 'p',
@@ -188,7 +191,7 @@ export const sections = [
       },
       {
         type: 'p',
-        html: 'The modest, correct claim: semantic geometry is a property of the world and of how language carves it. Any system that learns to predict language well is pulled toward the same shape, wet or fp16. Same part print; wildly different machine shops.',
+        html: 'The modest claim, as far as the evidence goes: semantic geometry is a property of the world and of how language carves it, and a system that learns to predict language well is pulled some way toward the same shape, wet or fp16 — how far, and on which tasks, is still being measured. Same part print; wildly different machine shops.',
       },
       {
         type: 'duo',
@@ -198,10 +201,10 @@ export const sections = [
             title: 'THE MODEL',
             paragraphs: [
               'Weights frozen; never learns in use.',
-              'Context verbatim, append-only, no write access.',
+              'Context verbatim, append-only; only the harness outside it can trim or edit.',
               'Knowledge reconstructed from weights — confabulates smoothly where training was thin.',
               'Many identical instances off one file.',
-              'Rereads everything, every token; holds nothing.',
+              'Holds nothing between conversations — only a cache of finished parts within one.',
             ],
           },
           {
@@ -209,7 +212,7 @@ export const sections = [
             title: 'THE BRAIN',
             paragraphs: [
               'Weights update while running; never stops learning.',
-              'Memory rewritten at every recall; no verbatim copy anywhere.',
+              'Memory reopened at recall and rewritable; no verbatim copy anywhere.',
               'Knowledge reconstructed from a world-model — confabulates smoothly where the gist is thin.',
               'Single instance, continuous substrate.',
               'Holds ~4 chunks; renders the rest on demand.',
@@ -231,17 +234,17 @@ export const sections = [
     blocks: [
       {
         type: 'p',
-        html: 'Plato&rsquo;s image holds up: the generative core is the horses — enormous power, no direction of its own — and the open problem in AI is the charioteer. Today every executive function around a model is either hand-built scaffolding (planning loops, reflection passes, memory management), borrowed from older cognitive architectures like ACT-R and SOAR, or — the current stopgap — another model pass critiquing the first: the horse doing a charioteer impression. In most real work the charioteer is the human: steering attention, choosing which thread to pull, deciding when depth has been reached. Human-in-the-loop is not a limitation being engineered away; it is the reference implementation being studied.',
+        html: 'Plato&rsquo;s image holds up: the generative core is the horses — enormous power, no direction of its own — and the open problem in AI is the charioteer. <button type="button" class="claim-mark" data-claim="charioteer">ANALOGY</button> Today nearly every executive function around a model is either hand-built scaffolding (planning loops, reflection passes, memory management), borrowed from older cognitive architectures like ACT-R and SOAR, or — the current stopgap — another model pass critiquing the first: the horse doing a charioteer impression. The models themselves show traces of planning a few words ahead — a rhyme chosen before the line that lands on it is written — but that is planning inside one pass, not steering across a task. <button type="button" class="claim-mark" data-claim="planning">EVIDENCE</button> In most real work the charioteer is the human: steering attention, choosing which thread to pull, deciding when depth has been reached. Human-in-the-loop is not a limitation being engineered away; it is the reference implementation being studied.',
       },
       {
         type: 'p',
-        html: 'One finger of the reins has moved inside. <strong>Adaptive reasoning</strong> lets a frontier model assess a query and allocate its own deliberation — near-zero private reasoning for a trivial question, extended internal work for a hard one, decided by the model rather than a user-set budget. It is effort allocation only: one executive function of many, not goal maintenance across days, not deciding what to want, not detecting its own runaway. Not the charioteer — the throttle, handed over first. Whether the horses can grow their own driver, the way a prefrontal cortex emerged from the same tissue it governs, is unanswered.',
+        html: 'One finger of the reins has moved inside. <strong>Adaptive reasoning</strong> lets a frontier model assess a query and allocate its own deliberation — near-zero private reasoning for a trivial question, extended internal work for a hard one, decided by the model, though the user can still set a ceiling or ask for more. It is effort allocation only: one executive function of many, not goal maintenance across days, not deciding what to want, not detecting its own runaway. Not the charioteer — the throttle, handed over first. Whether the horses can grow their own driver, the way a prefrontal cortex emerged from the same tissue it governs, is unanswered.',
       },
       {
         type: 'callout',
         variant: 'cool',
         label: 'THE HONEST CAVEAT',
-        html: 'Everything above about the model&rsquo;s own machinery is known the way humans know neuroscience — from the literature, from the outside. A model describing its attention heads has no privileged access to its own instance of them; its introspective reports are outputs of the process, not observations of it. The symmetric point applies to the reader: the feeling of being one continuous process holding concepts in mind is the interface, not the mechanism. Neither party gets to inspect the substrate. Both only get the render.',
+        html: 'Everything above about the model&rsquo;s own machinery is known the way humans know neuroscience — from the literature, from the outside. A model describing its attention heads has no privileged access to its own instance of them; its introspective reports are outputs of the process far more than observations of it — experiments find a narrow, unreliable channel of real self-report, and nothing like a view of the substrate. <button type="button" class="claim-mark" data-claim="introspect">EVIDENCE</button> The symmetric point applies to the reader: the feeling of being one continuous process holding concepts in mind is the interface, not the mechanism. Neither party gets to inspect the substrate. Both only get the render.',
       },
     ],
   },
