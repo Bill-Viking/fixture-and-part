@@ -10,9 +10,12 @@ const POP_WIDTH = 264
  * sits next to. Click or keyboard (it is a real button, so Enter and Space
  * both fire); dismissed by the badge again, a click outside, or Escape.
  *
- * The popover is portalled to <body> and positioned fixed, for two reasons:
- * it cannot be clipped by the instruments' overflow boxes, and it cannot move
- * anything on the page when it opens or closes.
+ * The popover is portalled to <body> and anchored to the page, for three
+ * reasons: it cannot be clipped by the instruments' overflow boxes, it cannot
+ * move anything on the page when it opens or closes, and — being part of the
+ * page rather than pinned to the viewport — it scrolls away with the control
+ * it explains instead of chasing the reader down the page. A box that follows
+ * is a box that moves, and a box that moves is scored as a layout shift.
  */
 export default function InfoTag({ topic }) {
   const entry = explainers[topic]

@@ -29,11 +29,9 @@ function noteLabel(note) {
  * the honest behaviour for a reader following a sentence: two open notes
  * would be two answers to one question.
  *
- * Nothing here can move the page. The popover is portalled to <body> and
- * positioned ABSOLUTELY, in document coordinates: placed by the page's one
- * placement law against the viewport at the moment it opens, then written
- * down as a page position, so it scrolls away with the sentence it belongs
- * to instead of chasing the reader down the page. The mark is inline text
+ * Nothing here can move the page. The note is portalled to <body> and placed
+ * by the page's one placement law, which anchors every popover IN THE PAGE:
+ * it scrolls away with the sentence it belongs to. The mark is inline text
  * whose box does not change on hover, on focus or when its note is open —
  * the open state is a background, and a background has no size.
  */
@@ -46,12 +44,7 @@ export default function ClaimNotes() {
   const markRef = useRef(null)
   const popRef = useRef(null)
   const popId = useId()
-  // `follow: false`: the note is anchored in the page, not in the viewport.
-  // It is placed once, at open; no scroll listener ever moves it again, and
-  // a reflow only carries it along under its own mark.
-  const pos = usePopoverPlacement(openId, markRef, popRef, POP_WIDTH, {
-    follow: false,
-  })
+  const pos = usePopoverPlacement(openId, markRef, popRef, POP_WIDTH)
 
   const clearMark = useCallback((mark) => {
     if (!mark) return
