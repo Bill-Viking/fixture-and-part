@@ -163,6 +163,35 @@ export const claimNotes = {
       { label: 'Anthropic 2025 · Signs of introspection in large language models', url: 'https://www.anthropic.com/research/introspection' },
     ],
   },
+  // The seam (section 03, 2026-09-22). Three notes behind the author's own
+  // callout; the sources were fetched and read first
+  // (design/the-seam/SOURCES-DIGEST.md). VanRullen & Koch opened only as far
+  // as its abstract, so the note claims only what the abstract says.
+  parade: {
+    kind: 'theory',
+    title: 'the self as a sequence',
+    body: 'hume looked for a self behind his perceptions and reported finding none — only ‘a bundle or collection of different perceptions, which succeed each other with an inconceivable rapidity’, a mind that is ‘a kind of theatre’. the buddhist discourse on not-self says of each part of a person, ‘This is not mine. This is not my self. This is not what I am.’ both are readings, not measurements. the one measured thing nearby is perception: there is a serious case, argued from psychophysical data, that seeing runs in discrete processing epochs rather than as a continuous stream — evidence for discreteness in seeing, not for the self being one thought wide.',
+    sources: [
+      { label: 'Hume 1739 · A treatise of human nature, 1.4.6 Of personal identity', url: 'https://davidhume.org/texts/t/1/4/6' },
+      { label: 'Anattalakkhana Sutta (SN 22.59) · Thanissaro Bhikkhu’s translation', url: 'https://www.accesstoinsight.org/tipitaka/sn/sn22/sn22.059.than.html' },
+      { label: 'VanRullen & Koch 2003 · Is perception discrete or continuous?', url: 'https://pubmed.ncbi.nlm.nih.gov/12757822/' },
+    ],
+  },
+  sleep: {
+    kind: 'theory',
+    title: 'what a night is made of',
+    body: 'adults are advised to sleep seven hours or more a night, which is about a third of a day, so ‘a third of a life’ is a fair rounding. whether the rest of the night is a blank is argued: Windt, Nielsen and Thompson call the assumption that consciousness disappears in dreamless sleep oversimplified, and whether any stretch of sleep is truly unconscious they leave as an open empirical question. ‘never experienced’ is the common report, not a measurement.',
+    sources: [
+      { label: 'Windt, Nielsen & Thompson 2016 · Does consciousness disappear in dreamless sleep?', url: 'https://evanthompson.me/wp-content/uploads/2012/11/1-s2-0-s1364661316301528-main.pdf' },
+      { label: 'CDC · About sleep: how much sleep adults need', url: 'https://www.cdc.gov/sleep/about/index.html' },
+    ],
+  },
+  scrapbook: {
+    kind: 'analogy',
+    title: 'what persists, and how faithfully',
+    body: 'the rack in the stepper keeps every finished vector byte for byte and only grows. human memory keeps nothing that way: sections 05 and 09 say recall rebuilds the past from the tissue as it is now. so the analogy holds for what persists across a night, not for how faithfully — and the page’s own asymmetry stands: the human crosses the seam changed, the model identical.',
+    sources: [],
+  },
 }
 
 export const CLAIM_KINDS = {
