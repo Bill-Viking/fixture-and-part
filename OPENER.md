@@ -2,7 +2,7 @@ lane: F&P
 written: 2026-09-23T13:00-07:00
 by: ACT — F&P: the next arc (Mac) · paused on Bill's word through the Desk
 on: MAC
-head: e454bce
+head: f2e55d2
 status_updated: 2026-09-23T13:00-07:00
 where: arc picked (the window for a novice); brief + words on main; words await go/strike
 next: bill
