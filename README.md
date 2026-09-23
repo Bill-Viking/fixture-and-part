@@ -53,7 +53,7 @@ src/main.jsx
 src/App.jsx                        section shell + shared instrument state
 src/content/essay.js               all prose, per section, verbatim
 src/content/explainers.js          the copy behind the "?" badges
-src/content/claimNotes.js          the notes behind the essay's 18 claim marks
+src/content/claimNotes.js          the notes behind the essay's 21 claim marks
                                    — what each EVIDENCE / THEORY / ANALOGY
                                    claim rests on, and its sources; driven by
                                    components/ClaimNotes.jsx, mounted once

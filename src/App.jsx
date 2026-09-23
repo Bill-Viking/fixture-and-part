@@ -47,11 +47,25 @@ function Html({ as: Tag = 'p', html, className }) {
   return <Tag className={className} dangerouslySetInnerHTML={inner} />
 }
 
+/**
+ * A box set into the prose, labelled with the kind of claim it makes.
+ *
+ * The body is a BLOCK, not a span. Four of the five callouts on the page are
+ * one run of inline html and rendered the same either way; the fifth — the
+ * author's own, in section 03 — is two paragraphs, and a <p> inside a <span>
+ * is not html a page may write. The element that holds blocks says so, and
+ * `.callout p` in the stylesheet gives them their rhythm. Measured: with the
+ * span swapped for the div, each of the four callouts that were here before
+ * renders pixel-identical to main at 1280 and at 390 — max channel delta 0,
+ * no tolerance allowed, with the new callout taken out of flow so that the
+ * page below it sits at main's own coordinates and the glyphs are rasterised
+ * at the same sub-pixel phase.
+ */
 function Callout({ label, html, variant }) {
   return (
     <div className={`callout${variant === 'cool' ? ' cool' : ''}`}>
       <span className="lbl">{label}</span>
-      <Html as="span" html={html} />
+      <Html as="div" className="callout-body" html={html} />
     </div>
   )
 }
