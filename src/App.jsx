@@ -37,7 +37,7 @@ import { readLens } from './lib/logitLens.js'
  * tidiness. React compares this prop by identity, not by the string inside
  * it, so a fresh object literal on every render means every paragraph on the
  * page has its innerHTML written again on every state change — measured:
- * 155 childList records under one scroll, with the eighteen claim marks
+ * 155 childList records under one scroll, with the claim marks (eighteen at the time)
  * among the nodes thrown away and rebuilt, losing the accessible names they
  * had been given. Memoised on the string, React skips all of it and the
  * prose is written once.
