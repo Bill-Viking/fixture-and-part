@@ -2,7 +2,7 @@ lane: F&P
 written: 2026-09-22T19:35-07:00
 by: ACT — F&P: pick the next arc (Mac)
 on: MAC
-head: 189ed44
+head: a60fbe9
 status_updated: 2026-09-22T19:35-07:00
 where: the seam and the popover law are live; nothing in flight; next arc not chosen
 next: bill
