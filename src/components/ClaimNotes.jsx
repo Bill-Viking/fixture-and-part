@@ -15,7 +15,7 @@ function noteLabel(note) {
 
 /**
  * The notes behind the essay's claim marks — one component, mounted once,
- * driving one popover for all eighteen of them.
+ * driving one popover for all twenty-one of them.
  *
  * The marks themselves are static DOM: they are written into the prose in
  * `essay.js` and rendered through `dangerouslySetInnerHTML`, so React does
@@ -79,7 +79,7 @@ export default function ClaimNotes() {
 
   // The accessible name of every mark comes from its own note, so the two
   // cannot drift: a screen reader hears "evidence: what the rat study
-  // measured" rather than the word EVIDENCE eighteen times.
+  // measured" rather than the word EVIDENCE twenty-one times.
   useEffect(() => {
     const marks = document.querySelectorAll(MARK)
     marks.forEach((mark) => {
@@ -100,7 +100,7 @@ export default function ClaimNotes() {
     })
   }, [])
 
-  // One listener for all eighteen marks. Enter and Space arrive here too:
+  // One listener for all twenty-one marks. Enter and Space arrive here too:
   // the marks are real buttons, so the browser fires a click for both.
   useEffect(() => {
     const onClick = (e) => {
@@ -146,7 +146,7 @@ export default function ClaimNotes() {
     popRef.current?.focus({ preventScroll: true })
   }, [openId])
 
-  // Dev only. Eighteen marks in the prose, eighteen notes in the file, and
+  // Dev only. Twenty-one marks in the prose, twenty-one notes in the file, and
   // this is what says so — including which way round a mismatch went.
   useEffect(() => {
     if (!import.meta.env.DEV) return
