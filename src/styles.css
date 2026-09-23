@@ -132,6 +132,21 @@ figcaption{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:
 .callout.cool{border-left-color:var(--frozen);}
 .callout .lbl{font-family:var(--mono);font-size:11.5px;letter-spacing:0.14em;color:var(--moving-ink);display:block;margin-bottom:8px;}
 .callout.cool .lbl{color:var(--frozen);}
+/* A callout may hold paragraphs, and one does: the author's own, in section
+   03. The prose's own 18 px gap is set for 17 px text with the whole page
+   around it; inside a box whose walls are 20 px away it reads as wide as the
+   padding, and the two paragraphs stop being one block in one box. 14 px is
+   the gap that keeps the hierarchy — 20 px to the wall (18 below 640 px),
+   14 px between the paragraphs, a line of 26.4 px within one. Measured at
+   1280 and at 390: the pitch from line to line is 26.390625 px — the 1/64 px
+   grid's 26.4 — on every line of both paragraphs, the three that carry a
+   mark included, and each paragraph's height is its line count times that;
+   line to line across the gap is 40.390625 px. The last paragraph takes no
+   margin, or the box would carry a spare 14 px at its foot — said here
+   rather than left to the global p:last-child, which this rule would
+   otherwise outrank by coming later. */
+.callout p{margin-bottom:14px;}
+.callout p:last-child{margin-bottom:0;}
 
 .duo{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:30px 0;}
 .card{border-radius:6px;padding:22px;font-size:15.5px;line-height:1.6;}
