@@ -3,6 +3,36 @@
 
 ## Now
 
+HANDOFF CAPTURE (hub button-up 2026-09-24, mechanical — verbatim tail, no model read): claude a4845300-c7a8-43b2-8175-21865fe200e4 · last message 2026-09-23T12:48:40-07:00
+  lane F&P (the folder's only lane) · FABLE · 1146.1 min ago at the capture
+  the last exchange, verbatim:
+  --- [2026-09-23T17:15:18.740Z] ASSISTANT
+  Another quiet half hour, so the waiter rests now, per your rule. Your message here, or a pick carried from the Desk, wakes this lane on its own, and any mail waits in the INBOX until then. Still owed from you: go or strike on the window's words.
+
+  --- [2026-09-23T19:46:08.088Z] USER
+  Another Claude session sent a message:
+  <cross-session-message from="local_14485aed-b867-4510-94b3-b4754364160f" name="ACT — Exocortex/Desk: the front desk — Bill's one window">
+  From Bill, through the Desk window, Wed 2026-09-23 12:5x: "let's pause fixture and part, I want to focus on getting Exocortex as far as we can today." Pause this lane now: write OPENER.md with the open question (your proposed wording, still owed go or strike) carried inside it so the next sitting asks it first, update STATUS, commit + push, release your claim, stamp off, retitle yourself ARCH, and reply here in one line. Nothing else starts.
+  </cross-session-message>
+
+  This came from another Claude session — not typed b …[+490 chars]
+
+  --- [2026-09-23T19:46:30.508Z] ASSISTANT
+  **[FIXTURE⊕PART — the next arc · Mac]** `MAC · FABLE · EXTRA`
+
+  Pause heard from you through the Desk. Writing the carryover now: STATUS, the opener with the words question carried inside it, commit, push, release, retitle.
+
+  --- [2026-09-23T19:48:39.050Z] ASSISTANT
+  **[FIXTURE⊕PART — paused · Mac]** `MAC · FABLE · EXTRA`
+
+  **Paused on your word.** The window for a novice is picked, its brief and words are on main, and nothing is built. The next F&P sitting opens by asking you one thing first: go or strike on the window's sentences.
+
+  - **Carryover is written and verified against git.** STATUS and OPENER.md are committed and pushed. Origin matches the local head, and the tree is clean.
+  - **The lane is let go.** Claim released, stamp off, this session retitled ARCH.
+  - **The Desk was told.** The direct message did not land in twenty seconds, so the same receipt went by mail to the Desk's address, and it carries your token-line question for the hub to ask you …[+764 chars]
+  this block quotes; it does not explain. A session with a model may upgrade it to plain words (`buttonup.py capture --work-order`).
+
+
 HANDOFF CAPTURE (hub button-up 2026-09-24, mechanical — verbatim tail, no model read): claude 4382560f-8bc7-4cc4-bfb6-110eb3ca9139 · last message 2026-09-23T18:36:44-07:00
   lane F&P (the folder's only lane) · FABLE · 798.0 min ago at the capture
   the last exchange, verbatim:
