@@ -1,6 +1,6 @@
 # WORDS — the window for a novice (instrument E, section 01)
 
-APPROVED by Bill 2026-09-27 09:4x, Dell: "go on the words, but hold the build for a building day" — no strikes. §6 is on main in `src/content/explainers.js` (`fileBlob`; apostrophes set curly, the file's own convention; proved verbatim by a normalized compare).
+APPROVED by Bill 2026-09-27 09:2x, Dell: "go on the words, but hold the build for a building day" — no strikes. §6 is on main in `src/content/explainers.js` (`fileBlob`; apostrophes set curly, the file's own convention; proved verbatim by a normalized compare).
 
 Every string the build puts on the page, verbatim. Bill approves these; the builder copies them character for character. A value in ⟨angle brackets⟩ is filled from real data at run time; the example beside it is the real value for the shipped window. Facts below were read from the file itself on 2026-09-23 (sha256 1d3ab4d7…8431, the same file the page ships facts about).
 
