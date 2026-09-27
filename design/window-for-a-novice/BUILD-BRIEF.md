@@ -75,3 +75,11 @@ The control for every measurement is main (the head you branched from) in a seco
 Small commits on `window-for-a-novice`, each message saying what was measured; end every message with
 `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
 Write the report to `design/window-for-a-novice/REPORT.md` and force-add it (`git add -f`; design/ is gitignored) as the last commit: what was built (files), every gauntlet number, the stills' paths, anything found and NOT fixed. Your final message is the same report. Leave the tree clean; leave the branch for the lane to verify, merge and deploy.
+
+## On the Dell (facts verified first-hand 2026-09-27 by the lane; these replace the Mac lines above where they differ)
+
+- The model file, downloaded and sha-checked this morning (sha256 `1d3ab4d7e08ca9b8ea9a42dda13a05b7ff0f1b0c9bdc4f6eba27e7f0ceff8431`, 83,502,375 bytes — the same file the Mac lines name): `C:\Users\billm\AppData\Local\Temp\claude\D--Projects-fixture-and-part\6717c5d8-e203-429c-ab8d-0ae90845e2cd\scratchpad\model\decoder_model_quantized.onnx`. Beside it, `tokenizer.json` (2,107,653 bytes, sha256 `cda20b8ca044949aa07ac4078420c80d1a57139d5f9f33700e46fb2d891e7c66`) for the row labels. Copy both into your own scratch space; pass the model with `--file`; the script checks the sha either way.
+- Headless Chrome: `C:\Program Files (x86)\Google\Chrome\Application\chrome.exe`. Node v24.19.0 (global `WebSocket` present), npm 11.17.0.
+- A dev build (`npm run build`, no base) is safe from the Bash tool here; lint and build were green on main fccdedb at the start of this sitting (one pre-existing AttentionInspector warning). Only the DEPLOY build sets `VITE_BASE`, and that one is the lane's and runs through PowerShell (STATUS ## Important, first bullet) — never yours.
+- Paths in bash are `/d/Projects/fixture-and-part/...` and `/c/Users/billm/...`; a worktree the harness makes lives under `.claude/worktrees/`. Git Bash rewrites a leading-slash argument into a Windows path — keep that in mind for any `--flag=/...` you hand to a native tool (`MSYS_NO_PATHCONV=1` in front disables it).
+- Everything else in "Environment traps" holds (the CLS traps, one browser at a time, the 390 CDP driver, the viewport-clip pattern).
