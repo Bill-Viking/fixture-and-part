@@ -3,6 +3,27 @@
 
 ## Now
 
+HANDOFF CAPTURE (hub button-up 2026-09-27, mechanical — verbatim tail, no model read): claude 6717c5d8-e203-429c-ab8d-0ae90845e2cd · last message 2026-09-27T10:40:02-07:00
+  lane F&P (the folder's only lane) · FABLE · 484.7 min ago at the capture
+  the last exchange, verbatim:
+  --- [2026-09-27T17:34:44.491Z] USER
+  file it and in that sense the brain solevd a prolbem pretty elegantly... interesting, retreive a memroy, literaly pull from the shelf, no copy left on the shelf and evaluate in terms of current context, rewriting any edits as necessary.  I wonder if that's soemthign LLMs cojld leanr from
+
+  --- [2026-09-27T17:36:32.141Z] ASSISTANT
+  Heard: "yeah why don't we do that too" is a ruling for the exocortex. It gets a row in the build queue this turn, not just a letter. Reading the queue's shape first.
+
+  --- [2026-09-27T17:38:56.812Z] ASSISTANT
+  Terrarium is in the record. Reading what it says before I tie the two together.
+
+  --- [2026-09-27T17:40:00.490Z] ASSISTANT
+  **FIXTURE⊕PART** `DELL · FABLE · EXTRA`
+
+  **Filed, all three places.** The note sits in this project's STATUS under "the loop and the landing" with your words. Your "why don't we do that too" is row BQ-193 in the build queue, seeded on your words and pushed to the brain. The hub rules it and writes the brief at its next turn. The terrarium thought went to the Continuum lane as one line.
+
+  **Could LLMs learn from it?** Inside the model, no. The read leaves the shelf untouched, by design, and the page's whole argument rests on that. A model that rewrote itself with every conversation would be a different model for every user and nobody could check it. Around the model, yes. Every memory store to …[+2010 chars]
+  this block quotes; it does not explain. A session with a model may upgrade it to plain words (`buttonup.py capture --work-order`).
+
+
 **WORDS APPROVED, BUILD HELD 2026-09-27 (Dell, session "ACT — F&P: the window for a novice").** Bill ruled at 09:2x: "go on the words, but hold the build for a building day" — no strikes. Done this sitting, the lane's own half of the arc: WORDS §6 written into `src/content/explainers.js` (`fileBlob`: title `what the window shows`, the body verbatim from WORDS.md, 1,179 characters, apostrophes set curly as the file's convention, proved by a normalized compare; lint unchanged — the one AttentionInspector warning; build green; the title present in the built bundle; NOT deployed — main is ahead of the live page by this one src commit plus docs); the Dell facts appended to BUILD-BRIEF.md as its last section (a2660db: the model file downloaded and sha-checked 1d3ab4d7…8431, 83,502,375 bytes, plus tokenizer.json cda20b8c…7c66, both in this session's scratchpad — path in the brief, may be gone by the building day, the builder re-downloads; Chrome path; build notes). Also this sitting: a new candidate from Bill's morning idea, "the trace drifts away" (To do; a words sitting next week). One thing the record held only in part: a second Mac sitting on 2026-09-23 evening (claude 4382560f…, captured below) drafted a plainer opening around the word "it"; Bill was told 2026-09-27 and ruled go on the committed words — the draft is filed as the candidate "the lit row" in To do, not ruled. NOTHING IS BUILT. NEXT, on a building day Bill names: start the OPUS · HIGH builder in its own worktree from BUILD-BRIEF.md + WORDS.md (branch `window-for-a-novice` off main); the lane verifies first-hand (lint, build, diff scope, the fileFacts SAME/NEW table, the standout rule's output, the CLS zeros, the declared height change, the viewBox trio, the stills), shows Bill ONE still of section 01 at 1280, asks "ship it?", merges fast-forward, deploys (Dell: through PowerShell, ## Important first bullet; Mac: the project-state memory's Phase 3A recipe), verifies live with a cache-busted fetch, records every number in ## Important. Continues on EITHER machine (GitHub-carried); opener = `OPENER.md`. — Previous ## Now follows.
 
 HANDOFF CAPTURE (hub button-up 2026-09-24, mechanical — verbatim tail, no model read): claude a4845300-c7a8-43b2-8175-21865fe200e4 · last message 2026-09-23T12:48:40-07:00
