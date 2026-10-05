@@ -3,6 +3,49 @@
 
 ## Now
 
+HANDOFF CAPTURE (hub button-up 2026-10-05, mechanical — verbatim tail, no model read): claude 4382560f-8bc7-4cc4-bfb6-110eb3ca9139 · last message 2026-10-04T10:48:45-07:00
+  lane F&P (the folder's only lane) · FABLE · 1675.8 min ago at the capture
+  the repo, read before this capture: nothing uncommitted, nothing untracked
+  the last exchange, verbatim:
+  --- [2026-09-24T01:29:01.501Z] ASSISTANT
+  **FIXTURE⊕PART** `MAC · FABLE · EXTRA` (holding EXTRA for this turn: designing words is judgment, no bump needed)
+
+  Starting. First I read what the page already carries: the example sentence it runs, and how a word enters in section 03, so the thread ties to real things.
+
+  --- [2026-09-24T01:31:14.846Z] ASSISTANT
+  The reader is at work on the essay; the thread's lines wait on its digest so I put one short set in front of you, not two. What I already know for sure: the sentence's word "it" is row 340 of the word table, and the window page that holds it also shows "he", "you", "with", "as", "we", real words a newcomer recognizes. The window as it stands opens on punctuation and digits. Opening it on the page with "it" is a change the code already allows.
+
+  I'll come back with the new words the moment the digest lands.
+
+  --- [2026-09-24T01:35:36.105Z] USER
+  <task-notification>
+  <task-id>a94fbb0bfbd794b6b</task-id>
+  <tool-use-id>toolu_01YXZYFAnfH8YaiMo26M1cUJ</tool-use-id>
+  <output-file>/private/tmp/claude-501/-Users-bill-Projects-fixture-and-part/4382560f-8bc7-4cc4-bfb6-110eb3ca9139/tasks/a94fbb0bfbd794b6b.output</output-file>
+  <status>completed</status>
+  <summary>Agent "Digest essay sections 01–04 and captions" finished</summary>
+  <note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+  <result># Digest: fixture-and-part essay/instrument text (verbatim, file:line tagged)
+
+  ## 1. src/content/essay.js  …[+12676 chars]
+
+  --- [2026-09-24T01:36:43.416Z] ASSISTANT
+  **FIXTURE⊕PART** `MAC · FABLE · EXTRA`
+
+  The digest is in. The thread is the word "it" from the page's own sentence, "The engine roared and it shut down." Section 04 already opens on that word and says it comes to mean the engine. So section 01 shows its row of bytes, and three short sentences carry it through.
+
+  **The new words**
+
+  1. The sign, above the window, in plain type:
+     `every word the model knows is a row of numbers like these · the lit row is "it", the word this page follows`
+
+  2. Under the sign, smaller, the technical line:
+     `the word table (transformer.wte) · words 336–359 of 50,257 · slots 0–63 of 768 · one byte per number`
+
+  3. The window opens on the page that holds "it". That …[+1804 chars]
+  this block quotes; it does not explain. A session with a model may upgrade it to plain words (`buttonup.py capture --work-order`).
+
+
 HANDOFF CAPTURE (hub button-up 2026-09-27, mechanical — verbatim tail, no model read): claude 6717c5d8-e203-429c-ab8d-0ae90845e2cd · last message 2026-09-27T10:40:02-07:00
   lane F&P (the folder's only lane) · FABLE · 484.7 min ago at the capture
   the last exchange, verbatim:
