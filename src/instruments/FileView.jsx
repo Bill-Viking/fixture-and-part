@@ -3,12 +3,13 @@ import InfoTag from '../components/InfoTag.jsx'
 import LoadNote from '../components/LoadNote.jsx'
 import {
   decodeWindow,
+  readColumnStats,
   readHistogram,
   readManifest,
   readSha,
   readWindow,
 } from '../lib/fileBytes.js'
-import { WINDOW_COLS, WINDOW_ROWS, rawValue } from '../lib/onnxScan.js'
+import { WINDOW_COLS, WINDOW_ROWS, rawValue, standoutColumns } from '../lib/onnxScan.js'
 import { tokenText } from '../lib/realModel.js'
 import InstrumentHead from '../components/InstrumentHead.jsx'
 
@@ -38,6 +39,13 @@ import InstrumentHead from '../components/InstrumentHead.jsx'
  */
 
 const WTE = 'transformer.wte.weight_quantized'
+const WPE = 'transformer.wpe.weight_quantized'
+/**
+ * How close a live column number has to sit to the shipped one to agree. The
+ * shipped numbers are written to four decimals, so a true agreement is never
+ * further apart than half of the last place.
+ */
+const COLUMN_TOLERANCE = 1e-4
 /** Below this share of the file a segment is thinner than a pixel: no lies. */
 const CLICKABLE_PCT = 0.5
 /** And below this a bracket cannot hold its own label. */
@@ -55,6 +63,23 @@ const short = (name) => name.replace(/^transformer\./, '')
 const sig = (v, digits) => {
   const text = Number(v.toPrecision(digits)).toString()
   return text.replace('-', NBSP_MINUS)
+}
+
+/** The text cut to `keep` characters and an ellipsis once it runs past `longest`. */
+const cut = (text, keep, longest) => {
+  const chars = Array.from(text)
+  return chars.length > longest ? `${chars.slice(0, keep).join('')}…` : text
+}
+/** A row label holds six characters; a word piece in the readout, twenty-four. */
+const rowLabelText = (piece) => cut(piece, 5, 6)
+const readoutPiece = (piece) => cut(piece, 23, 24)
+
+const NUMBER_WORDS = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight']
+/** The plain words for how a standout slot stands out, in either position. */
+const STANDOUT_WORDS = {
+  same: { first: 'holds nearly the same number for every word', later: 'holds nearly the same number for every word', pick: 'nearly the same for every word' },
+  low: { first: 'runs low for nearly every word', later: 'runs low for nearly all of them', pick: 'runs low for nearly every word' },
+  high: { first: 'runs high for nearly every word', later: 'runs high for nearly all of them', pick: 'runs high for nearly every word' },
 }
 
 /** 1d3ab4d7…8431 — enough of a hash to compare by eye. */
@@ -122,6 +147,51 @@ function rampColour(ramp, t) {
   const c = (i) => Math.round(from[i] + (to[i] - from[i]) * f)
   return `rgb(${c(0)},${c(1)},${c(2)})`
 }
+
+/**
+ * One colour token off the document, or null with the reason in the console —
+ * the labels are not painted rather than painted in a guessed colour.
+ *
+ * The labels use --frozen-on-screen: they are the eyebrow's words, and the
+ * eyebrow's role on a dark panel has exactly one allowed form (the colour
+ * law at the head of styles.css). What is lit — a picked row, the hovered
+ * slot, the two standout slots — uses the pick's own colour, the top of the
+ * ramp, so the marks and the picked square are one colour.
+ */
+function readToken(token) {
+  const value = getComputedStyle(document.documentElement).getPropertyValue(token).trim()
+  if (!value) {
+    if (import.meta.env.DEV) {
+      console.error(`instrument E: ${token} is not defined; the window's labels cannot be painted`)
+    }
+    return null
+  }
+  return value
+}
+
+/**
+ * The three bands inside the window that are not cells: the row labels at the
+ * left, the slot labels at the top, the key at the bottom. Their sizes are
+ * the stylesheet's (`--file-gutter-*` on .file-canvas-box), read here, so the
+ * box's reserved height and the place the cells start are one number rather
+ * than two copies of it.
+ */
+function readGutters(element) {
+  const style = getComputedStyle(element)
+  const px = (name) => parseFloat(style.getPropertyValue(name)) || 0
+  return {
+    left: px('--file-gutter-left'),
+    top: px('--file-gutter-top'),
+    bottom: px('--file-gutter-bottom'),
+  }
+}
+
+/** Where the key's ticks sit, in values; the last is the tensor's own largest. */
+const KEY_TICKS = [0, 0.05, 0.2, 0.5]
+const KEY_SENTENCE = 'shade = size of the number, either sign · dark is near zero'
+/** The canvas's own type: the page's mono, at a size a 10.5 px row holds with air. */
+const LABEL_PX = 9
+const MARK_PX = 7
 
 // --- reading the manifest ---------------------------------------------------
 
@@ -371,6 +441,9 @@ export default function FileView({
   const [histograms, setHistograms] = useState(() => new Map())
   const [windows, setWindows] = useState(() => new Map())
   const [mismatches, setMismatches] = useState([])
+  // The word table's columns over every one of its rows, read live — the
+  // numbers the two standout marks rest on.
+  const [liveColumns, setLiveColumns] = useState(null)
   const [manifestMatch, setManifestMatch] = useState(null)
   // The selected tensor is owned by App: instrument F's steel boxes select
   // rows here, and one selection cannot have two owners. WTE is still what it
@@ -390,6 +463,11 @@ export default function FileView({
 
   const listRef = useRef(null)
   const canvasRef = useRef(null)
+  // The cell under the pointer. A ref, not state: hovering repaints the
+  // labels and nothing else, so it must never reach the readout, the live
+  // region or a render.
+  const hoverRef = useRef(null)
+  const paintRef = useRef(() => {})
   const readoutId = useId()
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 })
 
@@ -499,6 +577,46 @@ export default function FileView({
     }
   }, [live, facts, selected, page, windowKey, windows, noteMismatch])
 
+  // The word table's 768 columns, read again over all 50,257 rows, and
+  // compared number by number with the shipped reading — the marks on two of
+  // the window's slots are a claim about the whole table, so they are
+  // re-checked like the bytes are.
+  useEffect(() => {
+    if (!live || !facts) return undefined
+    let cancelled = false
+    readColumnStats(WTE)
+      .then((stats) => {
+        if (cancelled) return
+        const shipped = facts.columnStats?.[WTE]
+        if (shipped) {
+          const agrees = (list, read) =>
+            list.length === read.length &&
+            list.every((v, i) => Math.abs(v - read[i]) <= COLUMN_TOLERANCE)
+          if (!agrees(shipped.mean, stats.mean) || !agrees(shipped.sd, stats.sd)) {
+            noteMismatch(`${short(WTE)} columns`)
+          }
+        }
+        setLiveColumns(stats)
+      })
+      .catch((error) => {
+        if (!cancelled) setLiveError(error.message)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [live, facts, noteMismatch])
+
+  // The shipped row labels were read from the tokenizer file; once the model's
+  // own tokenizer is loaded, it is asked the same 24 questions.
+  useEffect(() => {
+    if (!ready || !facts) return
+    const shipped = facts.rowLabels?.[WTE]
+    if (!shipped) return
+    if (shipped.some((piece, row) => tokenOf(row) !== piece)) {
+      noteMismatch(`${short(WTE)} row labels`)
+    }
+  }, [ready, facts, noteMismatch])
+
   /**
    * The moment the whole instrument exists for.
    *
@@ -560,20 +678,36 @@ export default function FileView({
    * prints the wrap it chose, because it is the panel's choice and not the
    * file's.
    */
+  /**
+   * The canvas cut into its bands: the cells, and the three gutters that hold
+   * the row labels, the slot labels and the key. Painted on the one canvas,
+   * so nothing inside the box is a DOM node that could move.
+   */
+  const layout = useMemo(() => {
+    const canvas = canvasRef.current
+    const { width, height } = canvasSize
+    if (!canvas || width <= 0 || height <= 0) return null
+    const g = readGutters(canvas)
+    return {
+      width,
+      height,
+      ...g,
+      areaW: Math.max(1, width - g.left),
+      areaH: Math.max(1, height - g.top - g.bottom),
+    }
+  }, [canvasSize])
+
   const grid = useMemo(() => {
     if (!view) return null
     if (view.kind === 'bytes') {
       return { cols: WINDOW_COLS, rows: WINDOW_ROWS, drawCols: view.cols, drawRows: view.rows }
     }
     const total = view.data.length
-    const aspect =
-      canvasSize.width > 0 && canvasSize.height > 0
-        ? canvasSize.width / canvasSize.height
-        : WINDOW_COLS / WINDOW_ROWS
+    const aspect = layout ? layout.areaW / layout.areaH : WINDOW_COLS / WINDOW_ROWS
     const cols = Math.max(1, Math.min(total, Math.round(Math.sqrt(total * aspect))))
     const rows = Math.ceil(total / cols)
     return { cols, rows, drawCols: cols, drawRows: rows }
-  }, [view, canvasSize])
+  }, [view, layout])
 
   const pages = entry ? Math.ceil(entry.rows / WINDOW_ROWS) : 1
   const maxAbs = histogram
@@ -624,78 +758,286 @@ export default function FileView({
     return () => observer.disconnect()
   }, [])
 
+  // --- what the window labels ----------------------------------------------
+
+  // The columns are the live reading once it has landed, the shipped one
+  // before; the rule that marks them is the same function either way.
+  const columns = liveColumns ?? facts?.columnStats?.[WTE] ?? null
+  const standout = useMemo(() => (columns ? standoutColumns(columns) : null), [columns])
+
+  /** The standout slots inside the window, strongest first, as grid columns. */
+  const marked = useMemo(() => {
+    if (!standout || !view || view.kind !== 'bytes' || entry?.name !== WTE) return []
+    return standout.columns
+      .filter((c) => c.col >= view.col0 && c.col < view.col0 + view.cols)
+      .sort((a, b) => Math.abs(b.away) - Math.abs(a.away))
+      .map((c) => ({ ...c, at: c.col - view.col0 }))
+  }, [standout, view, entry])
+
+  /**
+   * The piece of text a word-table row stands for: the model's own tokenizer
+   * once it is loaded, at any page; before that, the 24 pieces the build read
+   * out of the tokenizer file for the first window, so nothing about the
+   * labels waits on a download.
+   */
+  const pieceOf = useCallback(
+    (row) => {
+      const piece = ready ? tokenOf(row) : null
+      if (piece !== null) return piece
+      return facts?.rowLabels?.[WTE]?.[row] ?? null
+    },
+    [ready, facts],
+  )
+
+  /** What is written left of a row, per kind of tensor; null where nothing is. */
+  const rowLabelOf = useCallback(
+    (r) => {
+      if (!entry?.quant || !view || view.kind !== 'bytes') return null
+      const row = view.row0 + r
+      if (entry.name === WTE) {
+        const piece = pieceOf(row)
+        return piece === null ? null : rowLabelText(piece)
+      }
+      if (entry.name === WPE) return `p${row}`
+      return String(row)
+    },
+    [entry, view, pieceOf],
+  )
+
+  // --- the canvas -----------------------------------------------------------
+
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const { width, height } = canvasSize
-    if (width <= 0 || height <= 0) return
-    const dpr = window.devicePixelRatio || 1
-    canvas.width = Math.round(width * dpr)
-    canvas.height = Math.round(height * dpr)
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-    ctx.clearRect(0, 0, width, height)
+    paintRef.current = () => {
+      const canvas = canvasRef.current
+      if (!canvas || !layout) return
+      const { width, height } = layout
+      const dpr = window.devicePixelRatio || 1
+      const backingW = Math.round(width * dpr)
+      const backingH = Math.round(height * dpr)
+      if (canvas.width !== backingW) canvas.width = backingW
+      if (canvas.height !== backingH) canvas.height = backingH
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      ctx.clearRect(0, 0, width, height)
 
-    if (!view || !grid) return
-    // Read on every draw, so the window follows the page's tokens rather than
-    // a copy of them taken at mount.
-    const ramp = readRamp()
-    if (!ramp) return
-    const cellW = width / grid.cols
-    const cellH = height / grid.rows
-    // A hairline of the screen's own ground between cells, so the window
-    // reads as a grid of separate numbers rather than as one wash. Dropped
-    // below 7px, where a whole pixel of gutter would be a fifth of the cell
-    // and the picture would go to lace.
-    const gutter = Math.min(cellW, cellH) >= 7 ? 1 : 0
+      if (!view || !grid) return
+      // Read on every draw, so the window follows the page's tokens rather than
+      // a copy of them taken at mount.
+      const ramp = readRamp()
+      if (!ramp) return
+      const x0 = layout.left
+      const y0 = layout.top
+      const cellW = layout.areaW / grid.cols
+      const cellH = layout.areaH / grid.rows
+      // A hairline of the screen's own ground between cells, so the window
+      // reads as a grid of separate numbers rather than as one wash. Dropped
+      // below 7px, where a whole pixel of gutter would be a fifth of the cell
+      // and the picture would go to lace.
+      const gutter = Math.min(cellW, cellH) >= 7 ? 1 : 0
 
-    const quant = entry?.quant
-    for (let r = 0; r < grid.drawRows; r++) {
-      for (let c = 0; c < grid.drawCols; c++) {
-        const i = r * grid.drawCols + c
-        if (i >= view.data.length) break
-        const value = quant
-          ? quant.scale * (rawValue(view.dtype, view.data[i]) - quant.zeroPoint)
-          : view.data[i]
-        // A square root rather than a straight line: almost every weight in
-        // this file is tiny, and a linear ramp against the largest one would
-        // paint the whole window the background colour and call it a reading.
-        const t = Math.min(1, Math.sqrt(Math.abs(value) / maxAbs))
-        ctx.fillStyle = rampColour(ramp, t)
-        ctx.fillRect(
-          c * cellW,
-          r * cellH,
-          Math.max(1, Math.ceil(cellW) - gutter),
-          Math.max(1, Math.ceil(cellH) - gutter),
+      const quant = entry?.quant
+      for (let r = 0; r < grid.drawRows; r++) {
+        for (let c = 0; c < grid.drawCols; c++) {
+          const i = r * grid.drawCols + c
+          if (i >= view.data.length) break
+          const value = quant
+            ? quant.scale * (rawValue(view.dtype, view.data[i]) - quant.zeroPoint)
+            : view.data[i]
+          // A square root rather than a straight line: almost every weight in
+          // this file is tiny, and a linear ramp against the largest one would
+          // paint the whole window the background colour and call it a reading.
+          const t = Math.min(1, Math.sqrt(Math.abs(value) / maxAbs))
+          ctx.fillStyle = rampColour(ramp, t)
+          ctx.fillRect(
+            x0 + c * cellW,
+            y0 + r * cellH,
+            Math.max(1, Math.ceil(cellW) - gutter),
+            Math.max(1, Math.ceil(cellH) - gutter),
+          )
+        }
+      }
+
+      const lit = rampColour(ramp, 1)
+      if (cell && cell.row < grid.drawRows && cell.col < grid.drawCols) {
+        ctx.strokeStyle = lit
+        ctx.lineWidth = 1
+        ctx.strokeRect(
+          x0 + cell.col * cellW - 0.5,
+          y0 + cell.row * cellH - 0.5,
+          cellW + 1,
+          cellH + 1,
         )
       }
-    }
 
-    if (cell && cell.row < grid.drawRows && cell.col < grid.drawCols) {
-      ctx.strokeStyle = rampColour(ramp, 1)
-      ctx.lineWidth = 1
-      ctx.strokeRect(
-        cell.col * cellW - 0.5,
-        cell.row * cellH - 0.5,
-        cellW + 1,
-        cellH + 1,
-      )
-    }
-  }, [canvasSize, view, grid, entry, maxAbs, cell])
+      const words = readToken('--frozen-on-screen')
+      const mono = readToken('--mono')
+      if (!words || !mono) return
+      const hover = hoverRef.current
+      const font = (px) => `${px}px ${mono}`
+      const bytes = view.kind === 'bytes'
 
+      // Left: what each row is.
+      if (layout.left > 0 && bytes) {
+        ctx.font = font(LABEL_PX)
+        ctx.textAlign = 'right'
+        ctx.textBaseline = 'middle'
+        for (let r = 0; r < grid.drawRows; r++) {
+          const text = rowLabelOf(r)
+          if (text === null) continue
+          const on = cell?.row === r || hover?.row === r
+          ctx.fillStyle = on ? lit : words
+          ctx.fillText(text, x0 - 4, y0 + (r + 0.5) * cellH)
+        }
+      }
+
+      // Top: which slot each column is. Every eighth, the standouts in the
+      // pick colour with a mark under them, and the slot under the pointer or
+      // the pick lit — a lit number clears any label it would print over.
+      if (layout.top > 0 && bytes) {
+        ctx.font = font(LABEL_PX)
+        ctx.textBaseline = 'alphabetic'
+        ctx.textAlign = 'center'
+        const centre = (c) => x0 + (c + 0.5) * cellW
+        const active = new Set([cell?.col, hover?.col].filter((c) => c !== undefined))
+        const items = new Map()
+        for (let c = 0; c < grid.drawCols; c++) {
+          if ((view.col0 + c) % 8 === 0) items.set(c, { c, rank: 0 })
+        }
+        for (const m of marked) items.set(m.at, { c: m.at, rank: 1 })
+        for (const c of active) {
+          if (c < grid.drawCols) items.set(c, { c, rank: 2 })
+        }
+        const placed = []
+        const sorted = [...items.values()].sort((a, b) => b.rank - a.rank || a.c - b.c)
+        for (const item of sorted) {
+          const text = String(view.col0 + item.c)
+          const half = ctx.measureText(text).width / 2 + 1
+          const from = centre(item.c) - half
+          const to = centre(item.c) + half
+          if (placed.some((p) => from < p.to && to > p.from)) continue
+          placed.push({ from, to })
+          ctx.fillStyle = item.rank > 0 ? lit : words
+          ctx.fillText(text, centre(item.c), LABEL_PX)
+        }
+        if (marked.length > 0) {
+          ctx.font = font(MARK_PX)
+          ctx.fillStyle = lit
+          for (const m of marked) ctx.fillText('▲', centre(m.at), layout.top - 3)
+        }
+      }
+
+      // Bottom: the key, painted by the ramp that paints the cells, along the
+      // same square-root law, so a shade in the strip is a shade in the window.
+      // On the phone the gutters carry no labels, and the key keeps only its
+      // strip and its two end ticks.
+      if (layout.bottom > 0) {
+        const compact = layout.left === 0
+        const top = y0 + layout.areaH
+        ctx.font = font(LABEL_PX)
+        const sentenceW = compact ? 0 : ctx.measureText(KEY_SENTENCE).width
+        // Inset from the panel's edge on the phone, where nothing else sits
+        // between the strip's ends and the border.
+        const stripX = compact ? x0 + 3 : x0
+        const stripW = Math.round(
+          compact ? layout.areaW - 6 : Math.max(80, Math.min(220, layout.areaW - sentenceW - 14)),
+        )
+        const stripY = top + (compact ? 1 : 3)
+        const stripH = compact ? 4 : 5
+        for (let px = 0; px < stripW; px++) {
+          ctx.fillStyle = rampColour(ramp, stripW > 1 ? px / (stripW - 1) : 1)
+          ctx.fillRect(stripX + px, stripY, 1, stripH)
+        }
+        const last = maxAbs.toFixed(1)
+        const ticks = compact
+          ? [{ v: 0, text: '0' }, { v: maxAbs, text: last }]
+          : [
+              ...KEY_TICKS.filter((v) => v < maxAbs).map((v) => ({ v, text: String(v) })),
+              { v: maxAbs, text: last },
+            ]
+        ctx.textBaseline = 'alphabetic'
+        ctx.fillStyle = words
+        const baseline = stripY + stripH + (compact ? 7 : 10)
+        const placed = []
+        // The ends are placed first, so a middle tick too close to one of
+        // them is the one that gives way.
+        const order = [0, ticks.length - 1, ...ticks.keys()].filter((i, k, a) => a.indexOf(i) === k)
+        for (const i of order) {
+          const tick = ticks[i]
+          const x = stripX + Math.sqrt(Math.min(1, tick.v / maxAbs)) * (stripW - 1)
+          const w = ctx.measureText(tick.text).width
+          const align = i === 0 ? 'left' : i === ticks.length - 1 ? 'right' : 'center'
+          const from = align === 'left' ? x : align === 'right' ? x + 1 - w : x - w / 2
+          if (placed.some((p) => from < p.to + 4 && from + w > p.from - 4)) continue
+          placed.push({ from, to: from + w })
+          ctx.textAlign = 'left'
+          ctx.fillText(tick.text, from, baseline)
+          if (!compact) ctx.fillRect(Math.round(x), stripY + stripH, 1, 2)
+        }
+        if (!compact) {
+          ctx.textAlign = 'left'
+          ctx.textBaseline = 'middle'
+          ctx.fillText(KEY_SENTENCE, stripX + stripW + 14, top + layout.bottom / 2)
+        }
+      }
+    }
+    paintRef.current()
+  }, [layout, view, grid, entry, maxAbs, cell, marked, rowLabelOf])
+
+  // The canvas is painted in the page's mono, which may still be on its way
+  // when the first paint runs; once it has landed, paint again.
+  useEffect(() => {
+    let cancelled = false
+    document.fonts?.ready.then(() => {
+      if (!cancelled) paintRef.current()
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  /** The cell under a pointer, or null in a gutter or past a short last row. */
+  const cellAt = useCallback(
+    (event) => {
+      if (!view || !grid || !layout) return null
+      const rect = event.currentTarget.getBoundingClientRect()
+      const x = event.clientX - rect.left - layout.left
+      const y = event.clientY - rect.top - layout.top
+      if (x < 0 || y < 0 || x >= layout.areaW || y >= layout.areaH) return null
+      const col = Math.floor((x / layout.areaW) * grid.cols)
+      const row = Math.floor((y / layout.areaH) * grid.rows)
+      if (row < 0 || col < 0 || row >= grid.drawRows || col >= grid.drawCols) return null
+      if (row * grid.drawCols + col >= view.data.length) return null
+      return { row, col }
+    },
+    [view, grid, layout],
+  )
+
+  // A click in a gutter picks nothing, and leaves the reading where it was.
   const pickCell = useCallback(
     (event) => {
-      if (!view || !grid) return
-      const rect = event.currentTarget.getBoundingClientRect()
-      const col = Math.floor(((event.clientX - rect.left) / rect.width) * grid.cols)
-      const row = Math.floor(((event.clientY - rect.top) / rect.height) * grid.rows)
-      if (row < 0 || col < 0 || row >= grid.drawRows || col >= grid.drawCols) return
-      if (row * grid.drawCols + col >= view.data.length) return
-      setCell({ row, col })
+      const at = cellAt(event)
+      if (at) setCell(at)
     },
-    [view, grid],
+    [cellAt],
   )
+
+  const hoverCell = useCallback(
+    (event) => {
+      const at = cellAt(event)
+      const held = hoverRef.current
+      if (held?.row === at?.row && held?.col === at?.col) return
+      hoverRef.current = at
+      paintRef.current()
+    },
+    [cellAt],
+  )
+
+  const leaveCanvas = useCallback(() => {
+    if (!hoverRef.current) return
+    hoverRef.current = null
+    paintRef.current()
+  }, [])
 
   const onCanvasKey = useCallback(
     (event) => {
@@ -723,15 +1065,26 @@ export default function FileView({
 
   // --- the lines that say what is on screen ---------------------------------
 
+  /**
+   * The line above the window, in the words a reader new to all of this can
+   * follow: which table, which rows of how many, which slots of how many, and
+   * that each square is one byte. The f32 vectors keep their line; the wrap
+   * is the panel's choice and the line already says so.
+   */
   const blobEyebrow = () => {
     if (!entry || !view) return '—'
     const first = view.row0 * (entry.quant ? 1 : WINDOW_COLS)
     if (entry.quant) {
-      return (
-        `${entry.name} · rows ${count(view.row0)}–${count(view.row0 + view.rows - 1)} ` +
-        `of ${count(entry.rows)} · cols 0–${view.cols - 1} of ${count(entry.dims[1] ?? 1)} ` +
-        `· raw bytes, ${entry.dtype}`
-      )
+      const rows = `${count(view.row0)}–${count(view.row0 + view.rows - 1)} of ${count(entry.rows)}`
+      const slots =
+        `slots ${count(view.col0)}–${count(view.col0 + view.cols - 1)} ` +
+        `of ${count(entry.dims[1] ?? 1)} · one byte per number`
+      if (entry.name === WTE) return `the word table (transformer.wte) · words ${rows} · ${slots}`
+      if (entry.name === WPE) {
+        return `the position table (transformer.wpe) · positions ${rows} · ${slots}`
+      }
+      const name = entry.name.replace(/^transformer\./, '').replace(/\.weight_quantized$/, '')
+      return `${groupOf(entry.name).label} · ${name} · rows ${rows} · ${slots}`
     }
     return (
       `${entry.name} · values ${count(first)}–${count(first + view.data.length - 1)} ` +
@@ -740,35 +1093,68 @@ export default function FileView({
   }
 
   const NOTHING_PICKED =
-    'click a square, or press the arrow keys inside the window, for one value'
+    'click a square, or use the arrow keys inside the window, to read one number'
 
+  /**
+   * The idle second line for the word table: which of the window's slots
+   * stand out across the whole table, said by the rule rather than written in
+   * — so it says what the file says, and would say something else of a file
+   * that held something else.
+   */
+  const standoutLine = () => {
+    if (entry?.name !== WTE || marked.length === 0) return ''
+    const n = marked.length
+    const lead = n === 1 ? 'one slot stands out: ' : `${NUMBER_WORDS[n] ?? n} slots stand out: `
+    return (
+      lead +
+      marked
+        .map((m, i) => `${m.col} ${STANDOUT_WORDS[m.phrase][i === 0 ? 'first' : 'later']}`)
+        .join(' · ')
+    )
+  }
+
+  /**
+   * The reading under the window, as two lines: what the picked square is in
+   * words, then the arithmetic that turns its byte into a number — the line
+   * this panel has always printed, without the token on its end, because the
+   * first line now says which word it is.
+   */
   const readout = () => {
-    if (!entry || !view || !grid) return 'no tensor selected'
-    if (!cell || cell.row >= grid.drawRows || cell.col >= grid.drawCols) {
-      return NOTHING_PICKED
-    }
+    if (!entry || !view || !grid) return { words: 'no tensor selected', arith: '' }
+    const idle = { words: NOTHING_PICKED, arith: standoutLine() }
+    if (!cell || cell.row >= grid.drawRows || cell.col >= grid.drawCols) return idle
     const i = cell.row * grid.drawCols + cell.col
-    if (i >= view.data.length) return NOTHING_PICKED
+    if (i >= view.data.length) return idle
     if (!entry.quant) {
       const index = view.row0 * WINDOW_COLS + i
-      return `index ${count(index)} · ${sig(view.data[i], 6)}`
+      return { words: `index ${count(index)} · ${sig(view.data[i], 6)}`, arith: '' }
     }
     // The stored byte and its reading are not the same number for i8 — 241 in
     // the file is −15 as an i8 — and it is the reading that goes into the
-    // arithmetic, so the line names the dtype rather than calling it a byte.
+    // arithmetic, so the second line names the dtype rather than calling it a
+    // byte. The first line says the byte, because that is what is stored.
     const q = rawValue(view.dtype, view.data[i])
     const zp = entry.quant.zeroPoint
     const value = entry.quant.scale * (q - zp)
     const row = view.row0 + cell.row
-    const piece = entry.name === WTE ? tokenOf(row) : null
-    return (
-      `row ${count(row)} · col ${count(view.col0 + cell.col)} · ${entry.dtype} ${plain(q)} · ` +
-      `(${plain(q)} ${NBSP_MINUS} ${plain(zp)}) × ${sig(entry.quant.scale, 5)} = ${signed(value, 4)}` +
+    const slot = view.col0 + cell.col
+    const stored = `slot ${count(slot)} · stored as the byte ${view.data[i]} · means ${signed(value, 2)}`
+    let words = `row ${count(row)} · ${stored}`
+    if (entry.name === WTE) {
       // A wte row is a token id, so the row number names a piece of the
-      // vocabulary. The low ids are single raw bytes and print as one
-      // replacement character; that is what is in the table.
-      (piece ? ` · token "${piece}"` : '')
-    )
+      // vocabulary. The low ids are single raw bytes and print as the
+      // character each stands for; that is what is in the table.
+      const piece = pieceOf(row)
+      const mark = marked.find((m) => m.at === cell.col)
+      if (piece !== null) words = `the word "${readoutPiece(piece)}" · ${stored}`
+      if (mark) words += ` · ${STANDOUT_WORDS[mark.phrase].pick}`
+    } else if (entry.name === WPE) {
+      words = `position ${count(row)} · ${stored}`
+    }
+    const arith =
+      `row ${count(row)} · col ${count(slot)} · ${entry.dtype} ${plain(q)} · ` +
+      `(${plain(q)} ${NBSP_MINUS} ${plain(zp)}) × ${sig(entry.quant.scale, 5)} = ${signed(value, 4)}`
+    return { words, arith }
   }
 
   const barReadout = () => {
@@ -938,6 +1324,7 @@ export default function FileView({
     : `read from the model file when this page was built · ${size}`
 
   const proofLine = proof()
+  const reading = readout()
 
   return (
     <figure className="instrument">
@@ -1083,6 +1470,8 @@ export default function FileView({
             aria-describedby={readoutId}
             onClick={pickCell}
             onKeyDown={onCanvasKey}
+            onMouseMove={hoverCell}
+            onMouseLeave={leaveCanvas}
           />
         </div>
         <div className="file-blob-controls">
@@ -1115,7 +1504,8 @@ export default function FileView({
           </span>
         </div>
         <p className="file-readout" id={readoutId} aria-live="polite">
-          {readout()}
+          <span className="file-readout-words">{reading.words}</span>
+          <span className="file-readout-arith">{reading.arith}</span>
         </p>
 
         <div className="label-row">

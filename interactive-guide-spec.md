@@ -152,7 +152,24 @@ was invisible, and on a light ground it would be a smudge.
 **Contrast**: every text/ground pair on the page is measured, not assumed, by
 walking every rendered text node in a headless browser and compositing its
 effective background. Body and label text is ≥ 4.5:1; large text and UI edges
-are ≥ 3:1. The floor for text size anywhere in instrument E is 10px.
+are ≥ 3:1. The floor for text size anywhere in instrument E is 10px, with one
+exception: the labels painted inside the byte window's canvas are 9px mono,
+the size a 10.4px row of cells holds with air.
+
+**Instrument E's byte window** is labelled on its own canvas, so nothing inside
+`.file-canvas-box` is a DOM node: row labels in a left band (the word piece for
+the word table, `p0`… for the position table, the row number for any other
+matrix; none for an f32 vector), slot labels over every eighth column in a top
+band, and a key in a bottom band — a strip painted by the cells' own ramp and
+square-root law, ticks at 0 · 0.05 · 0.2 · 0.5 and the tensor's largest value,
+and the sentence that says shade is size. The two slots of the word table that
+stand out across all 50,257 rows (36 and 6) are numbered in the pick colour
+with a ▲; the rule is |mean − mean of means| > 4 sds of the 768 means, worded
+"holds nearly the same number" when the slot's own sd is under a twentieth of
+the median column sd and "runs high/low" otherwise. Under 640px the window
+keeps only the key's strip and its two end ticks — a 5px row cannot carry a
+label. The readout under it is two parts on lines of their own: the reading in
+words, then the arithmetic in the source tag's quieter size and colour.
 
 **Layout shift is zero** and is a standing invariant, not an aspiration: every
 reserved box holds the tallest and widest state it can ever show, right-aligned

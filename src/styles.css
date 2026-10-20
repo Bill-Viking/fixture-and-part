@@ -1939,12 +1939,21 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
   color:var(--frozen);letter-spacing:0.02em;margin:0 0 6px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-/* 24 rows of 64 values. At 1280 the body is 680px wide, which puts a cell at
-   10.6 x 10.5 px with a one-pixel gutter of screen ground between them —
-   large enough to read as a grid of numbers rather than as noise. The height
-   follows from the width so the cells stay square. */
+/* 24 rows of 64 values, and three bands around them painted on the same
+   canvas: the row labels at the left, the slot labels at the top, the key at
+   the bottom. The cells' 252px of height is unchanged — 10.5 px a row — and
+   the box grows by exactly the two horizontal bands, 20 + 22, to 294px. The
+   left band comes out of the width, which no box can grow into: at 1280 the
+   body is 680px, so a cell goes from 10.6 to 10.1 px wide beside the 38px of
+   labels (six characters of the 9px mono and its gap), with the one-pixel
+   gutter of screen ground between cells kept.
+
+   The bands are custom properties because the canvas reads them: the box's
+   reserved height and the point the cells start at are one number, here,
+   rather than a copy of it in the script. */
 .file-canvas-box{
-  height:252px;overflow:hidden;
+  --file-gutter-left:38px;--file-gutter-top:20px;--file-gutter-bottom:22px;
+  height:calc(252px + var(--file-gutter-top) + var(--file-gutter-bottom));overflow:hidden;
 }
 /* The drawing surface is sized from the box, not the other way round, so a
    resize repaints at the new device pixel ratio without the box moving. */
@@ -1959,11 +1968,18 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
   font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.03em;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
-/* Two reserved lines: the arithmetic that turns one byte into one weight. */
+/* The reading, in two parts on lines of their own: what the picked square is
+   in words, then — quieter, in the source tag's own size and colour — the
+   arithmetic that turns its byte into a number. Reserved for the longest
+   reading a pick can print, measured rather than guessed: the word-table line
+   with a 24-character piece and a standout slot's ending runs to two lines at
+   the 680px body, the arithmetic to one. */
 .file-readout{
-  font-family:var(--mono);font-size:10.5px;line-height:15px;height:30px;
+  font-family:var(--mono);font-size:10.5px;line-height:15px;height:45px;
   color:var(--ink);letter-spacing:0.02em;margin:8px 0 0;overflow:hidden;
 }
+.file-readout-words,.file-readout-arith{display:block;}
+.file-readout-arith{font-size:10px;color:var(--muted);}
 
 .file-curve{
   position:relative;
@@ -2199,14 +2215,27 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
   .file-row-name{line-height:16px;}
   .file-row-shape,.file-row-type,.file-row-bytes{line-height:14px;}
   .file-row-shape{text-align:left;}
-  .file-eyebrow{height:30px;white-space:normal;text-overflow:clip;}
-  .file-canvas-box{height:126px;}
+  /* Three lines, not two: the word table's and the position table's lines
+     carry five-digit row numbers on their later windows, and at 390 those
+     two need a third line (measured; a block matrix's needs two). */
+  .file-eyebrow{height:45px;white-space:normal;text-overflow:clip;}
+  /* The phone keeps today's 126px of cells, 5.3 px a row — too small for any
+     label to sit beside a row or over a column and be read, so the left and
+     top bands are gone here and the window is only the key's band taller: the
+     strip and its two end ticks, 14px, to 140. */
+  .file-canvas-box{
+    --file-gutter-left:0px;--file-gutter-top:0px;--file-gutter-bottom:14px;
+    height:calc(126px + var(--file-gutter-bottom));
+  }
   /* Two reserved rows: the two paging buttons on one, the sentence saying
      where the window is on the other. It no longer fits beside them, and
      ellipsizing it lost the half that told the reader what to do. */
   .file-blob-controls{height:48px;flex-wrap:wrap;align-content:center;row-gap:4px;}
   .file-page{flex:1 1 100%;padding-left:0;}
-  .file-readout{height:45px;}
+  /* Five lines, measured at 390 on the longest reading a pick can print —
+     the word line with a 24-character piece and a standout slot's ending
+     takes three, the arithmetic two — and on the idle pair, two and three. */
+  .file-readout{height:75px;}
   .file-curve svg{height:88px;}
   .file-curve-stat{height:45px;}
   .file-bar-readout{height:30px;white-space:normal;text-overflow:clip;}
@@ -2292,6 +2321,8 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
   .map-readout{height:180px;}
   .kv-inspector{height:408px;}
   .kv-goes,.kv-prov{font-size:9.5px;}
+  /* At 320 the longest word line takes a fourth line. */
+  .file-readout{height:90px;}
 }
 
 /* --- reduced motion ------------------------------------------------------ */
