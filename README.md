@@ -137,12 +137,29 @@ about a file that hashes to something else.
 node scripts/read-model-file.mjs                     # downloads the file
 node scripts/read-model-file.mjs --file model.onnx   # reads a local copy
 node scripts/read-model-file.mjs --allow-new-sha     # the upload has changed
+node scripts/read-model-file.mjs --tokenizer tokenizer.json  # a local tokenizer
 ```
+
+For the word table the script also writes the mean and sd of each of its 768
+columns over all 50,257 rows (`columnStats`), and the piece of text each of the
+first window's 24 rows stands for (`rowLabels`), read from the model's own
+`tokenizer.json` — whose sha256 is checked and recorded in `provenance` the way
+the model file's is. The byte window labels itself from these, on its one
+canvas: each row with its word piece (a position row as `p5`, any other
+matrix's row by its number), every eighth slot over its column, and a key under
+the cells painted by the same ramp and square-root law that paints them. A slot
+is marked when its mean lies more than four sds of the 768 means from their
+mean — slots 36 and 6 in the first 64 — and its words come from the same rule:
+a slot whose own sd is under a twentieth of the median column sd "holds nearly
+the same number for every word", any other "runs high" or "runs low" by the
+sign of its mean (`standoutColumns` in `onnxScan.js`).
 
 The JSON is committed, and imported dynamically so that it is its own chunk
 rather than part of the initial bundle. Once the reader loads the real model
 the worker re-reads all of it out of the copy in the browser, and the panel
-says whether the two agree — fingerprint included.
+says whether the two agree — fingerprint included; the word table's 768 + 768
+column numbers are compared at 1e-4 and its 24 row labels against the model's
+tokenizer, through the same line.
 
 It goes back a second time. When the reader changes the sentence in instrument
 A and the model runs on the new one, instrument E hashes the whole file again
