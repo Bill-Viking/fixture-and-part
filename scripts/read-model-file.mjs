@@ -7,7 +7,12 @@
 // src/content/fileFacts.json — the manifest of every tensor, the distribution
 // of every one of them, a window of raw bytes out of each weight, and a
 // whole-tensor thumbnail of each one, which instrument F draws as the texture
-// inside the box that names it.
+// inside the box that names it. For the word table it also writes the mean and
+// sd of every one of its 768 columns over all 50,257 rows — two of the
+// window's slots stand out across the whole table and the window marks them —
+// and the piece of text each of the shipped window's 24 rows stands for, read
+// from the tokenizer file, so the window can label its rows before anything
+// has been downloaded.
 //
 // The point of doing it here rather than by hand is that the browser re-reads
 // exactly the same things from its own cached copy the moment the model
@@ -21,10 +26,11 @@
 //   node scripts/read-model-file.mjs --file model.onnx  # reads a local copy
 //   node scripts/read-model-file.mjs --out other.json
 //   node scripts/read-model-file.mjs --allow-new-sha    # the upload changed
+//   node scripts/read-model-file.mjs --tokenizer tokenizer.json  # local copy
 //
 // The sha256 is checked, not trusted: a file that hashes to something else is
 // a different file, and the script stops rather than quietly re-dating facts
-// about it.
+// about it. The tokenizer file is checked the same way, against its own hash.
 
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
@@ -36,6 +42,7 @@ import {
   THUMB_ROWS,
   WINDOW_COLS,
   WINDOW_ROWS,
+  columnStatsOf,
   histogramOf,
   quantOf,
   readableTensors,
@@ -52,6 +59,14 @@ const ONNX_FILE = 'decoder_model_quantized.onnx'
 const URL = `https://huggingface.co/${MODEL_ID}/resolve/main/onnx/${ONNX_FILE}`
 const EXPECTED_SHA =
   '1d3ab4d7e08ca9b8ea9a42dda13a05b7ff0f1b0c9bdc4f6eba27e7f0ceff8431'
+const TOKENIZER_URL = `https://huggingface.co/${MODEL_ID}/resolve/main/tokenizer.json`
+const EXPECTED_TOKENIZER_SHA =
+  'cda20b8ca044949aa07ac4078420c80d1a57139d5f9f33700e46fb2d891e7c66'
+/** The one table whose columns and rows the window labels. */
+const WTE = 'transformer.wte.weight_quantized'
+/** Four decimals: the precision the window's words are written to and checked at. */
+const round4 = (v) => Math.round(v * 1e4) / 1e4
+
 /** How many values of an f32 vector are shipped: one row of the blob panel. */
 const FLOAT_WINDOW_ROWS = 1
 
@@ -74,6 +89,34 @@ async function getBytes() {
   return new Uint8Array(await response.arrayBuffer())
 }
 
+async function getTokenizer() {
+  const local = arg('--tokenizer')
+  if (local) {
+    process.stderr.write(`reading ${local}\n`)
+    return new Uint8Array(await readFile(resolve(process.cwd(), local)))
+  }
+  process.stderr.write(`downloading ${TOKENIZER_URL}\n`)
+  const response = await fetch(TOKENIZER_URL)
+  if (!response.ok) throw new Error(`tokenizer download failed (${response.status})`)
+  return new Uint8Array(await response.arrayBuffer())
+}
+
+/**
+ * The piece of text each of `ids` stands for, printed the way the page prints
+ * a token: byte-level BPE writes a leading space as `Ġ`, and the page writes
+ * it as `␣` (realModel.js `displayToken`).
+ */
+function piecesOf(tokenizerBytes, ids) {
+  const vocab = JSON.parse(new TextDecoder().decode(tokenizerBytes)).model.vocab
+  const byId = new Map()
+  for (const [piece, id] of Object.entries(vocab)) byId.set(id, piece)
+  return ids.map((id) => {
+    const piece = byId.get(id)
+    if (piece === undefined) throw new Error(`the tokenizer has no piece for id ${id}`)
+    return piece.replace(/^Ġ/, '␣')
+  })
+}
+
 function sha256(bytes) {
   return createHash('sha256').update(bytes).digest('hex')
 }
@@ -88,6 +131,18 @@ function main() {
         `this is not the file the page expects\n` +
           `  expected ${EXPECTED_SHA}\n` +
           `  read     ${sha}\n` +
+          `pass --allow-new-sha if the upload has genuinely changed`,
+      )
+    }
+
+    const tokenizer = await getTokenizer()
+    const tokenizerSha = sha256(tokenizer)
+    process.stderr.write(`tokenizer sha256 ${tokenizerSha}\ntokenizer bytes  ${tokenizer.length}\n`)
+    if (tokenizerSha !== EXPECTED_TOKENIZER_SHA && !flags.has('--allow-new-sha')) {
+      throw new Error(
+        `this is not the tokenizer the page expects\n` +
+          `  expected ${EXPECTED_TOKENIZER_SHA}\n` +
+          `  read     ${tokenizerSha}\n` +
           `pass --allow-new-sha if the upload has genuinely changed`,
       )
     }
@@ -156,6 +211,25 @@ function main() {
       windows[tensor.name] = shipped
     }
 
+    // The word table's columns over every one of its rows, and the pieces its
+    // shipped window's rows stand for. Four decimals: the words on the page
+    // are written to that precision and the live reading is compared at it.
+    const stats = columnStatsOf(bytes, manifest, WTE)
+    const columnStats = {
+      [WTE]: {
+        rows: stats.rows,
+        cols: stats.cols,
+        mean: Array.from(stats.mean, round4),
+        sd: Array.from(stats.sd, round4),
+      },
+    }
+    const rowLabels = {
+      [WTE]: piecesOf(
+        tokenizer,
+        Array.from({ length: windows[WTE].rows }, (_, r) => windows[WTE].row0 + r),
+      ),
+    }
+
     const facts = {
       provenance: {
         url: URL,
@@ -168,11 +242,14 @@ function main() {
         floatWindowValues: FLOAT_WINDOW_ROWS * WINDOW_COLS,
         thumbRows: THUMB_ROWS,
         thumbCols: THUMB_COLS,
+        tokenizer: { url: TOKENIZER_URL, sha256: tokenizerSha, bytes: tokenizer.length },
       },
       manifest,
       histograms,
       windows,
       thumbnails,
+      columnStats,
+      rowLabels,
     }
 
     const out = resolve(ROOT, arg('--out', 'src/content/fileFacts.json'))
