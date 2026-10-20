@@ -53,6 +53,7 @@
 // identity instrument D is built to show.
 
 import {
+  columnStatsOf,
   findInitializers,
   histogramOf,
   scalarFloat,
@@ -292,7 +293,7 @@ async function read({ requestId, stops, count, depths }) {
 }
 
 // ---------------------------------------------------------------------------
-// Instrument E's three questions
+// Instrument E's questions
 // ---------------------------------------------------------------------------
 
 async function sendManifest({ requestId, config }) {
@@ -343,6 +344,27 @@ async function sendHistogram({ requestId, config, name }) {
   })
 }
 
+/**
+ * The mean and sd of every column of one quantized matrix, over all its rows.
+ *
+ * Asked once, for the word table, when the model has loaded: the window marks
+ * the slots that stand out across all 50,257 words, and the panel compares
+ * this reading with the shipped one number by number. One pass over 38.6 MB.
+ */
+async function sendColumnStats({ requestId, config, name }) {
+  const state = await fileState(config)
+  const stats = columnStatsOf(state.bytes, state.manifest, name)
+  postMessage(
+    {
+      type: 'file-column-stats',
+      requestId,
+      name,
+      stats: { rows: stats.rows, cols: stats.cols, mean: stats.mean, sd: stats.sd },
+    },
+    [stats.mean.buffer, stats.sd.buffer],
+  )
+}
+
 // ---------------------------------------------------------------------------
 // The queue
 // ---------------------------------------------------------------------------
@@ -352,6 +374,7 @@ const FILE_TASKS = {
   'file-window': sendWindow,
   'file-histogram': sendHistogram,
   'file-rehash': sendReHash,
+  'file-column-stats': sendColumnStats,
 }
 
 self.onmessage = (event) => {

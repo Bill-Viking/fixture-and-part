@@ -1,12 +1,13 @@
 // The main-thread half of instrument E.
 //
-// Four questions, all answered by the shared worker out of the copy of the
+// Five questions, all answered by the shared worker out of the copy of the
 // model file already in this browser: what tensors are in the file and where,
 // what the raw bytes of one of them look like, how the values of a whole one
-// are distributed, and — asked again whenever the reader changes the text —
-// what the whole file hashes to now. The first three are cached here, so
+// are distributed, what every column of the word table holds across all its
+// rows, and — asked again whenever the reader changes the text —
+// what the whole file hashes to now. The first four are cached here, so
 // moving back to a tensor already read costs nothing and re-reads nothing;
-// the fourth deliberately is not.
+// the last deliberately is not.
 //
 // Nothing in this module talks about the shipped fileFacts.json. The panel
 // decides which of the two it is showing and says so; this side only ever
@@ -42,6 +43,7 @@ function ask(message, replyType) {
 let manifestRequest = null
 const histograms = new Map()
 const windows = new Map()
+const columnStats = new Map()
 
 /**
  * The walk of the whole file: every initializer with its dtype, shape, byte
@@ -84,6 +86,23 @@ export function readWindow(name, row0 = 0, col0 = 0) {
       throw error
     })
   windows.set(key, request)
+  return request
+}
+
+/**
+ * The mean and sd of every column of a quantized matrix, over all its rows —
+ * the live reading of the numbers the window's standout marks rest on.
+ */
+export function readColumnStats(name) {
+  const held = columnStats.get(name)
+  if (held) return held
+  const request = ask({ type: 'file-column-stats', name }, 'file-column-stats')
+    .then((reply) => reply.stats)
+    .catch((error) => {
+      columnStats.delete(name)
+      throw error
+    })
+  columnStats.set(name, request)
   return request
 }
 

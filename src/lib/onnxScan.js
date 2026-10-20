@@ -525,6 +525,105 @@ export function windowOf(bytes, manifest, name, row0 = 0, col0 = 0, maxRows = WI
   }
 }
 
+// ---------------------------------------------------------------------------
+// Columns — what every row of a table holds in one slot
+// ---------------------------------------------------------------------------
+
+/**
+ * The mean and the spread of every column of a quantized matrix, taken over
+ * every row of it, in dequantized units.
+ *
+ * One pass over the bytes. The sums are of the stored integers, which are
+ * exact in Float64 at this size (50,257 rows of a byte squared is under 1e9),
+ * so the scale is applied once at the end rather than to forty million
+ * products, and the script and the worker get the same numbers to the last
+ * bit. The spread is the population sd — every row is in it; nothing is a
+ * sample.
+ *
+ * It exists for the word table, where two of the window's 64 slots stand out
+ * across all 50,257 words; `standoutColumns` below is the rule that says so.
+ */
+export function columnStatsOf(bytes, manifest, name) {
+  const tensor = byName(manifest).get(name)
+  if (!tensor || tensor.byteLength === 0) throw new Error(`${name} holds no bytes`)
+  const quant = quantOf(manifest, name)
+  if (!quant || tensor.dims.length !== 2) {
+    throw new Error(`${name} is not a quantized matrix`)
+  }
+  const [rows, cols] = tensor.dims
+  const read = signedOf(tensor.dtype)
+  const sum = new Float64Array(cols)
+  const square = new Float64Array(cols)
+  const { zeroPoint, scale } = quant
+  let p = tensor.offset
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++, p++) {
+      const q = read(bytes[p]) - zeroPoint
+      sum[c] += q
+      square[c] += q * q
+    }
+  }
+  const mean = new Float64Array(cols)
+  const sd = new Float64Array(cols)
+  for (let c = 0; c < cols; c++) {
+    const m = sum[c] / rows
+    mean[c] = scale * m
+    sd[c] = scale * Math.sqrt(Math.max(0, square[c] / rows - m * m))
+  }
+  return { name, rows, cols, mean, sd }
+}
+
+/**
+ * The middle value of a list of numbers, without touching the list: the one
+ * at index n/2 of the sorted copy, which for an even count is the upper of the
+ * two middle values. That is how the facts this rule was ruled on were read
+ * (2026-09-23: median column sd 0.1242, median |mean| 0.0218), so the rule
+ * keeps the same reading of "median" rather than a second one.
+ */
+function median(values) {
+  const sorted = Array.from(values).sort((a, b) => a - b)
+  return sorted.length === 0 ? 0 : sorted[sorted.length >> 1]
+}
+
+/** How far out a column's mean has to sit, in sds of the means, to be marked. */
+export const STANDOUT_SDS = 4
+/** Under this share of the median column sd, a column "holds nearly the same number". */
+export const STEADY_SHARE = 1 / 20
+
+/**
+ * Which columns stand out, and the plain words for how.
+ *
+ * A column stands out when its mean lies more than four sds of the 768 means
+ * away from the mean of them. Its phrase is `same` when its own sd is under a
+ * twentieth of the median column sd — every word holds nearly the same number
+ * there — and otherwise `high` or `low` by the sign of its mean. Pure: the
+ * instrument applies it to the shipped numbers and to the live ones alike.
+ *
+ * @param {{mean: ArrayLike<number>, sd: ArrayLike<number>}} stats
+ */
+export function standoutColumns(stats) {
+  const n = stats.mean.length
+  let total = 0
+  for (let c = 0; c < n; c++) total += stats.mean[c]
+  const meanOfMeans = total / n
+  // The spread of the 768 means is the n - 1 sd, as the ruled facts read it
+  // (0.0730; the population form prints 0.0729). It moves no column across
+  // the line: the nearest, slot 87, sits at 4.02 either way.
+  let spread = 0
+  for (let c = 0; c < n; c++) spread += (stats.mean[c] - meanOfMeans) ** 2
+  const sdOfMeans = Math.sqrt(spread / (n - 1))
+  const medianSd = median(stats.sd)
+  const columns = []
+  for (let c = 0; c < n; c++) {
+    const away = (stats.mean[c] - meanOfMeans) / sdOfMeans
+    if (!(Math.abs(away) > STANDOUT_SDS)) continue
+    const phrase =
+      stats.sd[c] < medianSd * STEADY_SHARE ? 'same' : stats.mean[c] > 0 ? 'high' : 'low'
+    columns.push({ col: c, away, mean: stats.mean[c], sd: stats.sd[c], phrase })
+  }
+  return { meanOfMeans, sdOfMeans, medianSd, columns }
+}
+
 /** The signed integer a raw byte stands for, for the readout line. */
 export function rawValue(dtype, byte) {
   return signedOf(dtype)(byte)
