@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" width="1280" height="320" role="img" aria-labelledby="t d">
+  <title id="t">The Fixture and the Part</title>
+  <desc id="d">Two steel rails with the amber part held between them, beside the title and subtitle of the essay.</desc>
+  <rect width="1280" height="320" fill="#F4F5F7"/>
+  <rect x="16.5" y="16.5" width="1247" height="287" fill="none" stroke="#DCDFE4" stroke-width="1"/>
+  <g>
+    <rect x="72" y="80" width="176" height="48" fill="none" stroke="#1E5AA8" stroke-width="2"/>
+    <rect x="72" y="192" width="176" height="48" fill="none" stroke="#1E5AA8" stroke-width="2"/>
+    <rect x="96" y="142" width="128" height="36" fill="#F2B705"/>
+  </g>
+  <text x="312" y="124" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="56" font-weight="700" letter-spacing="-1" fill="#14161A">The Fixture and the <tspan fill="#7A5900">Part</tspan></text>
+  <text font-family="'IBM Plex Sans','Helvetica Neue',Arial,sans-serif" font-size="21" fill="#585F6A">
+    <tspan x="314" y="170">How a language model thinks, how a brain remembers,</tspan>
+    <tspan x="314" y="199">and why the honest comparison flatters neither.</tspan>
+  </text>
+  <g font-family="'IBM Plex Mono',Menlo,Consolas,monospace" font-size="13" letter-spacing="0.5">
+    <rect x="314" y="229" width="11" height="11" fill="#1E5AA8"/>
+    <text x="333" y="239" fill="#1E5AA8">STEEL — frozen machinery</text>
+    <rect x="566" y="229" width="11" height="11" fill="#F2B705"/>
+    <text x="585" y="239" fill="#7A5900">AMBER — the moving part</text>
+    <rect x="810" y="229" width="11" height="11" fill="#2C7539"/>
+    <text x="829" y="239" fill="#2C7539">GREEN — keys</text>
+  </g>
+  <rect x="992.5" y="246.5" width="271" height="57" fill="none" stroke="#DCDFE4" stroke-width="1"/>
+  <g font-family="'IBM Plex Mono',Menlo,Consolas,monospace" font-size="11.5" letter-spacing="0.5" fill="#585F6A">
+    <text x="1008" y="270">10 SECTIONS · 6 LIVE INSTRUMENTS</text>
+    <text x="1008" y="290">GPT-2 RUNS IN THE BROWSER</text>
+  </g>
+</svg>
