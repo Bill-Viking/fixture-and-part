@@ -34,7 +34,7 @@ Three colours carry that thesis through every figure:
 
 ![Instrument F, the forward pass, at 1280 pixels wide](docs/readme/forward-pass-1280.png)
 
-*Instrument F, "The forward pass, live", in section 02, as the page renders it at 1280 pixels wide with reduced motion on and no model loaded (illustrative mode: the walls are the real file, the fall is a schematic).*
+*The top of instrument F, "The forward pass, live", in section 02, as the page renders it at 1280 pixels wide with reduced motion on and no model loaded (illustrative mode: the walls are the real file, the fall is a schematic). The drawing runs on below this crop; the page has all of it.*
 
 ## The instruments
 
