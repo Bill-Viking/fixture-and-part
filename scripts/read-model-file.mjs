@@ -145,10 +145,32 @@ const BYTE_OF = (() => {
 })()
 
 /**
+ * The tokenizer's decode tidies the spaces a word piece carries before
+ * punctuation and a few contractions (transformers.js `clean_up_tokenization`,
+ * on by default for this tokenizer): the piece `Ġ.` decodes to "." and prints
+ * as `.` on the page, not `␣.`. The same replacements, in the same order, so
+ * a label read here is the label the page prints for the same row — 23 rows
+ * of the table differ without it.
+ */
+const cleanUp = (text) =>
+  text
+    .replace(/ \./g, '.')
+    .replace(/ \?/g, '?')
+    .replace(/ !/g, '!')
+    .replace(/ ,/g, ',')
+    .replace(/ ' /g, "'")
+    .replace(/ n't/g, "n't")
+    .replace(/ 'm/g, "'m")
+    .replace(/ 's/g, "'s")
+    .replace(/ 've/g, "'ve")
+    .replace(/ 're/g, "'re")
+
+/**
  * A piece decoded and printed the way the page prints a token: its bytes read
- * as UTF-8 (a byte that is not a character on its own becomes �), then a
- * leading space as ␣, a newline as ⏎ and a tab as ⇥ — realModel.js
- * `displayToken`, which the browser runs on the loaded tokenizer's own decode.
+ * as UTF-8 (a byte that is not a character on its own becomes �) and tidied
+ * as the tokenizer's decode tidies them, then a leading space as ␣, a newline
+ * as ⏎ and a tab as ⇥ — realModel.js `displayToken`, which the browser runs
+ * on the loaded tokenizer's own decode.
  */
 function printedOf(spelling) {
   const bytes = Uint8Array.from(Array.from(spelling, (ch) => {
@@ -156,7 +178,7 @@ function printedOf(spelling) {
     if (b === undefined) throw new Error(`the piece ${spelling} holds a letter no byte maps to`)
     return b
   }))
-  const raw = new TextDecoder('utf-8').decode(bytes)
+  const raw = cleanUp(new TextDecoder('utf-8').decode(bytes))
   return (raw.startsWith(' ') ? `␣${raw.slice(1)}` : raw)
     .replace(/\n/g, '⏎')
     .replace(/\t/g, '⇥')
