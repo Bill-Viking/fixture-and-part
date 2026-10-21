@@ -54,6 +54,10 @@ export const sections = [
         type: 'p',
         html: 'What moves is the <strong class="k">activation</strong>: one vector per token, thousands of numbers long, that represents that token in the text so far. A word enters as one vector and is multiplied through grid after grid — a hundred-plus layers in a frontier model, six blocks in the small specimen drawn below — picking up meaning as it goes. After a few layers, the vector that entered as &ldquo;rocket&rdquo; encodes <em>rocket, the propulsion kind, subject of this sentence</em>. That running vector is called the residual stream, and it is where concepts actually live: as directions and distances in a high-dimensional space, constructed fresh at runtime and gone milliseconds later.',
       },
+      {
+        type: 'p',
+        html: 'Take &ldquo;it&rdquo; from the sentence below. Its starting vector is the lit row from section 01, and this page follows that one word from here.',
+      },
       { type: 'instrument', name: 'tokenizer' },
       { type: 'instrument', name: 'forward' },
     ],
@@ -71,6 +75,10 @@ export const sections = [
       {
         type: 'p',
         html: 'The inheritance mechanism is the <strong>KV cache</strong>. When a token passes through an attention layer it produces key and value vectors — its machined representation at that layer — and the cache stores every one of them, verbatim, so new tokens compute only themselves against the stored rack. It is not a summary; it is the racked finished parts, kept staged. And it is append-only by construction: a token attends only backward, so token 500&rsquo;s cached vectors are byte-identical before and after token 5,000 exists. A ledger, not a document. The freeze cuts both ways — early tokens can never be reinterpreted in light of later context. Any reconsidering happens in new tokens reading old ones; the old ones never change.',
+      },
+      {
+        type: 'p',
+        html: 'On the rack below, &ldquo;it&rdquo; is the fifth entry staged, and the entries above it are all it can read.',
       },
       { type: 'instrument', name: 'stepper' },
       {
@@ -100,6 +108,10 @@ export const sections = [
       {
         type: 'p',
         html: 'A new token&rsquo;s query is scored against every cached key; the scores pass through a softmax so they sum to one — attention paid to one token is attention taken from another — and the token receives the correspondingly weighted blend of the values, folded into its own representation. That blend is how &ldquo;it&rdquo; comes to internally <em>mean</em> the engine. The scheme itself — what to ask, how to advertise, what to hand over — lives in the weight matrices, learned by gradient descent and designed by no one. The organizing principle is frozen in the steel; the organization is re-stamped onto each token as it arrives, in parallel across dozens of heads per layer, each head asking a different kind of question.',
+      },
+      {
+        type: 'p',
+        html: 'The inspector below opens on &ldquo;it&rdquo;: the row from section 01, now reading the words before it.',
       },
       { type: 'instrument', name: 'attention' },
       {
