@@ -169,7 +169,19 @@ with a ▲; the rule is |mean − mean of means| > 4 sds of the 768 means, worde
 the median column sd and "runs high/low" otherwise. Under 640px the window
 keeps only the key's strip and its two end ticks — a 5px row cannot carry a
 label. The readout under it is two parts on lines of their own: the reading in
-words, then the arithmetic in the source tag's quieter size and colour.
+words, then the arithmetic in the source tag's quieter size and colour. The
+word table's window opens on rows 336–359, the page holding row 340 (` it`,
+the fifth token of the page's own sentence), not on its first rows; every
+other tensor opens on its first rows, and before the model loads neither
+paging button moves the window. Row 340 is the lit row: its label is `▶ ␣it`
+in the pick colour at all times, its readout says ` · the lit row`, and a
+plain sentence in the body face above the eyebrow names it — reserved at the
+lines its one sentence measures at each width and kept empty, at the same
+height, for any other tensor. A word-table row whose print holds the
+replacement glyph or a control character prints the vocabulary's own
+spelling instead (`¡`, `Ā`, `Ĵ` …, with a leading `Ġ` as `␣`), and its
+readout calls it "the raw byte" or "the raw bytes"; the rule is one function
+(`labelOf`, `src/lib/pieceLabel.js`) shared by the page and the build script.
 
 **Layout shift is zero** and is a standing invariant, not an aspiration: every
 reserved box holds the tallest and widest state it can ever show, right-aligned

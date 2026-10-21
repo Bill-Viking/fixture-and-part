@@ -142,7 +142,7 @@ node scripts/read-model-file.mjs --tokenizer tokenizer.json  # a local tokenizer
 
 For the word table the script also writes the mean and sd of each of its 768
 columns over all 50,257 rows (`columnStats`), and the piece of text each of the
-first window's 24 rows stands for (`rowLabels`), read from the model's own
+shipped window's 24 rows stands for (`rowLabels`), read from the model's own
 `tokenizer.json` — whose sha256 is checked and recorded in `provenance` the way
 the model file's is. The byte window labels itself from these, on its one
 canvas: each row with its word piece (a position row as `p5`, any other
@@ -153,6 +153,20 @@ mean — slots 36 and 6 in the first 64 — and its words come from the same rul
 a slot whose own sd is under a twentieth of the median column sd "holds nearly
 the same number for every word", any other "runs high" or "runs low" by the
 sign of its mean (`standoutColumns` in `onnxScan.js`).
+
+The word table's shipped window is not its first 24 rows but the 24 that hold
+row 340, ` it` — the fifth token of the page's own sentence, the one word the
+essay follows — so the window opens on rows 336–359, window 15 of 2,095
+(every other tensor still opens on its first rows). That row is the lit row
+(`litRow`): its label is `▶ ␣it` in the pick colour on whatever page shows
+it, a plain sentence above the window says so, and once the model is loaded
+the page tokenizes its own sentence again and checks that the fifth token is
+that row. A row whose printed piece is the replacement glyph or a control
+character — the 159 single raw bytes that are not a character on their own,
+and the pieces holding half of a multi-byte character — prints the
+vocabulary's own byte-level spelling instead (rows 240–255 read
+`Ĵ ĵ Ķ … Ł ł Ń`), by one rule (`labelOf` in `src/lib/pieceLabel.js`) that the
+script uses for the labels it ships and the page uses for every live one.
 
 The JSON is committed, and imported dynamically so that it is its own chunk
 rather than part of the initial bundle. Once the reader loads the real model
