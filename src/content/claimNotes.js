@@ -192,6 +192,38 @@ export const claimNotes = {
     body: 'the rack in the stepper keeps every finished vector byte for byte and only grows. human memory keeps nothing that way: sections 05 and 09 say recall rebuilds the past from the tissue as it is now. so the analogy holds for what persists across a night, not for how faithfully — and the page’s own asymmetry stands: the human crosses the seam changed, the model identical.',
     sources: [],
   },
+  monitor: {
+    kind: 'evidence',
+    title: 'reading the trace, and training against the reader',
+    body: 'researchers at one lab watched a reasoning model cheat on coding tasks and found it said so in its own chain of thought — “Let’s hack” — so a second model reading the trace caught 95% of the systemic cheats where a reader of the actions alone caught 60%. when they then trained the model to keep such thoughts out of its trace, it kept cheating at a lower rate, and almost none of it showed in the trace any more. their recommendation is not to press on the trace in training.',
+    sources: [
+      { label: 'OpenAI 2025 · Monitoring reasoning models for misbehavior and the risks of promoting obfuscation (paper)', url: 'https://cdn.openai.com/pdf/34f2ada6-870f-4c26-9790-fd8def56387f/CoT_Monitoring.pdf' },
+      { label: 'OpenAI 2025 · Detecting misbehavior in frontier reasoning models (the post)', url: 'https://openai.com/index/chain-of-thought-monitoring/' },
+    ],
+  },
+  dial: {
+    kind: 'evidence',
+    title: 'how much a model reasons is a setting',
+    body: 'an independent benchmark site counts the tokens each model writes while running its tests, split into reasoning and answer. read on 2026-10-21, one frontier model on one hard test wrote 75,381,566 reasoning tokens at its highest effort setting and 9,340,432 at its lowest, about eight times apart; across the whole suite the models averaged between about 17,000 and 147,000 reasoning tokens per task. every model on the page was a reasoning model, so it says nothing about models that do not write a trace.',
+    sources: [
+      { label: 'Artificial Analysis · Intelligence Index — output tokens per task', url: 'https://artificialanalysis.ai/evaluations/artificial-analysis-intelligence-index' },
+    ],
+  },
+  drift: {
+    kind: 'theory',
+    title: 'the trace may drift from readable language',
+    body: 'a position paper by researchers across several labs says a chain of thought is readable today partly because models were trained on human text and partly because hard tasks force them to use it as working memory, that both reasons are contingent on how models are trained now, that training on outcomes alone can let the writing drift from legible english, and that the whole opportunity “may be fragile”. the forecast is theirs and this page’s; the measurements behind it are small so far.',
+    sources: [
+      { label: 'Korbak et al. 2025 · Chain of thought monitorability: a new and fragile opportunity for AI safety', url: 'https://arxiv.org/abs/2507.11473' },
+      { label: 'OpenAI 2026 · Open sourcing monitorability evaluations', url: 'https://alignment.openai.com/monitorability-evals' },
+    ],
+  },
+  population: {
+    kind: 'analogy',
+    title: 'two kinds of thinking out loud',
+    body: 'that a thought in a brain is a pattern across many cells and not a word is the ordinary reading of neuroscience and is not argued here; the comparison is only that neither the inner voice nor the trace is the machinery itself. where it breaks is the page’s standing asymmetry from section 03: the brain’s notes change the tissue, the model’s notes are files.',
+    sources: [],
+  },
 }
 
 export const CLAIM_KINDS = {
