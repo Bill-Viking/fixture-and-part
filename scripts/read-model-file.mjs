@@ -12,7 +12,9 @@
 // window's slots stand out across the whole table and the window marks them —
 // and the piece of text each of the shipped window's 24 rows stands for, read
 // from the tokenizer file, so the window can label its rows before anything
-// has been downloaded.
+// has been downloaded. The word table's shipped window is not its first 24
+// rows but the 24 that hold the one word the rest of the page follows — "it"
+// — and that row is written down as the lit row.
 //
 // The point of doing it here rather than by hand is that the browser re-reads
 // exactly the same things from its own cached copy the moment the model
@@ -50,6 +52,7 @@ import {
   thumbnailOf,
   windowOf,
 } from '../src/lib/onnxScan.js'
+import { labelOf } from '../src/lib/pieceLabel.js'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(HERE, '..')
@@ -64,6 +67,14 @@ const EXPECTED_TOKENIZER_SHA =
   'cda20b8ca044949aa07ac4078420c80d1a57139d5f9f33700e46fb2d891e7c66'
 /** The one table whose columns and rows the window labels. */
 const WTE = 'transformer.wte.weight_quantized'
+/**
+ * The one word the page follows, as the vocabulary spells it. The page's own
+ * sentence is DEFAULT_SENTENCE in src/lib/toyModel.js, "The engine roared and
+ * it shut down.", and its fifth token — index 4, where App.jsx's
+ * `realQueryIndex` points instrument C — is " it". The word table's shipped
+ * window is the one that holds this row, and the row is lit on it.
+ */
+const FOLLOWED_PIECE = 'Ġit'
 /** Four decimals: the precision the window's words are written to and checked at. */
 const round4 = (v) => Math.round(v * 1e4) / 1e4
 
@@ -101,19 +112,67 @@ async function getTokenizer() {
   return new Uint8Array(await response.arrayBuffer())
 }
 
-/**
- * The piece of text each of `ids` stands for, printed the way the page prints
- * a token: byte-level BPE writes a leading space as `Ġ`, and the page writes
- * it as `␣` (realModel.js `displayToken`).
- */
-function piecesOf(tokenizerBytes, ids) {
+/** The tokenizer's vocabulary, both ways: piece → id as the file has it, and id → piece. */
+function vocabularyOf(tokenizerBytes) {
   const vocab = JSON.parse(new TextDecoder().decode(tokenizerBytes)).model.vocab
   const byId = new Map()
   for (const [piece, id] of Object.entries(vocab)) byId.set(id, piece)
+  return { vocab, byId }
+}
+
+/**
+ * Byte-level BPE writes every byte as one printable letter: the 188 bytes
+ * that are printable already stand for themselves, and the other 68 — the
+ * controls, the space, DEL, the high controls and the soft hyphen — are moved
+ * up to U+0100 onward, in byte order. This is that mapping, computed, read
+ * backwards: a letter of the spelling to the byte it stands for.
+ */
+const BYTE_OF = (() => {
+  const bytes = []
+  for (let b = 33; b <= 126; b++) bytes.push(b)
+  for (let b = 161; b <= 172; b++) bytes.push(b)
+  for (let b = 174; b <= 255; b++) bytes.push(b)
+  const letters = [...bytes]
+  let moved = 0
+  for (let b = 0; b < 256; b++) {
+    if (!bytes.includes(b)) {
+      bytes.push(b)
+      letters.push(256 + moved)
+      moved++
+    }
+  }
+  return new Map(letters.map((c, i) => [String.fromCodePoint(c), bytes[i]]))
+})()
+
+/**
+ * A piece decoded and printed the way the page prints a token: its bytes read
+ * as UTF-8 (a byte that is not a character on its own becomes �), then a
+ * leading space as ␣, a newline as ⏎ and a tab as ⇥ — realModel.js
+ * `displayToken`, which the browser runs on the loaded tokenizer's own decode.
+ */
+function printedOf(spelling) {
+  const bytes = Uint8Array.from(Array.from(spelling, (ch) => {
+    const b = BYTE_OF.get(ch)
+    if (b === undefined) throw new Error(`the piece ${spelling} holds a letter no byte maps to`)
+    return b
+  }))
+  const raw = new TextDecoder('utf-8').decode(bytes)
+  return (raw.startsWith(' ') ? `␣${raw.slice(1)}` : raw)
+    .replace(/\n/g, '⏎')
+    .replace(/\t/g, '⇥')
+}
+
+/**
+ * The label each of `ids` prints, by the one rule the live page uses
+ * (src/lib/pieceLabel.js `labelOf`): the printed piece, or — where that print
+ * holds � or a control character — the vocabulary's own spelling, its `Ġ`
+ * shown as ␣.
+ */
+function piecesOf({ byId }, ids) {
   return ids.map((id) => {
     const piece = byId.get(id)
     if (piece === undefined) throw new Error(`the tokenizer has no piece for id ${id}`)
-    return piece.replace(/^Ġ/, '␣')
+    return labelOf(printedOf(piece), piece)
   })
 }
 
@@ -146,6 +205,17 @@ function main() {
           `pass --allow-new-sha if the upload has genuinely changed`,
       )
     }
+
+    // The row the page follows. If the vocabulary does not have it the page's
+    // own sentence no longer tokenizes the way every word below it says, and
+    // that is a stop, not a fallback.
+    const vocabulary = vocabularyOf(tokenizer)
+    const litId = vocabulary.vocab[FOLLOWED_PIECE]
+    if (!Number.isInteger(litId)) {
+      throw new Error(`the tokenizer has no piece ${FOLLOWED_PIECE}; the lit row cannot be found`)
+    }
+    const litRow0 = litId - (litId % WINDOW_ROWS)
+    process.stderr.write(`lit row ${FOLLOWED_PIECE} = id ${litId}, window from row ${litRow0}\n`)
 
     const manifest = scanManifest(bytes)
     process.stderr.write(
@@ -180,11 +250,13 @@ function main() {
         ).toString('base64'),
       }
       const quantized = Boolean(quantOf(manifest, tensor.name))
+      // Every tensor ships its first rows except the word table, which ships
+      // the window holding the lit row.
       const view = windowOf(
         bytes,
         manifest,
         tensor.name,
-        0,
+        tensor.name === WTE ? litRow0 : 0,
         0,
         quantized ? undefined : FLOAT_WINDOW_ROWS,
       )
@@ -225,9 +297,12 @@ function main() {
     }
     const rowLabels = {
       [WTE]: piecesOf(
-        tokenizer,
+        vocabulary,
         Array.from({ length: windows[WTE].rows }, (_, r) => windows[WTE].row0 + r),
       ),
+    }
+    const litRow = {
+      [WTE]: { id: litId, piece: piecesOf(vocabulary, [litId])[0], row0: windows[WTE].row0 },
     }
 
     const facts = {
@@ -250,6 +325,7 @@ function main() {
       thumbnails,
       columnStats,
       rowLabels,
+      litRow,
     }
 
     const out = resolve(ROOT, arg('--out', 'src/content/fileFacts.json'))
