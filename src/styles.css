@@ -1934,6 +1934,29 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
   min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 
+/* The sign: one plain line above the word table's window, in the body face at
+   the size and leading of an instrument's purpose line (.inst-purpose, 13.5 on
+   19), in ink. Reserved from the one sentence it holds, measured rather than
+   guessed: 628.2px of text, so one line in the 678px body above 760px and
+   two below it, with room to spare down to 481 (a 411px box, 8.7px left on
+   the first line). Three at 480 and under: at 390 the sentence does fit two
+   lines of the 320px box, but with 0.2px to spare, and at 389 it takes three
+   — a phone's width one pixel from clipping is not a reservation. At 320 it
+   takes three with a whole word of room on the last. The 4px under it is
+   inside the box, so the box's height is the whole of what it adds to the
+   page. Empty for any other tensor, at the same height, so a tensor switch
+   moves nothing. */
+.file-sign{
+  font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;line-height:19px;
+  height:23px;padding-bottom:4px;
+  color:var(--ink);letter-spacing:0;margin:0;overflow:hidden;
+}
+@media(max-width:760px){
+  .file-sign{height:42px;}
+}
+@media(max-width:480px){
+  .file-sign{height:61px;}
+}
 .file-eyebrow{
   font-family:var(--mono);font-size:10px;line-height:15px;height:15px;
   color:var(--frozen);letter-spacing:0.02em;margin:0 0 6px;
