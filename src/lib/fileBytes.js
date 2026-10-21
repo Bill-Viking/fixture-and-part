@@ -171,12 +171,13 @@ export function decodeWindow(shipped) {
 //
 // The second is the one that matters. `wteRowCheck` dequantizes a row of the
 // embedding table straight out of the file's bytes and compares it with the
-// same row as the graph's own Gather -> DequantizeLinear hands it back.
+// same row as the graph's own Gather -> DequantizeLinear hands it back — by
+// default the lit row, the one word the page follows.
 if (import.meta.env.DEV) {
   globalThis.__fileCheck = async (options = {}) => {
     const started = performance.now()
-    const tokenId = options.tokenId ?? 262
     const facts = (await import('../content/fileFacts.json')).default
+    const tokenId = options.tokenId ?? facts.litRow['transformer.wte.weight_quantized'].id
     const live = await readManifest()
 
     const shaMatches = live.sha === facts.provenance.sha256
@@ -227,10 +228,12 @@ if (import.meta.env.DEV) {
       }
     }
 
+    // Each shipped window is read again where it was cut: the word table's
+    // is the page that holds the lit row, every other one starts at row 0.
     const windowDiffs = []
     for (const name of names) {
-      const a = await readWindow(name, 0, 0)
       const b = decodeWindow(facts.windows[name])
+      const a = await readWindow(name, b.row0, b.col0)
       if (a.data.length < b.data.length) {
         windowDiffs.push(`${name}: ${a.data.length} values vs ${b.data.length} shipped`)
         continue
