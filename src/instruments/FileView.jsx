@@ -10,7 +10,9 @@ import {
   readWindow,
 } from '../lib/fileBytes.js'
 import { WINDOW_COLS, WINDOW_ROWS, rawValue, standoutColumns } from '../lib/onnxScan.js'
-import { tokenText } from '../lib/realModel.js'
+import { labelOf, needsSpelling } from '../lib/pieceLabel.js'
+import { loadModel, realTokenize, tokenText } from '../lib/realModel.js'
+import { DEFAULT_SENTENCE } from '../lib/toyModel.js'
 import InstrumentHead from '../components/InstrumentHead.jsx'
 
 /**
@@ -46,6 +48,16 @@ const WPE = 'transformer.wpe.weight_quantized'
  * further apart than half of the last place.
  */
 const COLUMN_TOLERANCE = 1e-4
+/**
+ * Where the page's own sentence puts the one word the page follows: its fifth
+ * token, " it" — the index App.jsx's `realQueryIndex` points instrument C at,
+ * and the row the build lit (`litRow` in fileFacts.json). Once the model is
+ * loaded the instrument tokenizes the sentence again and checks the two agree.
+ */
+const FOLLOWED_INDEX = 4
+/** The plain line above the window, for the word table; every other tensor keeps the line empty. */
+const SIGN =
+  'every word the model knows is a row of numbers like these · the lit row is "it", the word this page follows'
 /** Below this share of the file a segment is thinner than a pixel: no lies. */
 const CLICKABLE_PCT = 0.5
 /** And below this a bracket cannot hold its own label. */
@@ -84,6 +96,17 @@ const STANDOUT_WORDS = {
 
 /** 1d3ab4d7…8431 — enough of a hash to compare by eye. */
 const shortSha = (sha) => (sha ? `${sha.slice(0, 8)}…${sha.slice(-4)}` : '—')
+
+/**
+ * The page a tensor's window opens on: the one the build shipped. Every tensor
+ * ships its first rows except the word table, which ships the 24 rows holding
+ * the lit row (rows 336–359), so it opens at page 14 and the reading taken in
+ * the browser at that page is the one compared with the shipped bytes.
+ */
+const shippedPageOf = (facts, name) => {
+  const shipped = facts?.windows[name]
+  return shipped ? Math.floor(shipped.row0 / WINDOW_ROWS) : 0
+}
 
 // --- the ramp ---------------------------------------------------------------
 
@@ -449,7 +472,15 @@ export default function FileView({
   // rows here, and one selection cannot have two owners. WTE is still what it
   // opens on — that default now lives one level up.
   const setSelected = onSelectTensor
-  const [page, setPage] = useState(0)
+  // The page the reader has moved the window to, and for which tensor. Until
+  // the reader moves it — and whenever the tensor changes, from here or from
+  // instrument F's boxes — the window is on the page the build shipped.
+  const [paged, setPaged] = useState(null)
+  // The tokenizer's own vocabulary, id → piece as byte-level BPE spells it,
+  // read from the loaded tokenizer once the model is in (its public
+  // `get_vocab()`): the spelling a row prints where its decoded piece is a
+  // replacement glyph or a control character.
+  const [spellings, setSpellings] = useState(null)
   const [cell, setCell] = useState(null)
   const [hovered, setHovered] = useState(null)
   // The reader changed the text and the model ran on it; this is what the
@@ -553,6 +584,9 @@ export default function FileView({
     }
   }, [live, facts, selected, histograms, noteMismatch])
 
+  const shippedPage = shippedPageOf(facts, selected)
+  const page = paged?.name === selected ? paged.page : shippedPage
+  const atShipped = page === shippedPage
   const windowKey = `${selected}@${page}`
   useEffect(() => {
     if (!live || !facts) return undefined
@@ -561,7 +595,7 @@ export default function FileView({
     readWindow(selected, page * WINDOW_ROWS, 0)
       .then((result) => {
         if (cancelled) return
-        const shipped = page === 0 ? facts.windows[selected] : null
+        const shipped = atShipped ? facts.windows[selected] : null
         if (shipped) {
           const expected = decodeWindow(shipped)
           const same = expected.data.every((v, i) => v === result.data[i])
@@ -575,7 +609,7 @@ export default function FileView({
     return () => {
       cancelled = true
     }
-  }, [live, facts, selected, page, windowKey, windows, noteMismatch])
+  }, [live, facts, selected, page, atShipped, windowKey, windows, noteMismatch])
 
   // The word table's 768 columns, read again over all 50,257 rows, and
   // compared number by number with the shipped reading — the marks on two of
@@ -606,14 +640,80 @@ export default function FileView({
     }
   }, [live, facts, noteMismatch])
 
+  // The vocabulary, from the tokenizer the model loaded with. `loadModel`
+  // resolves at once with the handle it already holds when the model is
+  // ready, so this never starts a load of its own.
+  useEffect(() => {
+    if (!ready) return undefined
+    let cancelled = false
+    loadModel()
+      .then(({ tokenizer }) => {
+        if (cancelled) return
+        const byId = []
+        for (const [piece, id] of tokenizer.get_vocab()) byId[id] = piece
+        setSpellings(byId)
+      })
+      .catch((error) => {
+        // Without it the labels print as instrument B prints them; nothing
+        // claims a spelling it did not read.
+        if (import.meta.env.DEV) console.error('instrument E: the vocabulary could not be read', error)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [ready])
+
+  /**
+   * The label a word-table row prints once the model is loaded: the piece as
+   * instrument B prints it, or the vocabulary's own spelling where that print
+   * is a replacement glyph or a control character (pieceLabel.js — the rule
+   * the build used for the shipped labels).
+   */
+  const liveLabelOf = useCallback(
+    (row) => {
+      const printed = tokenOf(row)
+      if (printed === null) return null
+      const spelling = spellings?.[row]
+      return spelling === undefined ? printed : labelOf(printed, spelling)
+    },
+    [spellings],
+  )
+
   // The shipped row labels were read from the tokenizer file; once the model's
-  // own tokenizer is loaded, it is asked the same 24 questions.
+  // own tokenizer is loaded, it is asked the same 24 questions — again once
+  // the vocabulary is in hand, by the rule the labels are printed with.
   useEffect(() => {
     if (!ready || !facts) return
     const shipped = facts.rowLabels?.[WTE]
+    const row0 = facts.windows[WTE]?.row0 ?? 0
     if (!shipped) return
-    if (shipped.some((piece, row) => tokenOf(row) !== piece)) {
+    if (shipped.some((piece, r) => liveLabelOf(row0 + r) !== piece)) {
       noteMismatch(`${short(WTE)} row labels`)
+    }
+  }, [ready, facts, liveLabelOf, noteMismatch])
+
+  // The lit row is a claim about the page's own sentence: that its fifth
+  // token is this row. Once the model's tokenizer is loaded the sentence is
+  // tokenized again and the claim is checked, id and piece.
+  useEffect(() => {
+    if (!ready || !facts) return undefined
+    const shipped = facts.litRow?.[WTE]
+    if (!shipped) return undefined
+    let cancelled = false
+    realTokenize(DEFAULT_SENTENCE)
+      .then(({ ids }) => {
+        if (cancelled) return
+        if (ids[FOLLOWED_INDEX] !== shipped.id || tokenOf(shipped.id) !== shipped.piece) {
+          noteMismatch(`${short(WTE)} lit row`)
+        }
+      })
+      .catch((error) => {
+        // A sentence that could not be tokenized is not a disagreement, and
+        // the panel does not call it one.
+        if (import.meta.env.DEV) console.error('instrument E: the lit row could not be checked', error)
+      })
+    return () => {
+      cancelled = true
     }
   }, [ready, facts, noteMismatch])
 
@@ -661,9 +761,9 @@ export default function FileView({
   const view = useMemo(() => {
     const held = windows.get(windowKey)
     if (held) return held
-    if (page === 0 && facts?.windows[selected]) return decodeWindow(facts.windows[selected])
+    if (atShipped && facts?.windows[selected]) return decodeWindow(facts.windows[selected])
     return null
-  }, [windows, windowKey, page, facts, selected])
+  }, [windows, windowKey, atShipped, facts, selected])
 
   /**
    * How the values in view are laid out on the canvas.
@@ -716,10 +816,11 @@ export default function FileView({
 
   // --- selection ------------------------------------------------------------
 
+  // A new tensor opens on the page the build shipped for it.
   const select = useCallback(
     (name) => {
       setSelected(name)
-      setPage(0)
+      setPaged(null)
       setCell(null)
     },
     [setSelected],
@@ -776,18 +877,41 @@ export default function FileView({
 
   /**
    * The piece of text a word-table row stands for: the model's own tokenizer
-   * once it is loaded, at any page; before that, the 24 pieces the build read
-   * out of the tokenizer file for the first window, so nothing about the
-   * labels waits on a download.
+   * once it is loaded, at any page, by the label rule; before that, the 24
+   * pieces the build read out of the tokenizer file for the window it
+   * shipped, so nothing about the labels waits on a download.
    */
   const pieceOf = useCallback(
     (row) => {
-      const piece = ready ? tokenOf(row) : null
+      const piece = ready ? liveLabelOf(row) : null
       if (piece !== null) return piece
-      return facts?.rowLabels?.[WTE]?.[row] ?? null
+      const row0 = facts?.windows[WTE]?.row0 ?? 0
+      return facts?.rowLabels?.[WTE]?.[row - row0] ?? null
     },
-    [ready, facts],
+    [ready, facts, liveLabelOf],
   )
+
+  /**
+   * Which noun the readout gives a word-table row: a row whose print is a
+   * replacement glyph or a control character prints the vocabulary's
+   * spelling, and is called what it is — one raw byte, or several.
+   */
+  const nounOf = useCallback(
+    (row) => {
+      const spelling = ready ? spellings?.[row] : undefined
+      const printed = spelling === undefined ? null : tokenOf(row)
+      if (printed === null || !needsSpelling(printed)) return 'the word'
+      return Array.from(spelling).length === 1 ? 'the raw byte' : 'the raw bytes'
+    },
+    [ready, spellings],
+  )
+
+  /** The row the page follows, and where it is in the window if it is in view. */
+  const litId = facts?.litRow?.[WTE]?.id ?? null
+  const litAt =
+    entry?.name === WTE && view?.kind === 'bytes' && litId !== null && litId >= view.row0 && litId < view.row0 + view.rows
+      ? litId - view.row0
+      : null
 
   /** What is written left of a row, per kind of tensor; null where nothing is. */
   const rowLabelOf = useCallback(
@@ -796,12 +920,15 @@ export default function FileView({
       const row = view.row0 + r
       if (entry.name === WTE) {
         const piece = pieceOf(row)
-        return piece === null ? null : rowLabelText(piece)
+        if (piece === null) return null
+        // The lit row is marked the way the standout slots are: the ▶ marks
+        // the row as the ▲ marks a column.
+        return row === litId ? `▶ ${rowLabelText(piece)}` : rowLabelText(piece)
       }
       if (entry.name === WPE) return `p${row}`
       return String(row)
     },
-    [entry, view, pieceOf],
+    [entry, view, pieceOf, litId],
   )
 
   // --- the canvas -----------------------------------------------------------
@@ -885,7 +1012,8 @@ export default function FileView({
         for (let r = 0; r < grid.drawRows; r++) {
           const text = rowLabelOf(r)
           if (text === null) continue
-          const on = cell?.row === r || hover?.row === r
+          // The lit row's label is in the pick colour at all times.
+          const on = cell?.row === r || hover?.row === r || r === litAt
           ctx.fillStyle = on ? lit : words
           ctx.fillText(text, x0 - 4, y0 + (r + 0.5) * cellH)
         }
@@ -982,7 +1110,7 @@ export default function FileView({
       }
     }
     paintRef.current()
-  }, [layout, view, grid, entry, maxAbs, cell, marked, rowLabelOf])
+  }, [layout, view, grid, entry, maxAbs, cell, marked, rowLabelOf, litAt])
 
   // The canvas is painted in the page's mono, which may still be on its way
   // when the first paint runs; once it has landed, paint again.
@@ -1142,11 +1270,13 @@ export default function FileView({
     let words = `row ${count(row)} · ${stored}`
     if (entry.name === WTE) {
       // A wte row is a token id, so the row number names a piece of the
-      // vocabulary. The low ids are single raw bytes and print as the
-      // character each stands for; that is what is in the table.
+      // vocabulary. The low ids are single raw bytes: one that is a character
+      // on its own prints as that character, one that is not prints the
+      // letter the vocabulary spells it with, and is called a raw byte.
       const piece = pieceOf(row)
       const mark = marked.find((m) => m.at === cell.col)
-      if (piece !== null) words = `the word "${readoutPiece(piece)}" · ${stored}`
+      const lit = row === litId ? ' · the lit row' : ''
+      if (piece !== null) words = `${nounOf(row)} "${readoutPiece(piece)}"${lit} · ${stored}`
       if (mark) words += ` · ${STANDOUT_WORDS[mark.phrase].pick}`
     } else if (entry.name === WPE) {
       words = `position ${count(row)} · ${stored}`
@@ -1454,6 +1584,9 @@ export default function FileView({
           <InfoTag topic="fileBlob" />
           <span className="file-source">{source()}</span>
         </div>
+        {/* One plain line for the word table; empty, at the same height, for
+            any other tensor, so a tensor switch moves nothing. */}
+        <p className="file-sign">{selected === WTE ? SIGN : ''}</p>
         <p className="file-eyebrow">{blobEyebrow()}</p>
         <div className="file-canvas-box screen">
           {/* Not an image: it takes focus and the arrow keys move a reading
@@ -1475,12 +1608,15 @@ export default function FileView({
           />
         </div>
         <div className="file-blob-controls">
+          {/* Before the model loads there is only the shipped page to show,
+              so both buttons wait — the word table's opens at window 15,
+              and a back button live there would have had nothing to read. */}
           <button
             type="button"
             className="btn"
-            disabled={page === 0}
+            disabled={page === 0 || (!live && pages > 1)}
             onClick={() => {
-              setPage((p) => Math.max(0, p - 1))
+              setPaged({ name: selected, page: Math.max(0, page - 1) })
               setCell(null)
             }}
           >
@@ -1491,7 +1627,7 @@ export default function FileView({
             className="btn"
             disabled={page >= pages - 1 || (!live && pages > 1)}
             onClick={() => {
-              setPage((p) => Math.min(pages - 1, p + 1))
+              setPaged({ name: selected, page: Math.min(pages - 1, page + 1) })
               setCell(null)
             }}
           >
