@@ -1,51 +1,92 @@
-# The Fixture and the Part — interactive guide
+<p align="center"><img src="docs/readme/banner.svg" alt="Two steel rails with the amber part held between them, beside the title" width="100%"></p>
 
-An engineering-drawing-styled walkthrough of transformer internals, built from
-the static essay in `the-fixture-and-the-part.html`. The prose is reused
-verbatim; six of the figures are live instruments.
+# The Fixture and the Part
 
-Spec: `interactive-guide-spec.md`.
+*How a language model thinks, how a brain remembers, and why the honest comparison flatters neither.*
 
-## Status
+https://bill-viking.github.io/fixture-and-part/
 
-Phases 1, 2, 3A, instrument E and the light-theme pass are merged and
-deployed: the illustrative build, real `distilgpt2` running in the browser
-behind a load button, the glass pass (instrument D), the file itself
-(instrument E), and the white page ground with its role-named tokens and
-plain-words copy.
+## What it is
 
-On the `forward-pass` branch: a decoding control in instrument B — greedy or a
-seeded sampled draw, sampled by default, because greedy on a six-block model
-loops within a few tokens — and instrument F, "the forward pass, live", a
-drawing of the whole model in section 02 with the reader's own sentence
-running down through it.
+An interactive essay, drawn in the idiom of an engineering drawing. It runs to ten sections, and six of its figures are live instruments you can type into, step through and click. A real GPT-2 (`distilgpt2`, about 83 MB) can run in your browser: the page fetches it from huggingface.co only when you press its load button, runs it on WebGPU where the browser has it and on WASM where it does not, and sends nothing anywhere. With no model loaded, every number outside instrument E is an illustrative heuristic, and the page labels it so. Instrument E reads the real model file either way.
 
-The page works with no model loaded; in that state every number outside
-instrument E is an illustrative heuristic from `src/lib/toyModel.js` and is
-labelled as such. Instrument E has no illustrative mode: its numbers are read
-from the real model file either way, ahead of time or live.
+## What the name means
 
-## Run
+The essay's second section names the two halves of a running model after a machine shop:
+
+> Weights are the tooling. Activations are the workpiece.
+>
+> These are the weights: machined once during training, then bolted down. A model in use never modifies them.
+>
+> What moves is the activation: one vector per token, thousands of numbers long, that represents that token in the text so far.
+
+Three colours carry that thesis through every figure:
+
+- **STEEL** — frozen machinery
+- **AMBER** — the moving part
+- **GREEN** — keys
+
+## What it looks like
+
+![The page's header and section 01 at 1280 pixels wide](docs/readme/page-1280.png)
+
+*The header and section 01, "The file", as the page renders them at 1280 pixels wide.*
+
+![Instrument F, the forward pass, at 1280 pixels wide](docs/readme/forward-pass-1280.png)
+
+*Instrument F, "The forward pass, live", in section 02, as the page renders it at 1280 pixels wide with reduced motion on and no model loaded (illustrative mode: the walls are the real file, the fall is a schematic).*
+
+## The instruments
+
+| | Instrument | Section | What it shows |
+|---|---|---|---|
+| E | The file | 01 — The file | the model file itself: every tensor, a window of its raw bytes, the spread of one tensor's values |
+| A | The tokenizer | 02 — Fixture & part | the tokenizer strip: your sentence cut into the pieces the model reads |
+| F | The forward pass, live | 02 — Fixture & part | a drawing of the whole model with your sentence running down through it |
+| B | The forward pass and the KV rack | 03 — The moment | one forward pass per token, and the KV rack it leaves behind |
+| C | The attention inspector | 04 — The lookup | which earlier tokens each head attends to, at a layer you pick |
+| D | The glass pass | 04 — The lookup | the residual stream at one position, read through the logit lens |
+
+## Run it on your machine
+
+You need Node 20 or newer and npm. It was built with Node 26.7.0 and npm 11.19.0.
 
 ```
+git clone https://github.com/Bill-Viking/fixture-and-part.git
+cd fixture-and-part
 npm install
-npm run dev      # http://localhost:5173
-npm run build    # static output in dist/
-npm run preview
+npm run dev
 ```
 
-## Deploying to GitHub Pages
+Then open http://localhost:5173 in your browser.
+
+On a Mac, `Start Fixture and Part.command` does the same on a double-click once the repository is installed; it expects the checkout at `/Users/bill/Projects/fixture-and-part`, so edit its `cd` line if yours lives elsewhere.
+
+The real model loads from the page's own button: about 83 MB, downloaded once and cached by the browser after that.
+
+`npm run build` writes the static site to `dist/`.
+`npm run preview` serves that build locally.
+
+## Deploy to GitHub Pages
 
 `vite.config.js` reads the base path from `VITE_BASE`:
 
 ```
-VITE_BASE=/<repo-name>/ npm run build
+VITE_BASE=/fixture-and-part/ npm run build
 ```
 
 Leading and trailing slashes are both required. For a user/org Pages site the
 default base of `/` is correct and no env var is needed.
 
-## Layout
+Before you publish, check the build: every path in `dist/index.html` must start with the base (`/fixture-and-part/`).
+
+On Windows, build from PowerShell (`$env:VITE_BASE="/fixture-and-part/"; npm run build`), never from Git Bash, which rewrites the base into a Windows path and ships broken links.
+
+## Inside
+
+Spec: `interactive-guide-spec.md`.
+
+### Layout
 
 ```
 index.html
@@ -119,7 +160,7 @@ completed over it.
 There is one worker, not two. D's lens and E's reads both want the same 83 MB
 of model file, and a second worker would mean a second copy of it.
 
-## Reading the model file
+### Reading the model file
 
 Instrument E shows the real `decoder_model_quantized.onnx` — the same file the
 page downloads for real mode — and nothing on it is illustrative. So that it
@@ -182,7 +223,7 @@ change and is entitled to know, at that moment, that this one did not. The
 claim is a reading rather than a memory, which is why `readSha` in
 `src/lib/fileBytes.js` is the one call in that module that is not cached.
 
-## Design
+### Design
 
 The page is a white page ground with ink drawn on it. Dense fields of data —
 instrument B's KV rack, instrument C's lookup table, instrument D's lens rows,
@@ -194,7 +235,7 @@ nothing on this page may be identified by its fill: every card, callout, chip
 and frame carries a drawn edge. Full token table and the rules that go with it:
 `interactive-guide-spec.md` §3.
 
-## Colour law
+### Colour law
 
 Three roles, and the tokens are named for the roles rather than for the colours
 filling them, because the colours have now been repainted twice and the roles
@@ -218,3 +259,7 @@ fill takes `--moving-on`, which is a token so that a future repaint stays a
 swap of the table. And a role colour on a dark panel is not the same swatch as
 on the page ground: `--frozen-on-screen` and `--keys-on-screen` are the only
 forms of those two allowed there.
+
+---
+
+Drafted August 2026, from a conversation between Bill (Seattle) and Claude (Anthropic).
