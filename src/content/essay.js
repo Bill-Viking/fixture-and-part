@@ -246,13 +246,44 @@ export const sections = [
   },
   {
     id: '10',
-    eyebrow: '10 — THE CHARIOTEER',
+    eyebrow: '10 — THE LOOP',
+    eyebrowVariant: 'cool',
+    title: 'The fixture never learns; the harness takes notes',
+    blocks: [
+      {
+        type: 'p',
+        html: 'Nothing on this page acts. A pass takes text in and hands one word out, and the file is the same file after. What turns that into an agent is a loop built around it, outside the fixture: a program that takes the word, appends it, and runs the pass again — and, when the words spell out a request, runs a tool, pastes what came back into the context, and runs the pass again. The loop is ordinary software. Seen from the fixture, everything it does arrives the same way, as more text in the context: a tool&rsquo;s answer, a file, a note from an hour ago. The context is the moving part, the one thing in the whole arrangement that carries from one pass to the next, and the loop is what tends it — trims it when it grows too long, drops a file in, drops the tool&rsquo;s result in. Memory, in an agent, is files the loop writes, to be read into a later context, because nothing else will carry. The fixture never learns; the harness takes notes.',
+      },
+      { type: 'figure', name: 'loop' },
+      {
+        type: 'p',
+        html: 'One consequence is easy to miss. The pass is a total function: hand it any context and it hands back a probability for every one of the 50,257 words, every time, and the loop picks one. There is no pass that returns nothing. The nearest thing to silence is the end-of-text token — row 50,256 of the same table, chosen by the same rule as any word — and declining to answer is itself a string of words, made likelier by training the way any phrasing is. Training the file to be helpful, or careful, moves the numbers, so that &ldquo;I don&rsquo;t know&rdquo; becomes a likelier sentence; it adds no second mechanism that could withhold one. What the machine has in place of doubt is already on this page: the landing at the foot of the drawing in section 02, one bar per candidate word. Spiky, with one bar standing clear, and the pass has a strong guess. Flat, with the top eight nearly level, and it has none. That shape is the only certainty the fixture owns — how sure the bet is, never whether it is right.',
+      },
+      {
+        type: 'p',
+        html: 'A reasoning model is the same arrangement with one more habit. Before its answer it writes a trace — the model &ldquo;thinking out loud&rdquo; — a page of words produced one pass at a time and fed back the same way, and the trace is the part, not the fixture. It is readable for one reason only: it was trained to be words. Nothing inside the machine was ever in words; what the glass window in section 04 reads are directions in a space of numbers, and the trace is the loop&rsquo;s transcript of a long chain of landings. That is also why it is worth reading. Today a model set to cheat on a task tends to say so in its trace, in plain English, and a second model reading the trace catches it about nineteen times in twenty, against six in ten for a reader of the actions alone. Train the first model to keep bad plans out of its trace and it goes on cheating; it only stops writing it down. <button type="button" class="claim-mark" data-claim="monitor">EVIDENCE</button>',
+      },
+      {
+        type: 'p',
+        html: 'This page&rsquo;s human author put the forecast in one sentence: the model&rsquo;s internal conversations will naturally become more machine-efficient, and we will have fewer human ways of understanding them. The record so far points the same way. The trace is already a dial — one frontier model on one test writes eight times the reasoning at its highest setting as at its lowest, and the pages run to tens of thousands of tokens for a single task <button type="button" class="claim-mark" data-claim="dial">EVIDENCE</button> — and the pressure it is trained under rewards the answer and never the legibility of the route, the same pressure that turned assembly code into something only machines read. The labs that build these models say in print that the trace may drift away from readable language, that its monitorability is fragile, and that for now they have chosen not to press on it. <button type="button" class="claim-mark" data-claim="drift">THEORY</button> Two ways to watch, then. Read the words the machine writes, which is cheap and getting less faithful; or look inside, which is hard and was never in words to begin with. The glass window is the second kind.',
+      },
+      {
+        type: 'callout',
+        variant: 'cool',
+        label: 'THE OTHER SHOP — WHERE THE NOTES GO',
+        html: 'The brain runs the same loop with the seam closed. A thought is also a pattern across a population of cells rather than a word, and a person also thinks out loud — the narrating voice of section 03 — and that narration is also a transcript, not the mechanism. <button type="button" class="claim-mark" data-claim="population">ANALOGY</button> The difference is where the notes go. The harness writes its notes to files and the fixture is untouched; the brain writes its notes into the tissue that will think the next thought, which is why section 03 could say the human crosses the seam changed and the model identical. A brain that learned to hide its reasoning from itself would be a different brain afterward. A model that learns to hide its trace is the same file with a different habit.',
+      },
+    ],
+  },
+  {
+    id: '11',
+    eyebrow: '11 — THE CHARIOTEER',
     eyebrowVariant: 'cool',
     title: 'Who drives the horses',
     blocks: [
       {
         type: 'p',
-        html: 'Plato&rsquo;s image holds up: the generative core is the horses — enormous power, no direction of its own — and the open problem in AI is the charioteer. <button type="button" class="claim-mark" data-claim="charioteer">ANALOGY</button> Today nearly every executive function around a model is either hand-built scaffolding (planning loops, reflection passes, memory management), borrowed from older cognitive architectures like ACT-R and SOAR, or — the current stopgap — another model pass critiquing the first: the horse doing a charioteer impression. The models themselves show traces of planning a few words ahead — a rhyme chosen before the line that lands on it is written — but that is planning inside one pass, not steering across a task. <button type="button" class="claim-mark" data-claim="planning">EVIDENCE</button> In most real work the charioteer is the human: steering attention, choosing which thread to pull, deciding when depth has been reached. Human-in-the-loop is not a limitation being engineered away; it is the reference implementation being studied.',
+        html: 'Plato&rsquo;s image holds up: the generative core is the horses — enormous power, no direction of its own — and the open problem in AI is the charioteer. <button type="button" class="claim-mark" data-claim="charioteer">ANALOGY</button> Today nearly every executive function around a model is either hand-built scaffolding (planning loops, reflection passes, memory management — the harness of section 10), borrowed from older cognitive architectures like ACT-R and SOAR, or — the current stopgap — another model pass critiquing the first: the horse doing a charioteer impression. The models themselves show traces of planning a few words ahead — a rhyme chosen before the line that lands on it is written — but that is planning inside one pass, not steering across a task. <button type="button" class="claim-mark" data-claim="planning">EVIDENCE</button> In most real work the charioteer is the human: steering attention, choosing which thread to pull, deciding when depth has been reached. Human-in-the-loop is not a limitation being engineered away; it is the reference implementation being studied.',
       },
       {
         type: 'p',
