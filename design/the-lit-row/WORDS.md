@@ -35,7 +35,7 @@ The facts the words rest on:
 - replace `the lowest rows of the word table are the single raw bytes, and print as the character each one stands for.` with: `the first 256 rows of the word table are the single raw bytes: one that is a character on its own prints as that character, and one that is not prints the letter the vocabulary spells it with.`
 
 ## 7. The thread through the essay — three sentences, one each, the draft's (the lane commits these in `src/content/essay.js`, not the builder). Lane's recommendation: keep — without them the lit row is a highlight; with them it is the one word the page follows.
-- section 02, after the paragraph that ends `… picking up meaning as it goes.` (the one before the sentence box): `Take "it" from the sentence below. Its starting vector is the lit row from section 01, and this page follows that one word from here.`
+- section 02, after the paragraph that ends `… constructed fresh at runtime and gone milliseconds later.` (the one before the sentence box): `Take "it" from the sentence below. Its starting vector is the lit row from section 01, and this page follows that one word from here.`
 - section 03, before the stepper: `On the rack below, "it" is the fifth entry staged, and the entries above it are all it can read.`
 - section 04, before the inspector: `The inspector below opens on "it": the row from section 01, now reading the words before it.`
 
