@@ -35,7 +35,7 @@ export const sections = [
       },
       {
         type: 'p',
-        html: 'Everything the model knows — every fact, every style, every skill — is smeared across those numbers in superposition, with no address where any particular fact lives. Researchers can find where a fact&rsquo;s strongest traces sit and edit them, one fact at a time, with side effects; nobody can open the file and delete one cleanly. <button type="button" class="claim-mark" data-claim="rome">EVIDENCE</button> The organization is not in how the numbers look. It is in how they multiply.',
+        html: 'Everything the model knows — every fact, every style, every skill — is spread across those numbers, with no address where any particular fact lives. Researchers can find where a fact&rsquo;s strongest traces sit and edit them, one fact at a time, with side effects; nobody can open the file and delete one cleanly. <button type="button" class="claim-mark" data-claim="rome">EVIDENCE</button> How tidily that spread is organized is argued as this page is read: for years the working picture, called superposition, was that a network packs unrelated things into the same cells because they rarely collide, and in October 2026 one of the researchers who built that picture argued that the famous evidence was misread and that most cells in a network do one job. <button type="button" class="claim-mark" data-claim="clean">THEORY</button> The organization is not in how the numbers look. It is in how they multiply.',
       },
       { type: 'instrument', name: 'file' },
     ],

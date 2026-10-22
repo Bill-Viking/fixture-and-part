@@ -224,6 +224,17 @@ export const claimNotes = {
     body: 'that a thought in a brain is a pattern across many cells and not a word is the ordinary reading of neuroscience and is not argued here; the comparison is only that neither the inner voice nor the trace is the machinery itself. where it breaks is the page’s standing asymmetry from section 03: the brain’s notes change the tissue, the model’s notes are files.',
     sources: [],
   },
+  clean: {
+    kind: 'theory',
+    title: 'is the file tidy?',
+    body: 'the picture called superposition — a network holding more concepts than it has cells by packing them into shared directions — came from a careful 2022 toy-model study that itself said it was “very unclear what to generalize to real networks”. in october 2026 nick cammarata, a co-author of the early evidence, argued in an informal essay that the famous cat-and-car cell was a V-shape detector, that early networks’ mess had ordinary fixable causes, and that about nine in ten cells of a modern language model have one main job — by its own words “a working hypothesis”, with a technical paper promised. he does not dispute that concepts outnumber cells. others in the field answered within days that superposition in that sense still stands, that facts outnumber cells, and that the evidence shown is thin so far. the argument is open; this page’s own claim — spread across the numbers, no address — is the part nobody disputes.',
+    sources: [
+      { label: 'Elhage et al. 2022 · Toy models of superposition', url: 'https://transformer-circuits.pub/2022/toy_model/index.html' },
+      { label: 'Cammarata 2026 · Neural networks are already clean (Goodfire)', url: 'https://already-clean.goodfire.com/' },
+      { label: 'Nanda 2026 · a response, crossposted to LessWrong', url: 'https://www.lesswrong.com/posts/x4kvabkF2Jk8GLZp8/linkpost-neural-networks-are-already-clean' },
+      { label: 'Heaven, MIT Technology Review, 2026-10-19 · “We were looking at it wrong”', url: 'https://www.technologyreview.com/2026/10/19/1147149/we-were-looking-at-it-wrong-the-explosive-claim-thats-upended-the-ai-world/' },
+    ],
+  },
 }
 
 export const CLAIM_KINDS = {
