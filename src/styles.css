@@ -1283,6 +1283,10 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 .mr-card{pointer-events:none;}
 /* The pointer's card has no leader: it is already at the pointer. */
 .mr-card.is-hover .mr-card-tick{display:none;}
+/* One card at a time: while the pointer's card is painted (the script marks it
+   `data-live`) the pinned card stands down, and it comes back the moment the
+   pointer's card goes. Neither card moves; only one is drawn. */
+.mr-card.is-hover[data-live] ~ .mr-card.is-pinned{display:none;}
 
 /* What the selected wall is, read out of the file's own manifest, and the
    button that opens it there. One reserved box, one fixed button. */
