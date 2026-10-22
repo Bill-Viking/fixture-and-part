@@ -236,7 +236,24 @@ function geometryFor(compact, full) {
   const dotPitchY = compact ? 12 : 9.4
   const dotH = dotPitchY * 0.62
 
-  const keyY = barBase + (compact ? 112 : 78)
+  // The curves legend (WORDS §5): what a solid curve is and what a straight
+  // stream is, under the landing and above its key line, in that key line's
+  // mono caps. Its words are fixed — the floor is TRANSFER_FLOOR printed — so
+  // its wrap is a function of the setting alone and so is the height it adds.
+  // Set at 11 px or more where each setting is checked (1280, 641, 390), which
+  // the key line's own size is not; that is what costs the extra lines. The
+  // curve's words come first and the stream's start a line of their own.
+  const curvesFs = per(41, 23.8, 11.2)
+  const curvesLine = curvesFs * 1.35
+  // One column fewer than the width holds: every line but the last keeps its
+  // trailing space, so the string reads whole, and the space has an advance.
+  const curvesCols = Math.floor((SW - 16) / (curvesFs * (MONO_ADVANCE + TRACK.keyLine))) - 1
+  const curvesLines = [
+    ...wrapBalanced(CURVES_CURVE, curvesCols),
+    ...wrapBalanced(CURVES_STREAM, curvesCols),
+  ]
+  const curvesY = barBase + per(132, 94, 80)
+  const keyY = curvesY + (curvesLines.length - 1) * curvesLine + curvesFs * 1.9
   const keyY2 = keyY + (compact ? 34 : 0)
   const legRuleY = keyY2 + (compact ? 40 : 26)
   const legTop = legRuleY + (compact ? 44 : 28)
@@ -321,8 +338,33 @@ function geometryFor(compact, full) {
   // height.
   const cardSlack = per(6, 4, 4)
 
+  // The stations label (WORDS §4), in the walls' own label face at 10 px or
+  // more. Beside the BLOCK labels it reads top to bottom, turned a quarter
+  // clockwise, starting level with the top of block 0 — and the gutter it
+  // needs is not there: the BLOCK scrims start 3 units in and the drawing's
+  // edge is at 0. So the drawing gains a strip to the left of 0 rather than
+  // moving anything: the viewBox starts at −gutter, every wall cell keeps its
+  // own coordinates, and the label's ink is centred in the strip. On the
+  // phone it is two lines across the top instead, in a band above 0: the air
+  // over block 0 belongs to that block's carriers and callouts, and one line
+  // at 10 px is wider than the phone's drawing.
+  const gutter = per(0, 34, 16)
+  const stationFs = per(38, 22.5, 11)
+  const stationLine = stationFs * 1.3
+  const stationBand = compact ? 108 : 0
+  const stationX = compact ? 8 : (3 - gutter) / 2 - 0.26 * stationFs
+  const stationY = compact ? -16 - stationLine : bandTop[0]
+
   return {
     compact, fs, cardSlack,
+    // The drawing's own extent: the strip for the stations label is the only
+    // thing outside 0..SW × 0..H.
+    vbX: -gutter,
+    vbY: -stationBand,
+    vbW: SW + gutter,
+    vbH: H + stationBand,
+    stationFs, stationLine, stationX, stationY,
+    curvesFs, curvesLine, curvesY, curvesLines,
     cardW, cardH, cardPad, cardCols, cardLine, cardLines,
     bandX, bandW, cols, rows, pitchX, cellW, cellH, pitchY, bandH,
     bandTop, bandMid, bandBot, stopY, lastBot, air,
@@ -375,8 +417,23 @@ function textWidth(text, size, tracking) {
 /** The tracking each class of type on the screen is set with, in em. */
 const TRACK = {
   label: 0.11, tensor: 0.1, callout: 0.02, key: 0.1, quiet: 0.06,
-  note: 0.13, aperture: 0.11, leg: 0.01,
+  note: 0.13, aperture: 0.11, leg: 0.01, keyLine: 0.08,
 }
+
+/**
+ * The two labels that say what the drawing's shapes are (WORDS §4, §5).
+ *
+ * Each is one string on the page — a `<text>` whose lines are its own
+ * `<tspan>`s, every line but the last keeping its trailing space — and is
+ * kept here in the halves the narrow settings break it into. The curves
+ * legend's floor is TRANSFER_FLOOR printed, so a changed floor changes it.
+ */
+const STATIONS_HEAD = 'SIX STATIONS, TOP TO BOTTOM —'
+const STATIONS_TAIL = 'EVERY WORD PASSES THROUGH ALL SIX'
+const CURVES_CURVE =
+  `SOLID CURVE — ONE HEAD CARRYING A SOURCE WORD'S VALUE INTO THE HERO · WIDTH = ITS SHARE ` +
+  `OF ATTENTION · AT MOST TWO PER BLOCK, UNDER ${TRANSFER_FLOOR} NOT DRAWN ·`
+const CURVES_STREAM = `STRAIGHT STREAM — ONE WORD'S OWN NUMBERS, NEVER LEAVING ITS COLUMN`
 
 /**
  * How far the picture stands back behind something drawn on top of it.
@@ -439,6 +496,43 @@ function wrapText(text, cols, max) {
   const kept = lines.slice(0, max)
   kept[max - 1] = `${kept[max - 1].slice(0, Math.max(0, cols - 1))}…`
   return kept
+}
+
+/**
+ * The same number of lines a greedy wrap needs, made as even as they go.
+ *
+ * A greedy wrap of a fixed sentence can leave its last word or two alone on
+ * a line ("DRAWN ·"). The narrowest width that still needs no more lines
+ * spreads the words across them instead; nothing is clipped, because the
+ * line count is the greedy one. A middle dot or a dash stays at the end of
+ * the phrase it closes rather than opening the next line.
+ */
+function wrapBalanced(text, cols) {
+  const words = []
+  for (const word of String(text).split(/\s+/).filter(Boolean)) {
+    if ((word === '·' || word === '—') && words.length) words[words.length - 1] += ` ${word}`
+    else words.push(word)
+  }
+  const wrap = (width) => {
+    const lines = []
+    let current = ''
+    for (const word of words) {
+      if (current && current.length + 1 + word.length > width) {
+        lines.push(current)
+        current = word
+      } else {
+        current = current ? `${current} ${word}` : word
+      }
+    }
+    if (current) lines.push(current)
+    return lines
+  }
+  const lines = wrap(cols)
+  for (let c = Math.ceil(String(text).length / lines.length); c < cols; c++) {
+    const even = wrap(c)
+    if (even.length === lines.length) return even
+  }
+  return lines
 }
 
 /** Do two boxes overlap, and by how much? */
@@ -1562,6 +1656,14 @@ export default function ForwardMap({
       SW - 16,
       g.keyY2 - g.keyY + g.fs.key * (INK_ABOVE + INK_BELOW),
     )
+    // The curves legend above it, which says what the solid curves and the
+    // straight streams are — words a card standing on them would hide.
+    label(
+      8,
+      g.curvesY - g.curvesFs * INK_ABOVE,
+      SW - 16,
+      (g.curvesLines.length - 1) * g.curvesLine + g.curvesFs * (INK_ABOVE + INK_BELOW),
+    )
     // The line across the very top that names the sentence.
     label(8, 6 - g.fs.note * (INK_ABOVE - 1), SW - 16, g.fs.note * (INK_ABOVE + INK_BELOW))
     // A block that draws no transfer says so beside the hero, in the middle
@@ -1932,8 +2034,10 @@ export default function ForwardMap({
       const wall = windows ? wallWindow(windows, wallTensor(layer)) : null
       if (!svg || !wall) return null
       const box = svg.getBoundingClientRect()
-      const ux = ((clientX - box.left) * SW) / box.width
-      const uy = ((clientY - box.top) * g.H) / box.height
+      // The viewBox starts left of 0 and above 0 where the stations label
+      // needs a strip, so a pixel maps through the box's own origin.
+      const ux = g.vbX + ((clientX - box.left) * g.vbW) / box.width
+      const uy = g.vbY + ((clientY - box.top) * g.vbH) / box.height
       const col = Math.min(
         wall.cols - 1,
         Math.max(0, Math.floor((ux - g.bandX) / g.pitchX)),
@@ -2769,7 +2873,7 @@ export default function ForwardMap({
         <div
           className={`map-screen screen${ambient ? ' is-ambient' : ''}`}
           style={{
-            aspectRatio: `${SW} / ${g.H}`,
+            aspectRatio: `${g.vbW} / ${g.vbH}`,
             // The stroke of a grain, in the drawing's own units. It belongs to
             // the setting rather than to the stylesheet, because a stroke that
             // reads at 0.58 px a unit is a third too heavy at one.
@@ -2804,7 +2908,7 @@ export default function ForwardMap({
           <svg
             ref={svgRef}
             className="map-svg"
-            viewBox={`0 0 ${SW} ${g.H}`}
+            viewBox={`${g.vbX} ${g.vbY} ${g.vbW} ${g.vbH}`}
             role="img"
             aria-label={`one pass of distilgpt2 drawn as a memory room: six full-width walls of real weight bytes, ${n} granular token streams falling through them, the attention transfers into ${
               heroToken ?? 'the hero'
@@ -2870,7 +2974,7 @@ export default function ForwardMap({
                 <stop offset="1" stopColor="var(--moving)" stopOpacity="0" />
               </linearGradient>
             </defs>
-            <rect width={SW} height={g.H} fill="url(#mr-fade)" />
+            <rect x={g.vbX} y={g.vbY} width={g.vbW} height={g.vbH} fill="url(#mr-fade)" />
 
             <Walls g={g} windows={windows} />
 
@@ -2978,9 +3082,9 @@ export default function ForwardMap({
             <g className="mr-ambient" aria-hidden="true">
               <rect
                 className="mr-sweep"
-                x="0"
+                x={g.vbX}
                 y={f2(-g.bandH * 2.2)}
-                width={SW}
+                width={g.vbW}
                 height={f2(g.bandH * 2.2)}
                 fill="url(#mr-sweep)"
               />
@@ -3358,6 +3462,32 @@ export default function ForwardMap({
               WTE+WPE
             </text>
 
+            {/* What the six walls are to the sentence, said on the drawing
+                itself: beside the BLOCK labels and reading down them, or on
+                the phone two lines across the top. In the strip the viewBox
+                keeps for it, so it crosses no wall, stream or carrier. */}
+            {g.compact ? (
+              <text
+                className="mr-label mr-stations"
+                x={g.stationX}
+                y={f2(g.stationY)}
+                style={{ fontSize: g.stationFs }}
+              >
+                <tspan x={g.stationX} y={f2(g.stationY)}>{`${STATIONS_HEAD} `}</tspan>
+                <tspan x={g.stationX} y={f2(g.stationY + g.stationLine)}>
+                  {STATIONS_TAIL}
+                </tspan>
+              </text>
+            ) : (
+              <text
+                className="mr-label mr-stations"
+                transform={`translate(${f2(g.stationX)} ${f2(g.stationY)}) rotate(90)`}
+                style={{ fontSize: g.stationFs }}
+              >
+                {`${STATIONS_HEAD} ${STATIONS_TAIL}`}
+              </text>
+            )}
+
             {/* --- the landing --- */}
             <text
               className="mr-note"
@@ -3493,6 +3623,21 @@ export default function ForwardMap({
                   : `the landing is the last word’s alone; ${heroToken} is the hero, so it stands back`}
               </text>
             ) : null}
+            {/* What a solid curve is and what a straight stream is: the one
+                legend for the two shapes the fall is drawn with, above the
+                landing's own key line and in its face. */}
+            <text
+              className="mr-key-line mr-curves"
+              x="8"
+              y={f2(g.curvesY)}
+              style={{ fontSize: g.curvesFs }}
+            >
+              {g.curvesLines.map((line, i) => (
+                <tspan key={i} x="8" y={f2(g.curvesY + i * g.curvesLine)}>
+                  {i < g.curvesLines.length - 1 ? `${line} ` : line}
+                </tspan>
+              ))}
+            </text>
             <text className="mr-key-line" x="8" y={g.keyY} style={{ fontSize: g.fs.key }}>
               {live && finalTop ? (
                 <>
