@@ -1,0 +1,21 @@
+{
+  "readAt": "2026-10-22",
+  "modelBytes": 83502375,
+  "status": {
+    "bytes": 193849,
+    "lines": 339
+  },
+  "opener": {
+    "bytes": 5582
+  },
+  "memory": {
+    "files": 12,
+    "kb": 126
+  },
+  "commits": {
+    "total": 211,
+    "dayBefore": 21,
+    "day": 35
+  },
+  "carriedInsideModel": 0
+}
