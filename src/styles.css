@@ -328,6 +328,45 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 .inst-body{padding:18px 16px 20px;}
 .instrument figcaption{padding:0 16px 14px;margin-top:0;}
 
+/* The head's title with a "?" badge after it. Only FIG.7 has one. The
+   badge rides with the title's last word, so it can never wrap onto a line
+   of its own. It sits 1px low rather than the badge's usual 3px: at -3px it
+   pushed the title's 24px line to 25.5px, at -1px the title measures 24px a
+   line, as every other instrument title does. */
+.inst-title-tail{white-space:nowrap;}
+.inst-title-tail .info-tag{margin-left:8px;vertical-align:-1px;}
+
+/* --- FIG.7, the loop: a drawing, not an instrument ----------------------- */
+
+/* Two layouts of one drawing, each with a fixed viewBox chosen from the
+   breakpoint alone, and each SVG given its viewBox's own ratio here, so its
+   box is the right height before any glyph is drawn and nothing it holds can
+   change that height: no fonts, no content, no model state. The stacked
+   layout stops growing at 360 px wide, where its type is 1.2x its units. */
+.loop-svg{display:block;width:100%;height:auto;overflow:visible;}
+.loop-wide{aspect-ratio:680/312;}
+.loop-stacked{display:none;aspect-ratio:300/404;max-width:360px;margin:0 auto;}
+@media(max-width:640px){
+  .loop-wide{display:none;}
+  .loop-stacked{display:block;}
+}
+/* A drawing sheet: a hairline frame, flat fills, role colours, no shadow. */
+.lf-frame{fill:none;stroke:var(--hair);stroke-width:1;}
+.lf-box{fill:var(--frozen-tint);stroke:var(--frozen);stroke-width:2;}
+/* Yellow is a fill, never a word; the amber band and bars carry a dark-amber
+   edge so the shapes hold on white. */
+.lf-band,.lf-bar{fill:var(--moving);stroke:var(--moving-ink);stroke-width:1;}
+.lf-base{stroke:var(--rule);stroke-width:1;}
+.lf-sheet{fill:var(--card);stroke:var(--rule);stroke-width:1;}
+.lf-loop,.lf-arrow{fill:none;stroke:var(--ink);stroke-width:1.5;stroke-linejoin:round;}
+.lf-head path{fill:var(--ink);}
+.lf-label,.lf-note,.lf-word{font-family:var(--mono);}
+.lf-label{font-weight:500;letter-spacing:0.06em;fill:var(--ink);}
+.lf-label.is-frozen{fill:var(--frozen);}
+.lf-label.is-moving{fill:var(--moving-ink);}
+.lf-note{fill:var(--muted);}
+.lf-word{fill:var(--ink);}
+
 .field-label{
   display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:0.16em;
   color:var(--muted);margin-bottom:8px;

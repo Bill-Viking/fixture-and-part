@@ -94,4 +94,8 @@ export const explainers = {
     title: 'the causal mask',
     body: 'a token can only attend backwards. text is written one token at a time, so anything at or after the querying token does not exist yet for this lookup and is locked.',
   },
+  loop: {
+    title: 'the loop',
+    body: 'the loop is a program outside the model: it runs one pass, takes the word the pass lands on, appends it to the context and runs the pass again. when the words ask for a tool, it runs the tool and pastes the result into the context too. the notes are files it writes for a later context to read; the model file itself is never written. the drawing is schematic — it runs nothing — and every part of it is live somewhere above: the file in 01, the context in 03, the landing in 02.',
+  },
 }
