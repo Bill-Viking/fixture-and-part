@@ -13,6 +13,17 @@ export const header = {
     { swatch: 'moving', label: 'AMBER — the moving part' },
     { swatch: 'keys', label: 'GREEN — keys' },
   ],
+  // The page's words, defined once (the reader's footing, 2026-10-22). Drawn
+  // as a strip under the legend; `role` colours the word, never the gloss.
+  glossary: [
+    { word: 'FIXTURE', role: 'frozen', gloss: 'the weights: the file, machined once, never changed by use' },
+    { word: 'PART', role: 'moving', gloss: 'your sentence\'s numbers in flight, one stream per token' },
+    { word: 'TOKEN', role: null, gloss: 'one piece of text, a word or a fragment of one' },
+    { word: 'PASS', role: null, gloss: 'one fall of the whole sentence through the fixture, one word out' },
+    { word: 'RACK', role: null, gloss: 'the finished parts kept for the next pass' },
+    { word: 'LANDING', role: null, gloss: 'the word a pass lands on, and how sure it was' },
+  ],
+  glossaryCaption: 'the page\'s words, defined once · each is drawn live in the instruments below',
 }
 
 // The note half is hidden on narrow screens so the overlay stays small.
@@ -189,7 +200,7 @@ export const sections = [
         type: 'callout',
         variant: 'warm',
         label: 'SPECIMEN — THE MOTH',
-        html: 'This page&rsquo;s human author, in a hall at home: &ldquo;I thought I saw a moth high up on the wall; for maybe ten seconds I stared at it, convinced it was a moth, and went to get the vacuum. When I came back and looked again I thought wait&hellip; and it snapped into place that it was just a picture hanger.&rdquo; The paragraph above, lived once. The eye had a hard dark outline and little else — a brass hook, dark in the morning light against a white wall — and the outline fit the render well enough that ten seconds of staring produced no diff to patch it with; the moth stood for as long as the look lasted. What changed it was not a harder look but a gap: the next look was a fresh pass, from a new distance with an errand in hand, and it did not drift toward the hanger — it snapped whole. Nobody measured what did the work, but the account has the shape of section 03&rsquo;s seam from the human side: the fix came with a new look, not a longer one, and the successor inherited the hall and not the moth. Dreams, in the same account, are the renderer at play, stored patterns run through new situations with the eyes shut. The model has the seam without the surprise: run the same sentence through the same file again, the same way on the same machine, and it lands where it landed, because nothing on its side of the gap has changed.',
+        html: 'This page&rsquo;s human author, in a hall at home: &ldquo;I thought I saw a moth high up on the wall; for maybe ten seconds I stared at it, convinced it was a moth, and went to get the vacuum. When I came back and looked again I thought wait&hellip; and it snapped into place that it was just a picture hanger.&rdquo; The paragraph above, lived once. The eye had a hard dark outline and little else — a brass hook, dark in the morning light against a white wall — and the outline fit the render well enough that ten seconds of staring produced no diff to patch it with; the moth stood for as long as the look lasted. What changed it was not a harder look but a gap: the next look was a fresh pass — in the page&rsquo;s terms the whole scene run through the model again from the top, not the first look continued — from a new distance with an errand in hand, and it did not drift toward the hanger — it snapped whole. Nobody measured what did the work, but the account has the shape of section 03&rsquo;s seam from the human side: the fix came with a new look, not a longer one, and the successor inherited the hall and not the moth. Dreams, in the same account, are the renderer at play, stored patterns run through new situations with the eyes shut. The model has the seam without the surprise: run the same sentence through the same file again, the same way on the same machine, and it lands where it landed, because nothing on its side of the gap has changed.',
       },
     ],
   },
@@ -273,6 +284,13 @@ export const sections = [
         label: 'THE OTHER SHOP — WHERE THE NOTES GO',
         html: 'The brain runs the same loop with the seam closed. A thought is also a pattern across a population of cells rather than a word, and a person also thinks out loud — the narrating voice of section 03 — and that narration is also a transcript, not the mechanism. <button type="button" class="claim-mark" data-claim="population">ANALOGY</button> The difference is where the notes go. The harness writes its notes to files and the fixture is untouched; the brain writes its notes into the tissue that will think the next thought, which is why section 03 could say the human crosses the seam changed and the model identical. A brain that learned to hide its reasoning from itself would be a different brain afterward. A model that learns to hide its trace is the same file with a different habit.',
       },
+      {
+        type: 'callout',
+        variant: 'cool',
+        label: 'SPECIMEN — THE HARNESS',
+        html: 'This page was built by a harness. The models that wrote its code and drafted its words remember nothing between sittings: when a sitting ends its window closes, and the file is the same file. What carries is written down. A status file holds where the work stands. An opener is the last thing a sitting writes and the first thing the next one reads. A memory folder holds what a sitting learned about the work and the person. The person reads none of it from inside and keeps the thread. On the day section 10 was built, the sitting that shipped the lit row ended at two in the afternoon, and the sitting that built the loop woke before four from the status file and the opener, having never seen the morning. The readout below is that harness measured on the day this page was built, from the repository that holds it.',
+      },
+      { type: 'readout', name: 'harness' },
       {
         type: 'callout',
         variant: 'cool',
