@@ -49,20 +49,51 @@ Three colours carry that thesis through every figure:
 
 ## Run it on your machine
 
-You need Node 20 or newer and npm. It was built with Node 26.7.0 and npm 11.19.0.
+If you only want to read the page, you need none of this. It is live at https://bill-viking.github.io/fixture-and-part/ and runs in any current browser.
+
+To run your own copy you need two free things: Node, and a copy of this folder. Node is a program that runs the page's build tools on your computer, the way a browser runs a web page. "Node 20 or newer" means any version numbered 20 or higher; the current one from the Node site is fine.
+
+### 1. Install Node (once)
+
+Go to https://nodejs.org and click the download button marked LTS. Run the installer and keep every default.
+
+Check that it worked. Open a terminal window:
+
+- on a Mac, press Command-Space, type `Terminal`, press Return;
+- on Windows, press the Windows key, type `PowerShell`, press Enter.
+
+Type `node -v` and press Return. You should see a version number such as `v22.11.0`. If you see "command not found" or "not recognized", close the terminal window, open a new one, and try once more.
+
+### 2. Get the code
+
+The easiest way: at the top of this page, click the green **Code** button, then **Download ZIP**. Unzip it. You get a folder called `fixture-and-part-main`.
+
+If you already use git:
 
 ```
 git clone https://github.com/Bill-Viking/fixture-and-part.git
-cd fixture-and-part
+```
+
+### 3. Start it
+
+In the terminal, move into the folder. Type `cd ` (with a space after it), then drag the folder from Finder or File Explorer into the terminal window, and press Return. The prompt now ends with the folder's name.
+
+Then type these two lines, one at a time, pressing Return after each:
+
+```
 npm install
 npm run dev
 ```
 
-Then open http://localhost:5173 in your browser.
+The first line downloads the page's parts; it takes a minute or two and only needs doing once. The second line starts the page and prints an address like `http://localhost:5173/`. Open that address in your browser. You are done when the title "The Fixture and the Part" is on screen.
 
-On a Mac, `Start Fixture and Part.command` does the same on a double-click once the repository is installed; it expects the checkout at `/Users/bill/Projects/fixture-and-part`, so edit its `cd` line if yours lives elsewhere.
+To stop, go back to the terminal and press Control-C, then close the window. To run it again later, repeat step 3 without `npm install`.
 
-The real model loads from the page's own button: about 83 MB, downloaded once and cached by the browser after that.
+The real model loads from the page's own button: about 83 MB, downloaded once and cached by the browser after that. Everything else on the page works without it.
+
+On a Mac, `Start Fixture and Part.command` does step 3 on a double-click once `npm install` has run; it expects the checkout at `/Users/bill/Projects/fixture-and-part`, so edit its `cd` line if yours lives elsewhere.
+
+### For developers
 
 `npm run build` writes the static site to `dist/`.
 `npm run preview` serves that build locally.
