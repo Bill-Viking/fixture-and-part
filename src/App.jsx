@@ -6,6 +6,7 @@ import AttentionInspector from './instruments/AttentionInspector.jsx'
 import GlassPass from './instruments/GlassPass.jsx'
 import ForwardMap from './instruments/ForwardMap.jsx'
 import FileView from './instruments/FileView.jsx'
+import LoopFigure from './figures/LoopFigure.jsx'
 import ModeControl from './components/ModeControl.jsx'
 import ClaimNotes from './components/ClaimNotes.jsx'
 import {
@@ -148,6 +149,14 @@ function realQueryIndex(text, tokens) {
   // read side by side on the same word.
   if (text === DEFAULT_SENTENCE) return Math.min(4, tokens.length - 1)
   return tokens.length - 1
+}
+
+/**
+ * The drawings set into the prose. Unlike the instruments they take no
+ * state and run nothing, so they are made once, here, outside the app.
+ */
+const figures = {
+  loop: <LoopFigure />,
 }
 
 export default function App() {
@@ -778,6 +787,17 @@ export default function App() {
               if (block.type === 'p') return <Html key={key} html={block.html} />
               if (block.type === 'callout') return <Callout key={key} {...block} />
               if (block.type === 'duo') return <Duo key={key} cards={block.cards} />
+              if (block.type === 'figure') {
+                return (
+                  <div
+                    key={key}
+                    className="instrument-slot figure-slot"
+                    id={`fig-${block.name}`}
+                  >
+                    {figures[block.name]}
+                  </div>
+                )
+              }
               if (block.type === 'instrument') {
                 return (
                   <div
