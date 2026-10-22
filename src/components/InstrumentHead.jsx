@@ -23,6 +23,12 @@
  * `stacked` gives the note a row of its own at every width. Instrument E's
  * note names the file, its size and its command in one sentence and has never
  * fitted beside anything; below 780px every instrument stacks anyway.
+ *
+ * `info` puts a "?" badge after the title's last word, held to that word so
+ * it never wraps onto a line of its own. The heading keeps the title alone as
+ * its accessible name; the badge inside it is still its own button. Only the
+ * drawing in section 10 uses it: a figure has no field labels for its badge
+ * to sit beside. Without it the head renders exactly as it always has.
  */
 export default function InstrumentHead({
   eyebrow,
@@ -30,11 +36,22 @@ export default function InstrumentHead({
   purpose,
   note,
   stacked = false,
+  info = null,
 }) {
   return (
     <div className={stacked ? 'inst-head is-stacked' : 'inst-head'}>
       <span className="inst-eyebrow">{eyebrow}</span>
-      <h3 className="inst-title">{title}</h3>
+      {info ? (
+        <h3 className="inst-title" aria-label={title}>
+          {title.slice(0, title.lastIndexOf(' ') + 1)}
+          <span className="inst-title-tail">
+            {title.slice(title.lastIndexOf(' ') + 1)}
+            {info}
+          </span>
+        </h3>
+      ) : (
+        <h3 className="inst-title">{title}</h3>
+      )}
       <p className="inst-purpose">{purpose}</p>
       {note}
     </div>
