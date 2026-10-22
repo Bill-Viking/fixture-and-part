@@ -165,6 +165,7 @@ src/instruments/AttentionInspector.jsx
 src/instruments/GlassPass.jsx      D — residual stream + logit lens
                                                            FIG.6     (section 04)
 src/figures/LoopFigure.jsx         FIG.7 — the loop (section 10)
+src/figures/HarnessReadout.jsx     the harness, read at build (section 10)
 src/lib/forwardMap.js              F — the architecture, band by band, and the
                                    three scalars per pass the drawing moves on
 src/components/                    LoadNote, ModeControl, InfoTag, ClaimNotes,
@@ -184,6 +185,7 @@ src/lib/logitLens.js               D's main-thread client
 src/lib/fileBytes.js               E's main-thread client
 src/lib/loadProgress.js            one wording for the download's progress
 scripts/read-model-file.mjs        writes src/content/fileFacts.json
+scripts/read-harness.mjs           writes src/content/harnessFacts.json
 src/styles.css                     design tokens + all styling
 ```
 
@@ -278,6 +280,22 @@ and says what it found: the reader has just watched every other instrument
 change and is entitled to know, at that moment, that this one did not. The
 claim is a reading rather than a memory, which is why `readSha` in
 `src/lib/fileBytes.js` is the one call in that module that is not cached.
+
+The harness readout under section 10's `SPECIMEN — THE HARNESS` is read the
+same way: `npm run facts:harness` (`scripts/read-harness.mjs`) writes
+`src/content/harnessFacts.json` with the UTC day of the reading, the model
+file's size from `fileFacts.json`, the bytes and lines of `STATUS.md`, the
+bytes of `OPENER.md`, the memory folder's count of `*.md` files and their size
+in KB, the repository's commits (all of them, and those on the read day and
+the day before, in the machine's local time), and the bytes carried inside the
+model between sittings, which is 0. The memory folder is outside the
+repository: `HARNESS_MEMORY_DIR` names it when set, otherwise it is
+`~/.claude/projects/<slug>/memory`, where `<slug>` is the project's path with
+every character that is not a letter or a digit turned into `-` (in a linked
+worktree the main checkout's path is tried too). A reading the script cannot
+take is written as `null` and the readout prints `not read at build`. The
+JSON holds dates, counts and sizes only — no path and no user name — and is
+committed, so the page shows the reading of the day it was built.
 
 ### Design
 
