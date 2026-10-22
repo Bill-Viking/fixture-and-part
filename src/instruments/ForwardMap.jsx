@@ -2043,6 +2043,9 @@ export default function ForwardMap({
     e.stopPropagation()
     cursorRef.current = { layer, row: hit.row, col: hit.col }
     readCell(layer, hit.row, hit.col)
+    // The click's answer is the pinned card, so the pointer's card for the
+    // same cell goes; the next move onto another cell paints it again.
+    hideHoverCard()
   }
 
   /**
@@ -2102,6 +2105,7 @@ export default function ForwardMap({
         cursorRef.current = { layer, row, col }
         paintCursor(layer, row, col)
         readCell(layer, row, col)
+        hideHoverCard()
         return
       case 'Escape':
         e.preventDefault()
@@ -2157,18 +2161,24 @@ export default function ForwardMap({
    * words and the position written here survive every re-render.
    */
   const hoverCardRef = useRef(null)
+  // One card at a time. While the pointer's card is painted the pinned one is
+  // hidden — the stylesheet hides any pinned card that follows a hover card
+  // marked `data-live` — and when the pointer's card goes away the pinned one
+  // comes back where it was. On the pinned cell itself the pointer's card
+  // steps aside instead, because the pinned card already says what it would.
+  // An attribute rather than state, for the reason the card is painted
+  // straight to the DOM at all: a hover through React would rebuild the fall.
   const paintHoverCard = useCallback(
     (lead, at) => {
       const el = hoverCardRef.current
       if (!el) return
-      // One card at a time: the pointer's card gets out of the way of the
-      // pinned one rather than stacking on top of it.
       if (
         inspect?.at &&
         Math.abs(inspect.at.x - at.x) < 0.01 &&
         Math.abs(inspect.at.y - at.y) < 0.01
       ) {
         el.style.display = 'none'
+        el.removeAttribute('data-live')
         return
       }
       const box = placeCard(g, at, avoidBoxes)
@@ -2186,11 +2196,15 @@ export default function ForwardMap({
         texts[i].textContent = lines[i] ?? ''
       }
       el.style.display = ''
+      el.setAttribute('data-live', '')
     },
     [g, avoidBoxes, inspect],
   )
   const hideHoverCard = useCallback(() => {
-    if (hoverCardRef.current) hoverCardRef.current.style.display = 'none'
+    const el = hoverCardRef.current
+    if (!el) return
+    el.style.display = 'none'
+    el.removeAttribute('data-live')
   }, [])
 
   /** The lead for one cell of one wall, or null where the file has no scale. */
