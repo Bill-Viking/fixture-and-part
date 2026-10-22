@@ -206,7 +206,7 @@ export function cellLead(cell) {
       ? `stored as the byte ${thousands(byte)}`
       : `stored as the byte ${thousands(byte)}, the value ${minus(thousands(value))}`
   return (
-    `one weight of block ${layer}'s attention grid · row ${thousands(row)}, column ${thousands(col)} ` +
+    `one weight of block ${layer}’s attention grid · row ${thousands(row)}, column ${thousands(col)} ` +
     `of ${thousands(totalRows)} × ${thousands(totalCols)} · ${stored} · ` +
     `means ${minus(weight.toPrecision(4))} · in the ${third} third`
   )
