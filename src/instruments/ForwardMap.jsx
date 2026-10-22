@@ -2605,7 +2605,7 @@ export default function ForwardMap({
       <InstrumentHead
         eyebrow="INSTRUMENT F"
         title="The forward pass, live"
-        purpose="The walls are the fixture: the file’s own frozen tooling, one station for each of the six blocks. Your sentence is the part — one stream for each word, falling through the stations. A transfer is the tooling touching the part: attention picks a source in green and carries its value in amber. The hero is the piece finished at the last station, rich enough to say what comes next."
+        purpose="The walls are the fixture: the file’s own frozen tooling, one station for each of the six blocks. Your sentence is the part — one stream for each word, falling through the stations; every word passes through every station in order, and a stream never leaves its column. A transfer is the tooling touching the part — the solid curves, the only thing that crosses: attention picks a source in green and carries its value in amber. The hero is the piece finished at the last station, rich enough to say what comes next."
         note={
           <LoadNote
             label={
