@@ -96,25 +96,94 @@ function Duo({ cards }) {
  *
  * Where the strip is two columns the first holds the first half of the
  * words, rounded up (four of seven), and the row that opens the second column
- * says so. Its height comes from the stylesheet's measures, not from a font:
- * see `.glossary` there.
+ * says so.
+ *
+ * The strip's height is decided here, from the strings, and never by a font.
+ * Each gloss is set to a measure of whole characters — GLOSS_MEASURE, one per
+ * breakpoint — and each row is given the height of the lines its gloss takes
+ * at that measure, counted below the way the browser breaks a line. The
+ * stylesheet reads both as custom properties (see `.glossary` there), so the
+ * row is the same box in the fallback face, in Plex Mono, and in the moment
+ * between them when the browser has neither.
  */
+const GLOSS_MEASURE = { two: 36, one: 64, narrow: 38, phone: 28 }
+const CAPTION_MEASURE = 40
+
+/**
+ * The pieces a line may break between: after a run of spaces, or after a
+ * hyphen that a letter follows ("feed-" | "forward").
+ */
+function breakPieces(text) {
+  const pieces = []
+  let piece = ''
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]
+    const next = text[i + 1]
+    piece += ch
+    if ((ch === ' ' && next !== ' ') || (ch === '-' && next !== undefined && next !== ' ')) {
+      pieces.push(piece)
+      piece = ''
+    }
+  }
+  if (piece) pieces.push(piece)
+  return pieces
+}
+
+/**
+ * How many lines a string takes at a measure of whole characters: greedily,
+ * a line's trailing spaces not counted against it — which in a mono face is
+ * how the browser fills a line.
+ */
+function linesAt(text, measure) {
+  let lines = 1
+  let used = 0
+  for (const piece of breakPieces(text)) {
+    if (used > 0 && used + piece.trimEnd().length > measure) {
+      lines++
+      used = piece.length
+    } else {
+      used += piece.length
+    }
+  }
+  return lines
+}
+
 function Glossary({ entries, caption }) {
   const secondColumn = Math.ceil(entries.length / 2)
+  const measures = {
+    '--measure-two': GLOSS_MEASURE.two,
+    '--measure-one': GLOSS_MEASURE.one,
+    '--measure-narrow': GLOSS_MEASURE.narrow,
+    '--measure-phone': GLOSS_MEASURE.phone,
+  }
   return (
     <div className="glossary-strip">
-      <dl className="glossary">
+      <dl className="glossary" style={measures}>
         {entries.map((entry, i) => (
           <div
             className={i === secondColumn ? 'glossary-row is-col-break' : 'glossary-row'}
             key={entry.word}
+            style={{
+              '--lines-two': linesAt(entry.gloss, GLOSS_MEASURE.two),
+              '--lines-one': linesAt(entry.gloss, GLOSS_MEASURE.one),
+              '--lines-narrow': linesAt(entry.gloss, GLOSS_MEASURE.narrow),
+              '--lines-phone': linesAt(entry.gloss, GLOSS_MEASURE.phone),
+            }}
           >
             <dt className={entry.role ? `is-${entry.role}` : undefined}>{entry.word}</dt>
             <dd>{entry.gloss}</dd>
           </div>
         ))}
       </dl>
-      <p className="glossary-caption">{caption}</p>
+      <p
+        className="glossary-caption"
+        style={{
+          '--measure-caption': CAPTION_MEASURE,
+          '--lines-caption': linesAt(caption, CAPTION_MEASURE),
+        }}
+      >
+        {caption}
+      </p>
     </div>
   )
 }
