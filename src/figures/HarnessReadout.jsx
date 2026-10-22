@@ -16,8 +16,9 @@ import harnessFacts from '../content/harnessFacts.json'
  * note, and the stylesheet keeps those spaces where the row is one line
  * (760 px and up). Narrower, the same elements fold: the spaces are hidden,
  * the label, the value and the note each take a line, and the breaks inside a
- * value fall only where a " · " does — so the readout's height is a count of
- * lines fixed by the breakpoint, never by a font or a number's width.
+ * value fall only where a " · " does and the stylesheet says so — so the
+ * readout's height is a count of lines fixed by the breakpoint, never by a
+ * font or a number's width.
  */
 
 const LABEL_COLUMN = 24
@@ -30,7 +31,8 @@ const n = (value) => number.format(value)
 /**
  * The six rows. `value` returns the reading as its " · "-separated pieces, or
  * null when the script could not read it; `fold` is the piece that starts a
- * line of its own where the readout is narrower than 760 px.
+ * line of its own where the readout is narrower than 760 px, and `foldNarrow`
+ * one more that does so under 350 px.
  */
 const ROWS = [
   {
@@ -63,6 +65,7 @@ const ROWS = [
       ],
     note: null,
     fold: 2,
+    foldNarrow: 1,
   },
   {
     label: 'carried inside the model between sittings',
@@ -79,9 +82,11 @@ const padAfter = (label) =>
  * A reading's pieces, each held together, the " ·" that follows a piece kept
  * with it so that a fold never starts a line on a dot.
  */
-function Pieces({ pieces, fold }) {
+function Pieces({ pieces, fold, foldNarrow }) {
+  const classOf = (i) =>
+    i === fold ? 'hr-piece is-fold' : i === foldNarrow ? 'hr-piece is-fold-narrow' : 'hr-piece'
   return pieces.map((piece, i) => (
-    <span className={i === fold ? 'hr-piece is-fold' : 'hr-piece'} key={i}>
+    <span className={classOf(i)} key={i}>
       {i < pieces.length - 1 ? `${piece} ·` : piece}
       {i < pieces.length - 1 ? ' ' : null}
     </span>
@@ -107,7 +112,7 @@ export default function HarnessReadout({ facts = harnessFacts }) {
               <dd>
                 {pieces ? (
                   <span className="hr-value">
-                    <Pieces pieces={pieces} fold={row.fold} />
+                    <Pieces pieces={pieces} fold={row.fold} foldNarrow={row.foldNarrow} />
                   </span>
                 ) : (
                   <span className="hr-value is-unread">{NOT_READ}</span>

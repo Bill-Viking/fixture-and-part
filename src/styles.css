@@ -109,14 +109,19 @@ h1 .moving{color:var(--moving-ink);}
    gloss in the same face, muted; the caption a step smaller. Nothing in it is
    a control.
 
-   The strip moves nothing when the fonts arrive, and not because of a guess
-   at a height: every gloss is set to a fixed measure in ch, and in a mono
-   face every character is one ch, so where a line breaks — and so how many
-   lines each gloss takes, at a fixed 18 px — is a count of characters and the
-   same in Plex Mono, in the fallback before it, or in any monospace face. The
-   measure is a whole number of characters plus half of one, so a line exactly
-   as long as the measure still fits. The word column is a fixed 56 px (seven
-   characters, 52.5 px), so a gloss starts at the same x in every face.
+   The strip moves nothing when the fonts arrive, and its height is not left
+   to a font. Each gloss is set to a measure of whole characters, in units of
+   Plex Mono's advance (0.6em, so the width is the same before the face loads
+   as after), with half a character spare so a line exactly as long as the
+   measure still fits. Each row is then given the height of the lines its
+   gloss takes at that measure — counted from the string in App.jsx, the way
+   the browser breaks a line — and the measures and the counts both arrive
+   here as custom properties from that one table. The fallback face may break
+   a line differently for the moment it is on screen; the rows do not move.
+   (A measure in ch was tried first and did move them: for about 75 ms while
+   the face is pending, Chrome resolves ch as 0.5em, and at 390 px three loads
+   in seven scored 0.034082 as BLOCK grew a line and came back.) The word column is a
+   fixed 56 px (seven characters are 52.5 px).
 
      780 px and up  two columns, the first half of the words (rounded up) in
                     the first; a 36-character measure, 274 px of 278
@@ -125,32 +130,43 @@ h1 .moving{color:var(--moving-ink);}
      under 390      one column; 28 characters, 214 px of 220 at 320
 
    The caption holds one line from 600 px up (76 characters, 524 px of 564 at
-   600), and below that two, at a 40-character measure that breaks it in the
-   same place at every width down to 320. */
+   600) and below that is set to a 40-character measure, counted the same
+   way. */
 .glossary-strip{margin-top:22px;font-family:var(--mono);}
 .glossary{columns:2;column-gap:28px;font-size:12.5px;line-height:18px;}
-.glossary-row{display:grid;grid-template-columns:56px auto;column-gap:8px;break-inside:avoid;}
+.glossary-row{
+  display:grid;grid-template-columns:56px auto;column-gap:8px;
+  break-inside:avoid;overflow:hidden;
+  height:calc(var(--lines-two) * 18px);
+}
 .glossary-row + .glossary-row{margin-top:6px;}
 .glossary-row.is-col-break{break-before:column;margin-top:0;}
 .glossary dt{color:var(--ink);}
 .glossary dt.is-frozen{color:var(--frozen);}
 .glossary dt.is-moving{color:var(--moving-ink);}
-.glossary dd{width:36.5ch;color:var(--muted);}
+.glossary dd{width:calc((var(--measure-two) + 0.5) * 0.6em);color:var(--muted);}
 .glossary-caption{
-  margin:10px 0 0;font-size:11.5px;line-height:16px;color:var(--muted);
+  margin:10px 0 0;font-size:11.5px;line-height:16px;height:16px;color:var(--muted);
   white-space:nowrap;overflow:hidden;
 }
 @media(max-width:779px){
   .glossary{columns:auto;}
+  .glossary-row{height:calc(var(--lines-one) * 18px);}
   .glossary-row.is-col-break{break-before:auto;margin-top:6px;}
-  .glossary dd{width:64.5ch;}
+  .glossary dd{width:calc((var(--measure-one) + 0.5) * 0.6em);}
 }
 @media(max-width:599px){
-  .glossary dd{width:38.5ch;}
-  .glossary-caption{white-space:normal;width:40.5ch;}
+  .glossary-row{height:calc(var(--lines-narrow) * 18px);}
+  .glossary dd{width:calc((var(--measure-narrow) + 0.5) * 0.6em);}
+  .glossary-caption{
+    white-space:normal;
+    width:calc((var(--measure-caption) + 0.5) * 0.6em);
+    height:calc(var(--lines-caption) * 16px);
+  }
 }
 @media(max-width:389px){
-  .glossary dd{width:28.5ch;}
+  .glossary-row{height:calc(var(--lines-phone) * 18px);}
+  .glossary dd{width:calc((var(--measure-phone) + 0.5) * 0.6em);}
 }
 .sentinel{height:1px;}
 
@@ -422,16 +438,17 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
    readings ink, the title in the eyebrow's steel. Nothing in it is a control.
 
    Its height is a count of lines fixed by the breakpoint and by nothing else:
-   every break in it is placed by this stylesheet, never by a font or by how
-   wide a number is. From 760 px each row is one line with its spaces kept,
-   the words file's own layout, seven lines in all; the longest row (the
-   status file, 87 characters) is 626 px at 12 px in 678 px of room.
-   Narrower, the spaces are hidden and every part takes a line of its own —
-   the title folds before FROM, the label, the reading and the note stack, and
-   the commit count folds before "on the day" — nineteen lines, none longer
-   than 41 characters, which fit at 11.5 px down to a 350 px window. Below
-   that the longest label and the commit line's first half take one more line
-   each. */
+   every break in it is placed by this stylesheet, and nothing in it wraps on
+   its own, so no font and no number's width can add a line. From 760 px each
+   row is one line with its spaces kept, the words file's own layout, seven
+   lines in all; the longest row (the status file, 87 characters) is 626 px at
+   12 px in 678 px of room. Narrower, the spaces are hidden and every part
+   takes a line of its own — the title folds before FROM, the label, the
+   reading and the note stack, and the commit count folds before "on the day"
+   — nineteen lines, none longer than 41 characters, which fit at 11.5 px down
+   to a 350 px window. Below that the longest label is set to a 25-character
+   measure (in Plex Mono's 0.6em advance) and folds after "model", and the
+   commit count folds after its total too: twenty-one lines. */
 .harness-readout{
   margin:28px 0;padding:14px 16px;
   border:1px solid var(--rule);border-radius:4px;
@@ -448,16 +465,17 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
     padding:12px;font-size:11.5px;line-height:18px;
     height:calc(19 * 18px + 8px + 5 * 6px + 2 * 12px + 2px);
   }
-  .hr-title,.hr-rows{white-space:normal;}
+  .hr-title,.hr-rows{white-space:nowrap;}
   .hr-title{margin-bottom:8px;}
-  .hr-title-head,.hr-title-tail{display:block;white-space:nowrap;}
+  .hr-title-head,.hr-title-tail{display:block;}
   .hr-row + .hr-row{margin-top:6px;}
-  .hr-row dt,.hr-row dd,.hr-value,.hr-note,.hr-piece.is-fold{display:block;}
+  .hr-row dt,.hr-row dd,.hr-label,.hr-value,.hr-note,.hr-piece.is-fold{display:block;}
   .hr-pad{display:none;}
-  .hr-piece{white-space:nowrap;}
 }
 @media(max-width:349px){
   .harness-readout{height:calc(21 * 18px + 8px + 5 * 6px + 2 * 12px + 2px);}
+  .hr-label{white-space:normal;width:calc(25.5 * 0.6em);}
+  .hr-piece.is-fold-narrow{display:block;}
 }
 
 .field-label{
