@@ -9,6 +9,7 @@ PROPOSED 2026-10-22 by the F&P lane on the Mac for Bill's go or strike, on his "
 - `PASS` — `one fall of the whole sentence through the fixture, one word out`
 - `RACK` — `the finished parts kept for the next pass`
 - `LANDING` — `the word a pass lands on, and how sure it was`
+- `BLOCK` (steel) — `one station of the fixture: the lookup, then the feed-forward grids · also called a layer · the small model has six, and every word passes through all of them in order` (added on Bill's word 2026-10-22 06:4x; seven rows, four and three in the two columns)
 - strip caption, muted: `the page's words, defined once · each is drawn live in the instruments below`
 
 ## 2. The moth callout (section 08) — one gloss inside the existing sentence

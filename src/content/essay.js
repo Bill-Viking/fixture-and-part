@@ -22,6 +22,7 @@ export const header = {
     { word: 'PASS', role: null, gloss: 'one fall of the whole sentence through the fixture, one word out' },
     { word: 'RACK', role: null, gloss: 'the finished parts kept for the next pass' },
     { word: 'LANDING', role: null, gloss: 'the word a pass lands on, and how sure it was' },
+    { word: 'BLOCK', role: 'frozen', gloss: 'one station of the fixture: the lookup, then the feed-forward grids · also called a layer · the small model has six, and every word passes through all of them in order' },
   ],
   glossaryCaption: 'the page\'s words, defined once · each is drawn live in the instruments below',
 }
