@@ -104,6 +104,54 @@ h1 .moving{color:var(--moving-ink);}
 .sw.frozen{background:var(--frozen);}
 .sw.moving{background:var(--moving);}
 .sw.keys{background:var(--keys);}
+/* The page's words, defined once, under the legend: the word in the legend's
+   own mono at its size, coloured by its role (steel, dark amber, or ink); the
+   gloss in the same face, muted; the caption a step smaller. Nothing in it is
+   a control.
+
+   The strip moves nothing when the fonts arrive, and not because of a guess
+   at a height: every gloss is set to a fixed measure in ch, and in a mono
+   face every character is one ch, so where a line breaks — and so how many
+   lines each gloss takes, at a fixed 18 px — is a count of characters and the
+   same in Plex Mono, in the fallback before it, or in any monospace face. The
+   measure is a whole number of characters plus half of one, so a line exactly
+   as long as the measure still fits. The word column is a fixed 56 px (seven
+   characters, 52.5 px), so a gloss starts at the same x in every face.
+
+     780 px and up  two columns, the first half of the words (rounded up) in
+                    the first; a 36-character measure, 274 px of 278
+     600-779        one column; 64 characters, 484 px of 500 at 600
+     390-599        one column; 38 characters, 289 px of 290 at 390
+     under 390      one column; 28 characters, 214 px of 220 at 320
+
+   The caption holds one line from 600 px up (76 characters, 524 px of 564 at
+   600), and below that two, at a 40-character measure that breaks it in the
+   same place at every width down to 320. */
+.glossary-strip{margin-top:22px;font-family:var(--mono);}
+.glossary{columns:2;column-gap:28px;font-size:12.5px;line-height:18px;}
+.glossary-row{display:grid;grid-template-columns:56px auto;column-gap:8px;break-inside:avoid;}
+.glossary-row + .glossary-row{margin-top:6px;}
+.glossary-row.is-col-break{break-before:column;margin-top:0;}
+.glossary dt{color:var(--ink);}
+.glossary dt.is-frozen{color:var(--frozen);}
+.glossary dt.is-moving{color:var(--moving-ink);}
+.glossary dd{width:36.5ch;color:var(--muted);}
+.glossary-caption{
+  margin:10px 0 0;font-size:11.5px;line-height:16px;color:var(--muted);
+  white-space:nowrap;overflow:hidden;
+}
+@media(max-width:779px){
+  .glossary{columns:auto;}
+  .glossary-row.is-col-break{break-before:auto;margin-top:6px;}
+  .glossary dd{width:64.5ch;}
+}
+@media(max-width:599px){
+  .glossary dd{width:38.5ch;}
+  .glossary-caption{white-space:normal;width:40.5ch;}
+}
+@media(max-width:389px){
+  .glossary dd{width:28.5ch;}
+}
 .sentinel{height:1px;}
 
 .eyebrow{font-family:var(--mono);font-size:12.5px;letter-spacing:0.18em;color:var(--frozen);margin:76px 0 6px;}
@@ -366,6 +414,51 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 .lf-label.is-moving{fill:var(--moving-ink);}
 .lf-note{fill:var(--muted);}
 .lf-word{fill:var(--ink);}
+
+/* --- section 10: the harness, read at build ------------------------------ */
+
+/* The readout under SPECIMEN — THE HARNESS: mono on the page ground inside a
+   drawn rule, in the instruments' readout voice — labels and notes muted,
+   readings ink, the title in the eyebrow's steel. Nothing in it is a control.
+
+   Its height is a count of lines fixed by the breakpoint and by nothing else:
+   every break in it is placed by this stylesheet, never by a font or by how
+   wide a number is. From 760 px each row is one line with its spaces kept,
+   the words file's own layout, seven lines in all; the longest row (the
+   status file, 87 characters) is 626 px at 12 px in 678 px of room.
+   Narrower, the spaces are hidden and every part takes a line of its own —
+   the title folds before FROM, the label, the reading and the note stack, and
+   the commit count folds before "on the day" — nineteen lines, none longer
+   than 41 characters, which fit at 11.5 px down to a 350 px window. Below
+   that the longest label and the commit line's first half take one more line
+   each. */
+.harness-readout{
+  margin:28px 0;padding:14px 16px;
+  border:1px solid var(--rule);border-radius:4px;
+  font-family:var(--mono);font-size:12px;line-height:20px;color:var(--ink);
+  height:calc(7 * 20px + 4px + 2 * 14px + 2px);overflow:hidden;
+}
+.hr-title{margin:0 0 4px;color:var(--frozen);letter-spacing:0.04em;}
+.hr-title,.hr-rows{white-space:pre;}
+.hr-row dt,.hr-row dd{display:inline;}
+.hr-label,.hr-note{color:var(--muted);}
+.hr-value{color:var(--ink);}
+@media(max-width:759px){
+  .harness-readout{
+    padding:12px;font-size:11.5px;line-height:18px;
+    height:calc(19 * 18px + 8px + 5 * 6px + 2 * 12px + 2px);
+  }
+  .hr-title,.hr-rows{white-space:normal;}
+  .hr-title{margin-bottom:8px;}
+  .hr-title-head,.hr-title-tail{display:block;white-space:nowrap;}
+  .hr-row + .hr-row{margin-top:6px;}
+  .hr-row dt,.hr-row dd,.hr-value,.hr-note,.hr-piece.is-fold{display:block;}
+  .hr-pad{display:none;}
+  .hr-piece{white-space:nowrap;}
+}
+@media(max-width:349px){
+  .harness-readout{height:calc(21 * 18px + 8px + 5 * 6px + 2 * 12px + 2px);}
+}
 
 .field-label{
   display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:0.16em;

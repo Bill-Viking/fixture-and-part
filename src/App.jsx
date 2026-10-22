@@ -7,6 +7,7 @@ import GlassPass from './instruments/GlassPass.jsx'
 import ForwardMap from './instruments/ForwardMap.jsx'
 import FileView from './instruments/FileView.jsx'
 import LoopFigure from './figures/LoopFigure.jsx'
+import HarnessReadout from './figures/HarnessReadout.jsx'
 import ModeControl from './components/ModeControl.jsx'
 import ClaimNotes from './components/ClaimNotes.jsx'
 import {
@@ -86,6 +87,38 @@ function Duo({ cards }) {
   )
 }
 
+/**
+ * The page's words, defined once: a definition list under the header's
+ * legend, in the legend's own mono face and size. Nothing in it is clickable
+ * — it is a list of definitions, not navigation — and each row is the word
+ * and its gloss as plain text, so that is what is read out. The role colours
+ * the word and never the gloss.
+ *
+ * Where the strip is two columns the first holds the first half of the
+ * words, rounded up (four of seven), and the row that opens the second column
+ * says so. Its height comes from the stylesheet's measures, not from a font:
+ * see `.glossary` there.
+ */
+function Glossary({ entries, caption }) {
+  const secondColumn = Math.ceil(entries.length / 2)
+  return (
+    <div className="glossary-strip">
+      <dl className="glossary">
+        {entries.map((entry, i) => (
+          <div
+            className={i === secondColumn ? 'glossary-row is-col-break' : 'glossary-row'}
+            key={entry.word}
+          >
+            <dt className={entry.role ? `is-${entry.role}` : undefined}>{entry.word}</dt>
+            <dd>{entry.gloss}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="glossary-caption">{caption}</p>
+    </div>
+  )
+}
+
 function MiniLegend({ visible }) {
   return (
     <div
@@ -157,6 +190,14 @@ function realQueryIndex(text, tokens) {
  */
 const figures = {
   loop: <LoopFigure />,
+}
+
+/**
+ * The readouts set into the prose: build-time readings of the repository,
+ * drawn once like the figures. Section 10's harness is the one.
+ */
+const readouts = {
+  harness: <HarnessReadout />,
 }
 
 export default function App() {
@@ -771,6 +812,7 @@ export default function App() {
               </span>
             ))}
           </div>
+          <Glossary entries={header.glossary} caption={header.glossaryCaption} />
         </header>
         <div ref={sentinelRef} className="sentinel" aria-hidden="true" />
 
@@ -795,6 +837,17 @@ export default function App() {
                     id={`fig-${block.name}`}
                   >
                     {figures[block.name]}
+                  </div>
+                )
+              }
+              if (block.type === 'readout') {
+                return (
+                  <div
+                    key={key}
+                    className="instrument-slot readout-slot"
+                    id={`readout-${block.name}`}
+                  >
+                    {readouts[block.name]}
                   </div>
                 )
               }
