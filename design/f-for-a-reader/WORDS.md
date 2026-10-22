@@ -6,7 +6,10 @@ PROPOSED 2026-10-22 by the F&P lane on the Mac for Bill's go or strike, on his p
 Today the drawing keeps two cards: the one a click pins and the one that follows the pointer over a wall, and the pointer's card steps aside only on the exact pinned cell, so neighbouring cells overlap. Rule: while the pointer's card is painted the pinned card is hidden; when the pointer leaves the walls the pinned card returns; a click on another cell re-pins there; Escape clears both. The cards' words do not change (except §6).
 
 ## 2. The click rides the run (ruled by Bill — no words)
-A click anywhere on the sheet during the tour does not pause it. The card the click opens stays until the next stop replaces it or Escape puts it away. The tour's own buttons (PLAY/PAUSE/RESUME, the arrows, the speed) are unchanged. Any sentence on the page that says a click pauses the tour is retired; the builder lists each one it finds and removes it (the lane checked: none in tour.js or explainers.js by that wording; the code comment at ForwardMap ~1820 is the builder's to rewrite).
+A click anywhere on the sheet during the tour does not pause it. The card the click opens stays until the next stop replaces it or Escape puts it away. The tour's own buttons (PLAY/PAUSE/RESUME, the arrows, the speed) are unchanged. Two sentences on the page say a click pauses the tour, in the tour's own rule line under the controls (`tourLine`, ForwardMap ~2497–2505); they change, the rest of each line verbatim:
+- compact: `Step moves one stop; a click anywhere pauses the tour and is then honoured.` → `Step moves one stop; a click anywhere is honoured and the tour keeps going.`
+- full: `The steps move a stop either way, and clicking anything on the sheet pauses the tour and then honours the click.` → `The steps move a stop either way, and clicking anything on the sheet is honoured while the tour keeps going.`
+- the code comment at ForwardMap ~1819 is the builder's to rewrite.
 
 ## 3. The head's purpose sentence (InstrumentHead `purpose`, ForwardMap ~2592) — two clauses added, the rest verbatim
 As it stands:
