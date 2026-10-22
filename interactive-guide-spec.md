@@ -637,7 +637,7 @@ The essay's claims about brains and models are not all the same kind of thing, a
 - **THEORY** — a named account that fits the results and is still argued over.
 - **ANALOGY** — a comparison, offered as a comparison and nothing more.
 
-Twenty-five of them: fourteen EVIDENCE, seven THEORY, four ANALOGY. They are written into the prose in `src/content/essay.js` as `<button type="button" class="claim-mark" data-claim="<id>">KIND</button>`, so they come through `dangerouslySetInnerHTML` as static DOM; the notes behind them are `src/content/claimNotes.js`, one entry per id.
+Twenty-seven of them: fifteen EVIDENCE, eight THEORY, four ANALOGY, over twenty-six notes (section 10's conversation callout reuses section 06's `hsam`). They are written into the prose in `src/content/essay.js` as `<button type="button" class="claim-mark" data-claim="<id>">KIND</button>`, so they come through `dangerouslySetInnerHTML` as static DOM; the notes behind them are `src/content/claimNotes.js`, one entry per id.
 
 **Style.** `--keys` green, because the colour law makes green searchable metadata and a citation is that; mono at the callout label's size (11.5 px, 0.14em tracking); a 1 px underline offset 3 px. Hover and focus change the colour only; an open mark takes a `--keys-tint` background. Nothing about the mark changes size in any state — it is inline text inside a prose line box and it must move nothing.
 
