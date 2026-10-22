@@ -177,33 +177,57 @@ export function rayWhy(bar, argmaxToken, pickToken, decode = 'sampled') {
   return `${rayLead(bar, argmaxToken, pickToken, decode)} ${rayDetail()}`
 }
 
-/** What one wall cell is: this byte, this weight, this position in the tensor. */
+/** A count as the page prints counts: thousands separated. */
+const thousands = (v) => v.toLocaleString('en-US')
+/** A signed number with the page's own minus sign rather than a hyphen. */
+const minus = (s) => String(s).replace(/^-/, '−')
+
+/**
+ * What one wall cell is, in instrument E's grammar: short phrases between
+ * middle dots, the thing first and then its numbers.
+ *
+ * The card prints this lead and the row under the drawing prints the lead and
+ * the detail, the way a carrier's answer is split. `cell.layer` is the block
+ * the wall belongs to; the rest is the file's own reading of that byte.
+ */
 export function cellLead(cell) {
-  const { value, weight, row, col, tensor, scale, zeroPoint, totalRows, totalCols } = cell
+  const { value, weight, row, col, layer, totalRows, totalCols } = cell
   // The 2,304 columns of c_attn are the query, the key and the value
   // projections laid side by side, in that order — so a column number says
   // which of the three a weight belongs to. That is the file’s own layout.
   const third = col < totalCols / 3 ? 'query' : col < (2 * totalCols) / 3 ? 'key' : 'value'
   // The byte on disk and the number it stands for are two different things,
   // and the page says so everywhere else: this tensor is i8 at zero point 0,
-  // so the stored byte 236 is the quantised value −20. A readout that called
-  // −20 "the byte" would contradict the legend two inches above it.
+  // so the stored byte 236 is the value −20. A byte above 127 says both, so
+  // the card never calls −20 "the byte" under a legend that says 255 is −1.
   const byte = value < 0 ? value + 256 : value
-  const asStored = byte === value ? '' : `, which the file stores as the byte ${byte}`
+  const stored =
+    byte === value
+      ? `stored as the byte ${thousands(byte)}`
+      : `stored as the byte ${thousands(byte)}, the value ${minus(thousands(value))}`
   return (
-    `Wall cell — [${row}, ${col}] of ${tensor} [${totalRows}×${totalCols}], quantised value ${value}${asStored}. ` +
-    `The file holds this tensor as i8 at zero point ${zeroPoint}, so the weight is scale · (q − zp) = ` +
-    `${scale.toPrecision(3)} · (${value} − ${zeroPoint}) = ${weight.toPrecision(4)}. Column ${col} of ${totalCols} ` +
-    `falls in the ${third} projection.`
+    `one weight of block ${layer}'s attention grid · row ${thousands(row)}, column ${thousands(col)} ` +
+    `of ${thousands(totalRows)} × ${thousands(totalCols)} · ${stored} · ` +
+    `means ${minus(weight.toPrecision(4))} · in the ${third} third`
   )
 }
 
-export function cellDetail() {
-  return 'Brightness is the size of the weight, not its sign, and no pass changes it.'
+/** The arithmetic and the grid's own name: the row under the drawing only. */
+export function cellDetail(cell) {
+  const { value, weight, tensor, scale, zeroPoint, totalCols } = cell
+  // The three projections' column ranges, read off the tensor's own width
+  // rather than typed, so the sentence stays true of the grid it names.
+  const t = totalCols / 3
+  return (
+    `the file keeps it as one signed byte at zero point ${zeroPoint}: ` +
+    `${scale.toPrecision(3)} × ${minus(value - zeroPoint)} = ${minus(weight.toPrecision(4))} · ` +
+    `this grid is ${tensor} · columns 0–${t - 1} are the query, ${t}–${2 * t - 1} the key, ` +
+    `${2 * t}–${totalCols - 1} the value`
+  )
 }
 
 export function cellWhy(cell) {
-  return `${cellLead(cell)} ${cellDetail()}`
+  return `${cellLead(cell)} · ${cellDetail(cell)}`
 }
 
 // ---------------------------------------------------------------------------

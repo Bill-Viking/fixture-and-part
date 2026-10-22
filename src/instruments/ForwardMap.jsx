@@ -23,7 +23,6 @@ import {
   buildTour,
   carrierLead,
   carrierWhy,
-  cellDetail,
   cellLead,
   cellWhy,
   rayLead,
@@ -2090,15 +2089,19 @@ export default function ForwardMap({
     if (at && cursorOn.current) paintCursor(at.layer, at.row, at.col)
   })
 
-  /** Read one cell aloud, whichever hand asked. */
-  const readCell = useCallback(
+  /**
+   * One cell of one wall, as the file reads it: the byte, the weight it
+   * stands for, where it sits in the tensor and which block's wall it is.
+   * Null where the file has no scale for that tensor.
+   */
+  const cellAt = useCallback(
     (layer, row, col) => {
       const wall = windows ? wallWindow(windows, wallTensor(layer)) : null
-      const name = wallTensor(layer)
-      const tensor = factsFor(name)
-      if (!wall || !tensor || tensor.scale == null) return
+      const tensor = factsFor(wallTensor(layer))
+      if (!wall || !tensor || tensor.scale == null) return null
       const value = wall.values[row * wall.cols + col]
-      const cell = {
+      return {
+        layer,
         value,
         weight: tensor.scale * (value - (tensor.zeroPoint ?? 0)),
         row: wall.row0 + row,
@@ -2109,6 +2112,16 @@ export default function ForwardMap({
         totalRows: wall.totalRows,
         totalCols: wall.totalCols,
       }
+    },
+    [windows, factsFor],
+  )
+
+  /** Read one cell aloud, whichever hand asked. */
+  const readCell = useCallback(
+    (layer, row, col) => {
+      const name = wallTensor(layer)
+      const cell = cellAt(layer, row, col)
+      if (!cell) return
       say({
         kind: 'cell',
         text: cellWhy(cell),
@@ -2122,7 +2135,7 @@ export default function ForwardMap({
         letter: 'E',
       })
     },
-    [windows, factsFor, say, g],
+    [cellAt, say, g],
   )
 
   const onWallMove = (layer) => (e) => {
@@ -2316,23 +2329,10 @@ export default function ForwardMap({
   /** The lead for one cell of one wall, or null where the file has no scale. */
   const cellLeadAt = useCallback(
     (layer, row, col) => {
-      const wall = windows ? wallWindow(windows, wallTensor(layer)) : null
-      const tensor = factsFor(wallTensor(layer))
-      if (!wall || !tensor || tensor.scale == null) return null
-      const value = wall.values[row * wall.cols + col]
-      return cellLead({
-        value,
-        weight: tensor.scale * (value - (tensor.zeroPoint ?? 0)),
-        row: wall.row0 + row,
-        col: wall.col0 + col,
-        tensor: tensor.display,
-        scale: tensor.scale,
-        zeroPoint: tensor.zeroPoint ?? 0,
-        totalRows: wall.totalRows,
-        totalCols: wall.totalCols,
-      })
+      const cell = cellAt(layer, row, col)
+      return cell ? cellLead(cell) : null
     },
-    [windows, factsFor],
+    [cellAt],
   )
 
   /** Where a cell's card points: the middle of the cell itself. */
@@ -2430,8 +2430,8 @@ export default function ForwardMap({
           if (!wall) continue
           for (let r = 0; r < wall.rows; r++) {
             for (let c = 0; c < wall.cols; c++) {
-              const lead = cellLeadAt(l, r, c)
-              if (lead) note('cell', `${lead} ${cellDetail()}`)
+              const cell = cellAt(l, r, c)
+              if (cell) note('cell', cellWhy(cell))
             }
           }
         }
