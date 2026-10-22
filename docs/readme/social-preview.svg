@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640">
+  <rect width="1280" height="640" fill="#F4F5F7"/>
+  <rect x="24.5" y="24.5" width="1231" height="591" fill="none" stroke="#DCDFE4" stroke-width="1"/>
+  <g>
+    <rect x="100" y="220" width="220" height="60" fill="none" stroke="#1E5AA8" stroke-width="2"/>
+    <rect x="100" y="360" width="220" height="60" fill="none" stroke="#1E5AA8" stroke-width="2"/>
+    <rect x="130" y="297" width="160" height="46" fill="#F2B705"/>
+  </g>
+  <text x="392" y="268" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="64" font-weight="700" letter-spacing="-1.2" fill="#14161A">The Fixture and the <tspan fill="#7A5900">Part</tspan></text>
+  <text font-family="'IBM Plex Sans','Helvetica Neue',Arial,sans-serif" font-size="24" fill="#585F6A">
+    <tspan x="395" y="320">How a language model thinks, how a brain remembers,</tspan>
+    <tspan x="395" y="354">and why the honest comparison flatters neither.</tspan>
+  </text>
+  <g font-family="'IBM Plex Mono',Menlo,Consolas,monospace" font-size="14" letter-spacing="0.5">
+    <rect x="395" y="398" width="12" height="12" fill="#1E5AA8"/>
+    <text x="415" y="409" fill="#1E5AA8">STEEL — frozen machinery</text>
+    <rect x="664" y="398" width="12" height="12" fill="#F2B705"/>
+    <text x="684" y="409" fill="#7A5900">AMBER — the moving part</text>
+    <rect x="924" y="398" width="12" height="12" fill="#2C7539"/>
+    <text x="944" y="409" fill="#2C7539">GREEN — keys</text>
+  </g>
+  <rect x="944.5" y="548.5" width="311" height="67" fill="none" stroke="#DCDFE4" stroke-width="1"/>
+  <g font-family="'IBM Plex Mono',Menlo,Consolas,monospace" font-size="13" letter-spacing="0.5" fill="#585F6A">
+    <text x="964" y="577">11 SECTIONS · 6 LIVE INSTRUMENTS</text>
+    <text x="964" y="600">GPT-2 RUNS IN THE BROWSER</text>
+  </g>
+</svg>

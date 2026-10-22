@@ -8,7 +8,7 @@ https://bill-viking.github.io/fixture-and-part/
 
 ## What it is
 
-An interactive essay, drawn in the idiom of an engineering drawing. It runs to ten sections, and six of its figures are live instruments you can type into, step through and click. A real GPT-2 (`distilgpt2`, about 83 MB) can run in your browser: the page fetches it from huggingface.co only when you press its load button, runs it on WebGPU where the browser has it and on WASM where it does not, and sends nothing anywhere. With no model loaded, every number outside instrument E is an illustrative heuristic, and the page labels it so. Instrument E reads the real model file either way.
+An interactive essay, drawn in the idiom of an engineering drawing. It runs to eleven sections, and six of its figures are live instruments you can type into, step through and click. A real GPT-2 (`distilgpt2`, about 83 MB) can run in your browser: the page fetches it from huggingface.co only when you press its load button, runs it on WebGPU where the browser has it and on WASM where it does not, and sends nothing anywhere. With no model loaded, every number outside instrument E is an illustrative heuristic, and the page labels it so. Instrument E reads the real model file either way.
 
 ## What the name means
 
@@ -94,7 +94,7 @@ src/main.jsx
 src/App.jsx                        section shell + shared instrument state
 src/content/essay.js               all prose, per section, verbatim
 src/content/explainers.js          the copy behind the "?" badges
-src/content/claimNotes.js          the notes behind the essay's 21 claim marks
+src/content/claimNotes.js          the notes behind the essay's 25 claim marks
                                    — what each EVIDENCE / THEORY / ANALOGY
                                    claim rests on, and its sources; driven by
                                    components/ClaimNotes.jsx, mounted once
@@ -109,6 +109,7 @@ src/instruments/AttentionInspector.jsx
                                    C — attention inspector FIG.5     (section 04)
 src/instruments/GlassPass.jsx      D — residual stream + logit lens
                                                            FIG.6     (section 04)
+src/figures/LoopFigure.jsx         FIG.7 — the loop (section 10)
 src/lib/forwardMap.js              F — the architecture, band by band, and the
                                    three scalars per pass the drawing moves on
 src/components/                    LoadNote, ModeControl, InfoTag, ClaimNotes,
