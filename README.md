@@ -98,20 +98,44 @@ On a Mac, `Start Fixture and Part.command` does step 3 on a double-click once `n
 `npm run build` writes the static site to `dist/`.
 `npm run preview` serves that build locally.
 
-## Deploy to GitHub Pages
+## Publish your own copy (GitHub Pages)
 
-`vite.config.js` reads the base path from `VITE_BASE`:
+You only need this if you want your own copy of the page on the public web. Reading it, or running it on your machine, needs none of it.
+
+GitHub Pages is GitHub's free hosting: it takes the finished files from a branch of this repository called `gh-pages` and serves them at a public address. "Deploy" means building those finished files and putting them on that branch. GitHub does the rest within a minute or two.
+
+The one wrinkle is the address. GitHub serves a project page at `https://<your name>.github.io/fixture-and-part/`, with the repository's name as part of the address, so the build has to be told that prefix or every link on the page points at the wrong place. `vite.config.js` reads the prefix from a setting called `VITE_BASE`.
+
+In the terminal, in the project folder:
 
 ```
 VITE_BASE=/fixture-and-part/ npm run build
 ```
 
-Leading and trailing slashes are both required. For a user/org Pages site the
-default base of `/` is correct and no env var is needed.
+Leading and trailing slashes are both required. If your copy lives at the root of a user or organisation site (`https://<your name>.github.io/`), leave the setting out; the default `/` is right.
 
-Before you publish, check the build: every path in `dist/index.html` must start with the base (`/fixture-and-part/`).
+On Windows, run the build from PowerShell, never from Git Bash, which rewrites the prefix into a Windows path and ships broken links:
 
-On Windows, build from PowerShell (`$env:VITE_BASE="/fixture-and-part/"; npm run build`), never from Git Bash, which rewrites the base into a Windows path and ships broken links.
+```
+$env:VITE_BASE="/fixture-and-part/"; npm run build
+```
+
+Check the build before you publish: open `dist/index.html` and confirm every path in it starts with your prefix.
+
+Then put the contents of `dist/` on the `gh-pages` branch and push it. The recipe this project uses, from the project folder:
+
+```
+git fetch origin gh-pages
+git worktree add -B gh-pages /tmp/ghp origin/gh-pages
+git -C /tmp/ghp rm -rq .
+cp -R dist/. /tmp/ghp/
+git -C /tmp/ghp add -A
+git -C /tmp/ghp commit -m "Deploy"
+git -C /tmp/ghp push origin gh-pages
+git worktree remove --force /tmp/ghp
+```
+
+The first time, also turn Pages on: in the repository's Settings, under Pages, set the source to the `gh-pages` branch. Your copy is live when the address above shows the page's title.
 
 ## Inside
 
