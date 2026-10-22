@@ -22,7 +22,7 @@ As proposed:
 - `SIX STATIONS, TOP TO BOTTOM — EVERY WORD PASSES THROUGH ALL SIX` in the drawing's small mono caps, read top to bottom beside the BLOCK labels (rotated, or stacked in short lines where a rotated label would fail the type floor), in the walls' label colour; at ≤ 640 the same words as one horizontal line above BLOCK 0.
 
 ## 5. The curves legend — one line under the drawing, in the mono caps of the landing legend, above it
-- `SOLID CURVE — ONE HEAD CARRYING A SOURCE WORD'S VALUE INTO THE HERO · WIDTH = ITS SHARE OF ATTENTION · AT MOST TWO PER BLOCK, UNDER 0.15 NOT DRAWN · STRAIGHT STREAM — ONE WORD'S OWN NUMBERS, NEVER LEAVING ITS COLUMN`
+- `SOLID CURVE — ONE HEAD CARRYING A SOURCE WORD’S VALUE INTO THE HERO · WIDTH = ITS SHARE OF ATTENTION · AT MOST TWO PER BLOCK, UNDER 0.15 NOT DRAWN · STRAIGHT STREAM — ONE WORD’S OWN NUMBERS, NEVER LEAVING ITS COLUMN`
 - at ≤ 640 the same words on two lines (the curve, then the stream).
 - the `0.15` is `TRANSFER_FLOOR` printed, never typed, so a changed floor changes the legend.
 
@@ -31,8 +31,8 @@ As it stands (one dense sentence):
 > Wall cell — [18, 38] of h.4.attn.c_attn.weight [768×2304], quantised value 14. The file holds this tensor as i8 at zero point 0, so the weight is scale · (q − zp) = 0.0153 · (14 − 0) = 0.2136. Column 38 of 2304 falls in the query projection.
 
 As proposed — the lead:
-> one weight of block ⟨4⟩'s attention grid · row ⟨18⟩, column ⟨38⟩ of 768 × 2,304 · stored as the byte ⟨14⟩ · means ⟨0.2136⟩ · in the ⟨query⟩ third
-- for a negative weight the byte and the value differ, and the lead says both: `· stored as the byte ⟨236⟩, the value ⟨−20⟩ · means ⟨−0.3060⟩ ·` (the byte on disk and the number it stands for are two things, and the legend above says so)
+> one weight of block ⟨4⟩’s attention grid · row ⟨18⟩, column ⟨38⟩ of 768 × 2,304 · stored as the byte ⟨14⟩ · means ⟨0.2136⟩ · in the ⟨query⟩ third
+- for a negative weight the byte and the value differ, and the lead says both: `· stored as the byte ⟨236⟩, the value ⟨−20⟩ · means ⟨−0.3052⟩ (the file's own value; the lane's hand arithmetic said −0.3060) ·` (the byte on disk and the number it stands for are two things, and the legend above says so)
 
 The detail (the readout row only):
 > the file keeps it as one signed byte at zero point ⟨0⟩: ⟨0.0153⟩ × ⟨14⟩ = ⟨0.2136⟩ · this grid is h.⟨4⟩.attn.c_attn.weight · columns 0–767 are the query, 768–1535 the key, 1536–2303 the value
