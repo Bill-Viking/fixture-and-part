@@ -1816,14 +1816,16 @@ export default function ForwardMap({
     }
   }, [reduced])
 
-  // A click anywhere on the sheet pauses the tour and is then honoured in the
-  // ordinary way — the hero re-aims, the register opens, the readout answers.
-  // The tour's own controls are the exception: they are how it is driven.
+  // A click anywhere on the sheet is honoured in the ordinary way — the hero
+  // re-aims, the register opens, the readout answers — and a playing tour
+  // keeps playing through it (Bill's ruling, 2026-10-22). The card the click
+  // pins stays until a stop that opens a card of its own replaces it, or
+  // Escape puts it away; no stop of today's tour opens one, so it stays to
+  // Escape. Only the tour's own controls start, pause or step it.
   const onSheetPointerDown = (e) => {
     const target = e.target
     if (typeof target?.closest !== 'function') return
     if (target.closest('.mr-docent')) return
-    setTour((t) => (t.playing ? { ...t, playing: false } : t))
     // A press on the screen's own empty air puts the answer away. Anything
     // that answers for itself is not empty air, and neither is the row of
     // buttons under the drawing.
@@ -2511,12 +2513,12 @@ export default function ForwardMap({
     const tourLine = compact
       ? `Play walks one pass at reading speed, a stop at a time — ${stages.length} stops, about ${runLength(
           tourPlan.totalMs,
-        )} at 1×. The line under the controls speaks this pass’s own numbers. Step moves one stop; a click anywhere pauses the tour and is then honoured. Reduced motion: no timer, step through it. Left alone for 20 seconds, in view, the sheet runs itself — the sweep of light carries no number and changes no value.`
+        )} at 1×. The line under the controls speaks this pass’s own numbers. Step moves one stop; a click anywhere is honoured and the tour keeps going. Reduced motion: no timer, step through it. Left alone for 20 seconds, in view, the sheet runs itself — the sweep of light carries no number and changes no value.`
       : `Press play and one pass is walked at reading speed rather than replayed in a second: ${
           stages.length
         } stops, about ${runLength(
           tourPlan.totalMs,
-        )} at 1×, and the line under the controls says what is happening at each one in this pass’s own numbers. The steps move a stop either way, and clicking anything on the sheet pauses the tour and then honours the click. With reduced motion on there is no animation and no timer at all: play opens the tour at its first stop and the steps walk it. Left alone for twenty seconds — in view, tab in front, reduced motion off — the sheet runs itself: a sweep of light travels down the fall, the walls glint where it crosses them, and the carriers fire again in turn. That sweep is the one mark in the picture that carries no number; it redraws nothing and changes no value.`
+        )} at 1×, and the line under the controls says what is happening at each one in this pass’s own numbers. The steps move a stop either way, and clicking anything on the sheet is honoured while the tour keeps going. With reduced motion on there is no animation and no timer at all: play opens the tour at its first stop and the steps walk it. Left alone for twenty seconds — in view, tab in front, reduced motion off — the sheet runs itself: a sweep of light travels down the fall, the walls glint where it crosses them, and the carriers fire again in turn. That sweep is the one mark in the picture that carries no number; it redraws nothing and changes no value.`
 
     // The headings name the essay's own analogy before they name the mark:
     // section 02 is called "Weights are the tooling. Activations are the
