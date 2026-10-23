@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import InfoTag from '../components/InfoTag.jsx'
 import LoadNote from '../components/LoadNote.jsx'
 import {
@@ -9,6 +9,7 @@ import {
   readSha,
   readWindow,
 } from '../lib/fileBytes.js'
+import { mb, shortSha } from '../lib/fileFormat.js'
 import { WINDOW_COLS, WINDOW_ROWS, rawValue, standoutColumns } from '../lib/onnxScan.js'
 import { labelOf, needsSpelling } from '../lib/pieceLabel.js'
 import { loadModel, realTokenize, tokenText } from '../lib/realModel.js'
@@ -68,7 +69,6 @@ const LABELLED_PCT = 3
 const NBSP_MINUS = '−'
 
 const count = (n) => n.toLocaleString('en-US')
-const mb = (n) => `${(n / 1e6).toFixed(1)} MB`
 const signed = (v, dp) => `${v < 0 ? NBSP_MINUS : '+'}${Math.abs(v).toFixed(dp)}`
 const plain = (v) => String(v).replace('-', NBSP_MINUS)
 const short = (name) => name.replace(/^transformer\./, '')
@@ -94,9 +94,6 @@ const STANDOUT_WORDS = {
   high: { first: 'runs high for nearly every word', later: 'runs high for nearly all of them', pick: 'runs high for nearly every word' },
 }
 
-/** 1d3ab4d7…8431 — enough of a hash to compare by eye. */
-const shortSha = (sha) => (sha ? `${sha.slice(0, 8)}…${sha.slice(-4)}` : '—')
-
 /**
  * The page a tensor's window opens on: the one the build shipped. Every tensor
  * ships its first rows except the word table, which ships the 24 rows holding
@@ -106,6 +103,40 @@ const shortSha = (sha) => (sha ? `${sha.slice(0, 8)}…${sha.slice(-4)}` : '—'
 const shippedPageOf = (facts, name) => {
   const shipped = facts?.windows[name]
   return shipped ? Math.floor(shipped.row0 / WINDOW_ROWS) : 0
+}
+
+/**
+ * What the proof line has found, as a state rather than a sentence — the
+ * finding this instrument hands up to the page, so that section 07's file
+ * card can say the same thing in its own words without taking a reading of
+ * its own.
+ *
+ * The branches are `proof()`'s, in `proof()`'s own order, and nothing else:
+ * whatever the line below the curve says, this says the same of it. `sha` is
+ * the fingerprint the state rests on — the live one for `same` and for a file
+ * that reads differently, the one taken after the run for `same-after-run` —
+ * and null where the state rests on none.
+ *
+ * A file whose fingerprint matches but whose numbers read differently is
+ * `differs` too: the bytes read differently, so the numbers on the page did
+ * not come from what was read, and that is what the card's line says.
+ */
+function findingOf({ p, ready, liveError, live, mismatches, afterRun }) {
+  if (!p || !ready) return { state: 'unloaded', sha: null }
+  if (liveError) return { state: 'error', sha: null }
+  if (!live) return { state: 'reading', sha: null }
+  if (live.sha && live.sha !== p.sha256) return { state: 'differs', sha: live.sha }
+  if (mismatches.length > 0) return { state: 'differs', sha: live.sha ?? null }
+  if (afterRun && live.sha) {
+    if (afterRun.status === 'reading') return { state: 'reading', sha: null }
+    if (afterRun.status === 'error') return { state: 'error', sha: null }
+    if (afterRun.sha && afterRun.sha !== p.sha256) return { state: 'differs', sha: afterRun.sha }
+    if (afterRun.sha) return { state: 'same-after-run', sha: afterRun.sha }
+  }
+  if (live.sha) return { state: 'same', sha: live.sha }
+  // No SubtleCrypto: nothing to compare, and the card says nothing it did
+  // not check. E's own line in section 01 says what was compared instead.
+  return { state: 'no-fingerprint', sha: null }
 }
 
 // --- the ramp ---------------------------------------------------------------
@@ -457,6 +488,7 @@ export default function FileView({
   modelStatus,
   progress,
   onLoad,
+  onProof,
 }) {
   const [facts, setFacts] = useState(null)
   const [live, setLive] = useState(null)
@@ -1455,6 +1487,25 @@ export default function FileView({
 
   const proofLine = proof()
   const reading = readout()
+
+  // The proof line's finding, handed up whenever it changes: the same inputs
+  // `proof()` reads, the same branches, a state instead of a sentence.
+  //
+  // A layout effect, so the page's copy changes in the same paint as this
+  // line. Handed up from a passive effect, section 07's line trailed this one
+  // by one render — measured at 80 to 110 ms on each change, a moment in
+  // which the two said different things.
+  const finding = findingOf({
+    p: facts?.provenance,
+    ready,
+    liveError,
+    live,
+    mismatches,
+    afterRun,
+  })
+  useLayoutEffect(() => {
+    onProof?.({ state: finding.state, sha: finding.sha })
+  }, [onProof, finding.state, finding.sha])
 
   return (
     <figure className="instrument">
