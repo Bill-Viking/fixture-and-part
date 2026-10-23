@@ -229,12 +229,15 @@ figcaption{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:
    it can print, hidden but laid out, so its height is the tallest one's at
    the card's width and a change of state moves nothing (App.jsx, LiveLine). */
 .duo.contrast .card{display:flex;flex-direction:column;}
-/* At the label's tracking the file card's line is 315 px and the card's
-   measure 302: it takes two lines, and balanced they are two lines of a
-   length ("demonstrated — read" / "live on this page") rather than a full
-   line and "page" alone under it. */
+/* Tracked a little tighter than the callout label (0.10em, not 0.14em) so
+   the file card's 37-character line fits the card's measure on one line at
+   every width where the cards sit side by side above 760 px, and on a phone:
+   at 0.14em it is 315 px against a 304 px measure and wraps, and the two
+   cards' paragraphs then start at different heights. Where it must wrap
+   (641–759 px, a measure under 250 px) the wrap is balanced: two lines of a
+   length rather than "page" alone under a full line. */
 .card .card-kicker{
-  font-family:var(--mono);font-size:11.5px;letter-spacing:0.14em;line-height:1.5;
+  font-family:var(--mono);font-size:11.5px;letter-spacing:0.10em;line-height:1.5;
   margin:-6px 0 12px;text-wrap:balance;
 }
 .card.movingc .card-kicker{color:var(--moving-ink);}
@@ -2239,11 +2242,6 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
 
 @media(max-width:620px){
   .duo{grid-template-columns:1fr;}
-}
-/* Section 07's contrast stacks a little earlier than 09's duo: from 640 px
-   down, the brain card above the file card. */
-@media(max-width:640px){
-  .duo.contrast{grid-template-columns:1fr;}
 }
 
 /* The head's single line stops being wide enough for the note plus its load
