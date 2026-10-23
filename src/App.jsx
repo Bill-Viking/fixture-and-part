@@ -30,6 +30,7 @@ import {
   tokenText,
 } from './lib/realModel.js'
 import { readLens } from './lib/logitLens.js'
+import { mb, shortSha } from './lib/fileFormat.js'
 
 /**
  * A block of the essay's prose, which is written as HTML and rendered as
@@ -81,6 +82,83 @@ function Duo({ cards }) {
           {card.paragraphs.map((text) => (
             <p key={text}>{text}</p>
           ))}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * The model file's fingerprint, size and reading date as the build read them
+ * — fileFacts.json's `provenance`, put into the bundle by vite.config.js so
+ * the file card has them in its first paint (the JSON itself is a lazy chunk;
+ * see the config).
+ */
+const BUILT = __FILE_PROVENANCE__
+
+/** The card's values, spelled exactly as instrument E spells them. */
+const builtValues = {
+  sha: shortSha(BUILT.sha256),
+  mb: mb(BUILT.bytes),
+  readAt: BUILT.readAt,
+}
+
+/** `{sha}`, `{mb}` and `{readAt}` in a card's string, filled. */
+const fillValues = (text, values) =>
+  text.replace(/\{(sha|mb|readAt)\}/g, (_, key) => values[key])
+
+/** The two states the file card's line prints in the alert colour, as E does. */
+const ALERT_STATES = new Set(['differs', 'error'])
+
+/**
+ * The file card's last line: instrument E's finding about the model file,
+ * handed up to the page — never a reading of its own.
+ *
+ * Its height is the tallest of the lines it can print, at whatever width the
+ * card is: every one of them is laid in the same grid cell, hidden, beside
+ * the one that shows. A line changing therefore never changes the box, and
+ * nothing below it moves — including `no-fingerprint`, which prints nothing
+ * into the space the others reserve. The hidden ones are out of the
+ * accessibility tree; the sha they are sized with is the build's, and any
+ * other fingerprint takes the same thirteen characters of a mono face.
+ *
+ * No aria-live here. E's own proof line in section 01 is a polite live region
+ * and announces the same change; two of them would read it twice.
+ */
+function LiveLine({ lines, proof }) {
+  const line = lines[proof.state]
+  const text = line ? fillValues(line, { ...builtValues, sha: shortSha(proof.sha) }) : ''
+  return (
+    <div className="contrast-live-box" data-state={proof.state}>
+      <p className={`contrast-live${ALERT_STATES.has(proof.state) ? ' is-alert' : ''}`}>
+        {text}
+      </p>
+      {Object.values(lines).map((each) => (
+        <span className="contrast-live-ghost" aria-hidden="true" key={each}>
+          {fillValues(each, builtValues)}
+        </span>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * Section 07's contrast: one memory recalled on each side, in the shape of
+ * section 09's duo — the brain card cited, the file card demonstrated. The
+ * paragraphs are HTML, so the brain card's claim mark is a real button that
+ * opens its note like every other mark on the page.
+ */
+function Contrast({ cards, proof }) {
+  return (
+    <div className="duo contrast">
+      {cards.map((card) => (
+        <div className={`card ${card.variant}`} key={card.title}>
+          <h3>{card.title}</h3>
+          <p className="card-kicker">{card.kicker}</p>
+          {card.paragraphs.map((html) => (
+            <Html key={html} html={fillValues(html, builtValues)} />
+          ))}
+          {card.live ? <LiveLine lines={card.live} proof={proof} /> : null}
         </div>
       ))}
     </div>
@@ -313,6 +391,9 @@ export default function App() {
   // box has to select that row in the file, and two components cannot own one
   // selection. E's default is unchanged.
   const [fileTensor, setFileTensor] = useState(FILE_DEFAULT_TENSOR)
+  // What instrument E has found about the model file, handed up from it:
+  // section 07's file card prints this and takes no reading of its own.
+  const [fileProof, setFileProof] = useState({ state: 'unloaded', sha: null })
   const realBaseKey = useRef(null)
   // Read from the forward-pass effect, which must not re-subscribe on typing.
   const textRef = useRef(text)
@@ -736,6 +817,7 @@ export default function App() {
         modelStatus={modelStatus}
         progress={progress}
         onLoad={handleLoad}
+        onProof={setFileProof}
       />
     ),
     tokenizer: (
@@ -898,6 +980,9 @@ export default function App() {
               if (block.type === 'p') return <Html key={key} html={block.html} />
               if (block.type === 'callout') return <Callout key={key} {...block} />
               if (block.type === 'duo') return <Duo key={key} cards={block.cards} />
+              if (block.type === 'contrast') {
+                return <Contrast key={key} cards={block.cards} proof={fileProof} />
+              }
               if (block.type === 'figure') {
                 return (
                   <div
