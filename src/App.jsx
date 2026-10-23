@@ -394,6 +394,16 @@ export default function App() {
   // What instrument E has found about the model file, handed up from it:
   // section 07's file card prints this and takes no reading of its own.
   const [fileProof, setFileProof] = useState({ state: 'unloaded', sha: null })
+  // E hands its finding up from a layout effect, the first time at mount; a
+  // finding equal to the one held keeps the held object, so the page is not
+  // rendered again for news it already has.
+  const handleProof = useCallback(
+    (next) =>
+      setFileProof((prev) =>
+        prev.state === next.state && prev.sha === next.sha ? prev : next,
+      ),
+    [],
+  )
   const realBaseKey = useRef(null)
   // Read from the forward-pass effect, which must not re-subscribe on typing.
   const textRef = useRef(text)
@@ -817,7 +827,7 @@ export default function App() {
         modelStatus={modelStatus}
         progress={progress}
         onLoad={handleLoad}
-        onProof={setFileProof}
+        onProof={handleProof}
       />
     ),
     tokenizer: (
