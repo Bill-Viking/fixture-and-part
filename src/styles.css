@@ -229,9 +229,13 @@ figcaption{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:
    it can print, hidden but laid out, so its height is the tallest one's at
    the card's width and a change of state moves nothing (App.jsx, LiveLine). */
 .duo.contrast .card{display:flex;flex-direction:column;}
+/* At the label's tracking the file card's line is 315 px and the card's
+   measure 302: it takes two lines, and balanced they are two lines of a
+   length ("demonstrated — read" / "live on this page") rather than a full
+   line and "page" alone under it. */
 .card .card-kicker{
   font-family:var(--mono);font-size:11.5px;letter-spacing:0.14em;line-height:1.5;
-  margin:-6px 0 12px;
+  margin:-6px 0 12px;text-wrap:balance;
 }
 .card.movingc .card-kicker{color:var(--moving-ink);}
 .card.frozenc .card-kicker{color:var(--frozen);}
