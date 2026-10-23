@@ -1,6 +1,6 @@
 # WORDS — the contrast (a two-card block in section 07)
 
-PROPOSED 2026-10-22 by the F&P lane on the Mac for Bill's go or strike. Every string the build puts on the page, verbatim; Bill approves these and the builder copies them character for character, encoding quotes and dashes as `src/content/essay.js` does. A value in ⟨angle brackets⟩ is filled from real data at run time; the example beside it is the real value as the page ships it.
+APPROVED 2026-10-23 by Bill, as written, no strikes ("Go, and good idea"). PROPOSED 2026-10-22 by the F&P lane on the Mac. Every string the build puts on the page, verbatim; Bill approves these and the builder copies them character for character, encoding quotes and dashes as `src/content/essay.js` does. A value in ⟨angle brackets⟩ is filled from real data at run time; the example beside it is the real value as the page ships it.
 
 The facts the words rest on:
 - the model file the page runs: `decoder_model_quantized.onnx`, sha256 `1d3ab4d7e08ca9b8ea9a42dda13a05b7ff0f1b0c9bdc4f6eba27e7f0ceff8431`, 83,502,375 bytes, read when the page was built on 2026-10-21 (`src/content/fileFacts.json` → `provenance`; the page prints it `1d3ab4d7…8431` and `83.5 MB`, as instrument E does).
