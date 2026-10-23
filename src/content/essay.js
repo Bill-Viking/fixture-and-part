@@ -181,6 +181,45 @@ export const sections = [
         type: 'p',
         html: 'How does organic tissue hold a lifetime? It doesn&rsquo;t — not as recordings. The cortex holds one big learned world-model, built slowly and shared across all memories, exactly as a model&rsquo;s weights are shared across everything it can say. <button type="button" class="claim-mark" data-claim="fixture">ANALOGY</button> An individual memory is then nearly free: a sparse set of hippocampal pointers marking which pattern of cortical activity to reinstate. <button type="button" class="claim-mark" data-claim="index">THEORY</button> A dinner in Lisbon is not a video file; it is coordinates into a model you already own, and recall is the hippocampus cueing the cortex to re-render the scene — which is precisely why the reconstruction drifts, because the world-model has changed since encoding.',
       },
+      // The contrast: one memory recalled on each side. The brain card is
+      // cited, the file card demonstrated. {sha}, {mb} and {readAt} in the
+      // file card's paragraph are filled with the model file's own facts, read
+      // when the page was built; the `live` line is instrument E's finding,
+      // handed up — {sha} there is the fingerprint E's state rests on.
+      // `no-fingerprint` has no line: E's own sentence in section 01 says
+      // what was compared instead.
+      {
+        type: 'contrast',
+        cards: [
+          {
+            variant: 'movingc',
+            title: 'THE BRAIN',
+            kicker: 'cited — it cannot be shown here',
+            paragraphs: [
+              'A dinner in Lisbon, recalled tonight. The coordinates point into a model that has changed since that night, so every face, every street and every taste is rendered by the cortex you have now, not the one you had then.',
+              'Each recall opens the memory for editing and re-saves it through tonight&rsquo;s mood and tonight&rsquo;s question. What you have is the last telling, not the night. <button type="button" class="claim-mark" data-claim="reopen">EVIDENCE</button>',
+              'No copy of it can be read back byte for byte, and there is no fingerprint to check it against. The only honest demonstration is the one in section 05, in a rat.',
+            ],
+          },
+          {
+            variant: 'frozenc',
+            title: 'THE FILE',
+            kicker: 'demonstrated — read live on this page',
+            paragraphs: [
+              'The same bytes, read again. The model file this page runs is sha256 {sha}, {mb}, read when this page was built on {readAt}.',
+              'Every number on this page comes out the same each time because nothing on this side has changed. What the model knows is still reconstructed from those numbers, and confabulates where training was thin; only the file and the context are recalled exactly.',
+            ],
+            live: {
+              unloaded: 'load the model in section 01 and this page reads the whole file again, here, and says whether it is still the same.',
+              same: 'read again just now in this browser: the same file, byte for byte · sha256 {sha}',
+              'same-after-run': 'the text changed and the model ran; the file did not · read again just now, still the same file · sha256 {sha}',
+              differs: 'read again just now: not the file these numbers came from · sha256 {sha} · section 01 says what it found',
+              error: 'the file could not be read again just now · section 01 says why',
+              reading: 'reading the whole model file again…',
+            },
+          },
+        ],
+      },
       {
         type: 'p',
         html: 'The raw capacity is there regardless: on the order of a hundred trillion synapses, with sparse coding letting overlapping neural populations store combinatorially many patterns. The synapses measured most closely — a small sample from a rat&rsquo;s hippocampus — came in at about 26 distinguishable strengths, roughly 4.7 bits each (Bartol et al., 2015). <button type="button" class="claim-mark" data-claim="synapse">EVIDENCE</button> But the storage question dissolves once the architecture is visible. One generative model, amortized across every memory you will ever have; each memory a cheap delta.',

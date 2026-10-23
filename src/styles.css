@@ -221,6 +221,29 @@ figcaption{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:
 .card.movingc h3{color:var(--moving-ink);}
 .card p{margin-bottom:10px;color:var(--ink);}
 
+/* Section 07's contrast: the duo's two cards, each with a small mono line
+   under its title saying how the card knows what it says — in the callout
+   label's face, size and tracking, in the card's own ink. The file card's
+   last line is instrument E's finding, set at the foot of the card so the
+   two cards end together. The line's box is a grid cell holding every line
+   it can print, hidden but laid out, so its height is the tallest one's at
+   the card's width and a change of state moves nothing (App.jsx, LiveLine). */
+.duo.contrast .card{display:flex;flex-direction:column;}
+.card .card-kicker{
+  font-family:var(--mono);font-size:11.5px;letter-spacing:0.14em;line-height:1.5;
+  margin:-6px 0 12px;
+}
+.card.movingc .card-kicker{color:var(--moving-ink);}
+.card.frozenc .card-kicker{color:var(--frozen);}
+.contrast-live-box{display:grid;margin-top:auto;padding-top:4px;}
+.contrast-live-box > *{grid-area:1 / 1;}
+.card .contrast-live,
+.contrast-live-ghost{font-family:var(--mono);font-size:12px;line-height:18px;margin:0;}
+.card .contrast-live{color:var(--muted);}
+/* The alert red, exactly as E's own proof line takes it. */
+.card .contrast-live.is-alert{color:var(--alert-ink);}
+.contrast-live-ghost{visibility:hidden;}
+
 .foot{margin-top:100px;padding-top:28px;border-top:1px solid var(--hair);font-family:var(--mono);font-size:12px;color:var(--muted);line-height:1.9;}
 
 /* --- focus, always visible --------------------------------------------- */
@@ -2212,6 +2235,11 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
 
 @media(max-width:620px){
   .duo{grid-template-columns:1fr;}
+}
+/* Section 07's contrast stacks a little earlier than 09's duo: from 640 px
+   down, the brain card above the file card. */
+@media(max-width:640px){
+  .duo.contrast{grid-template-columns:1fr;}
 }
 
 /* The head's single line stops being wide enough for the note plus its load
