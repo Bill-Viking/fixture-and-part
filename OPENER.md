@@ -1,6 +1,7 @@
 lane: F&P
 written: 2026-10-23T06:29-07:00
 by: ACT — F&P: ship the F build, then the next pick (Mac) · the F build and the contrast both shipped
+captured: 2026-10-24T12:14:28-07:00 · tools/buttonup.py on the MAC · the session "ACT — F&P: ship the F build, then the next pick" ran after this opener and was captured (last message 2026-10-24T12:00:01-07:00) · its record: fixture-and-part/STATUS.md § HANDOFF CAPTURE (hub button-up 2026-10-24) · next sitting: the next
 on: MAC
 head: 7b3f21f
 status_updated: 2026-10-23T06:28-07:00
@@ -12,6 +13,8 @@ model: FABLE · EXTRA — the pick and any words after it are judgment; live met
 judgment: the next pick with Bill, and any words or design after it
 remaining: the pick is one short exchange; the arc it starts is its own
 ---
+CAPTURE NOTE (hub button-up 2026-10-24): the session "ACT — F&P: ship the F build, then the next pick" ran after this opener was written and was captured from the outside, not closed by its own hand. Read its HANDOFF CAPTURE block in STATUS first; this is the next sitting. The prompt below was written before that session ran.
+
 read the project status/memory first. You are the F&P lane (FIXTURE⊕PART). DEPENDS ON: nothing — this lane rides GitHub: `git pull` in the project folder first, and confirm main is at the head pinned above (or later, by docs commits only).
 
 Ritual in one line of receipts: clock; `sync.py pull` from the orchestrator-sync folder (`python3` on the Mac, `python` on the Dell); `git pull` and `git log --oneline -3` in the project; one-writer check (`tools/who-is-live.py --pen --lane "F&P"` in the hub folder — quote the ampersand); stamp and claim the lane (`tools/i-am.py`, `tools/claim.py --claim "F&P"`); title yourself `ACT — F&P: pick the next arc`. Read STATUS.md ## Now (the top two blocks are the 2026-10-23 ships) and ## To do.
