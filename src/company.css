@@ -1,0 +1,183 @@
+/* Query-gated sketch: document furniture and section 02's instrument chrome.
+   The drawing keeps its own dark ground, paints, mono metrics and geometry. */
+html[data-look="company"] {
+  --paper: #FFFFFF;
+  --card: #FFFFFF;
+  --sunk: #F4F7FB;
+  --ink: #1D1D1B;
+  --muted: #54606E;
+  --hair: #D5DEE8;
+  --rule: #7E8792;
+
+  --frozen: #005FB0;
+  --frozen-dim: #0072CE;
+  --frozen-tint: #EAF3FB;
+  --moving: #9A6400;
+  --moving-ink: #855600;
+  --moving-tint: #FBF4E7;
+  --moving-on: #FFFFFF;
+  --keys: #23653D;
+  --keys-tint: #EAF3ED;
+
+  --display: 'Barlow', 'Calibri', Arial, sans-serif;
+  --body: 'Barlow', 'Calibri', Arial, sans-serif;
+  --company-blue: #0072CE;
+}
+
+/* Paper needs a darker amber; the existing dark instruments need their
+   original luminous amber and dark reverse ink. No drawing selector changes. */
+html[data-look="company"] .screen {
+  --moving: #F2B705;
+  --moving-on: #14161A;
+}
+
+/* The masthead is the existing title and legend, treated as a letterhead.
+   Its one blue rule separates the page's key from the numbered sections. */
+html[data-look="company"] .wrap > header {
+  padding-top: 56px;
+  padding-bottom: 28px;
+  border-bottom: 3px solid var(--company-blue);
+  font-family: var(--body);
+  font-weight: 300;
+}
+
+html[data-look="company"] .wrap > header h1 {
+  font-size: clamp(38px, 6vw, 54px);
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+}
+
+html[data-look="company"] .wrap > header .sub {
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+html[data-look="company"] .wrap > header .legend {
+  padding-top: 18px;
+  border-top: 1px solid var(--hair);
+}
+
+/* The sketch's prose and heading grammar stop at section 02. Its instrument
+   labels and live readouts retain the existing mono face and reservations. */
+html[data-look="company"] #s02 > .eyebrow {
+  font-family: var(--display);
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: var(--frozen);
+  margin-bottom: 10px;
+}
+
+html[data-look="company"] #s02 > h2 {
+  font-size: clamp(27px, 3.5vw, 32px);
+  font-weight: 600;
+  line-height: 1.22;
+  letter-spacing: -0.015em;
+  padding-bottom: 18px;
+  margin-bottom: 24px;
+  border-bottom-color: var(--hair);
+}
+
+html[data-look="company"] #s02 > p {
+  font-family: var(--body);
+  font-size: 18px;
+  font-weight: 300;
+  line-height: 1.65;
+}
+
+html[data-look="company"] #s02 .callout {
+  font-family: var(--body);
+  font-weight: 300;
+  background: var(--sunk);
+  border-color: var(--hair);
+  border-left-color: var(--moving);
+  border-radius: 0;
+}
+
+html[data-look="company"] #s02 .callout.cool {
+  border-left-color: var(--company-blue);
+}
+
+html[data-look="company"] #s02 .callout .lbl {
+  font-family: var(--display);
+  font-weight: 800;
+}
+
+/* The section's two instruments share a document frame. Only F receives
+   the detailed control treatment; no other section is a completed sketch. */
+html[data-look="company"] #s02 .instrument {
+  border-radius: 0;
+  border-color: var(--rule);
+}
+
+html[data-look="company"] #s02 .inst-head {
+  background: var(--sunk);
+  border-bottom-color: var(--hair);
+}
+
+html[data-look="company"] #s02 .inst-eyebrow {
+  font-family: var(--display);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+html[data-look="company"] #s02 .inst-title {
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+html[data-look="company"] #s02 .inst-purpose {
+  font-family: var(--body);
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 21px;
+}
+
+html[data-look="company"] #s02 .inst-note {
+  border-radius: 0;
+}
+
+html[data-look="company"] #s02 figcaption {
+  border-top: 1px solid var(--hair);
+  padding-top: 12px;
+  color: var(--muted);
+}
+
+html[data-look="company"] #inst-forward-figure :is(.btn, .mr-chip, .mr-open) {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+html[data-look="company"] #inst-forward-figure .mr-chip.is-on {
+  background: var(--frozen);
+  border-color: var(--frozen);
+  color: var(--card);
+}
+
+/* Selection and running state are visible even when the pointer is absent.
+   Inset rules don't consume any of the reserved caption or readout space. */
+html[data-look="company"] #inst-forward-figure .mr-play {
+  color: var(--frozen);
+  border-color: var(--frozen);
+  font-weight: 500;
+}
+
+html[data-look="company"] #inst-forward-figure .mr-play[aria-pressed="true"] {
+  color: var(--card);
+  background: var(--frozen);
+}
+
+html[data-look="company"] #inst-forward-figure .mr-docent {
+  background: var(--sunk);
+  border-top-color: var(--company-blue);
+  border-bottom-color: var(--hair);
+}
+
+html[data-look="company"] #inst-forward-figure .map-readout-row {
+  box-shadow: inset 0 1px var(--hair);
+}
+
+html[data-look="company"] #inst-forward-figure .map-screen {
+  border-radius: 0;
+}
