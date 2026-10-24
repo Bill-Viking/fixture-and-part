@@ -10,7 +10,7 @@ import {
   readWindow,
 } from '../lib/fileBytes.js'
 import { mb, shortSha } from '../lib/fileFormat.js'
-import { WINDOW_COLS, WINDOW_ROWS, rawValue, standoutColumns } from '../lib/onnxScan.js'
+import { WINDOW_COLS, WINDOW_ROWS, binOfByte, binOfFloat, rawValue, standoutColumns } from '../lib/onnxScan.js'
 import { labelOf, needsSpelling } from '../lib/pieceLabel.js'
 import { loadModel, realTokenize, tokenText } from '../lib/realModel.js'
 import { DEFAULT_SENTENCE } from '../lib/toyModel.js'
@@ -258,6 +258,15 @@ function groupOf(name) {
   return { key: 'ln_f', badge: 'ln_f', label: 'ln_f' }
 }
 
+/** One tensor name for the window and the whole-tensor curve. */
+function tensorNoun(entry) {
+  if (!entry.quant) return entry.name
+  if (entry.name === WTE) return 'the word table (transformer.wte)'
+  if (entry.name === WPE) return 'the position table (transformer.wpe)'
+  const name = entry.name.replace(/^transformer\./, '').replace(/\.weight_quantized$/, '')
+  return `${groupOf(entry.name).label} · ${name}`
+}
+
 /**
  * Everything the header panel draws, derived from the manifest and from
  * nothing else — the rows, the segments of the byte bar, and the brackets
@@ -413,7 +422,7 @@ function manifestDiffers(a, b) {
 // --- the panels -------------------------------------------------------------
 
 /** The bell curve, as one filled step path. */
-function Curve({ histogram }) {
+function Curve({ histogram, pick }) {
   const path = useMemo(() => {
     if (!histogram) return null
     const counts = histogram.counts
@@ -467,6 +476,15 @@ function Curve({ histogram }) {
           />
         )}
         {path && <path d={path} className="file-curve-fill" />}
+        {pick && (
+          <rect
+            x={pick.bin * binWidth}
+            y="0"
+            width={binWidth}
+            height="104"
+            className="file-curve-pick"
+          />
+        )}
         <rect x="0" y="104" width="680" height="1" className="file-curve-axis" />
       </svg>
       <div className="file-curve-ticks">
@@ -841,6 +859,34 @@ export default function FileView({
     return { cols, rows, drawCols: cols, drawRows: rows }
   }, [view, layout])
 
+  // One index and one decoded value feed both readings; an invalid cell is idle.
+  const picked = useMemo(() => {
+    if (!entry || !view || !grid || !cell) return null
+    if (cell.row >= grid.drawRows || cell.col >= grid.drawCols) return null
+    const i = cell.row * grid.drawCols + cell.col
+    if (i >= view.data.length) return null
+    const raw = view.data[i]
+    const q = entry.quant ? rawValue(view.dtype, raw) : raw
+    const value = entry.quant ? entry.quant.scale * (q - entry.quant.zeroPoint) : raw
+    return { i, raw, q, value }
+  }, [entry, view, grid, cell])
+
+  const curvePick = useMemo(() => {
+    if (!picked || !histogram) return null
+    const bin = entry.quant
+      ? binOfByte(view.dtype, picked.raw)
+      : binOfFloat(picked.raw, Math.max(Math.abs(histogram.lo), Math.abs(histogram.hi)))
+    const percent = (histogram.counts[bin] / histogram.stats.n) * 100
+    const share = percent < 0.1 ? 'under 0.1%' : `${percent.toFixed(1)}%`
+    const matches = view.data.reduce((n, value) => n + (value === picked.raw ? 1 : 0), 0)
+    const lead = `the picked square: ${signed(picked.value, 4)} · `
+    const windowCount = `${count(matches)} of the ${count(view.data.length)}`
+    const line = entry.quant
+      ? `${lead}byte ${picked.raw} · ${share} of every value in this tensor is this byte · ${windowCount} squares in this window hold it`
+      : `${lead}in a bin that holds ${share} of every value in this tensor · ${windowCount} squares in this window hold this number`
+    return { bin, line }
+  }, [picked, histogram, entry, view])
+
   const pages = entry ? Math.ceil(entry.rows / WINDOW_ROWS) : 1
   const maxAbs = histogram
     ? Math.max(Math.abs(histogram.stats.min), Math.abs(histogram.stats.max)) || 1
@@ -1173,11 +1219,11 @@ export default function FileView({
     [view, grid, layout],
   )
 
-  // A click in a gutter picks nothing, and leaves the reading where it was.
+  // A click in a gutter or beyond a short last row clears the reading.
   const pickCell = useCallback(
     (event) => {
       const at = cellAt(event)
-      if (at) setCell(at)
+      setCell(at)
     },
     [cellAt],
   )
@@ -1201,6 +1247,10 @@ export default function FileView({
 
   const onCanvasKey = useCallback(
     (event) => {
+      if (event.key === 'Escape') {
+        setCell(null)
+        return
+      }
       if (!view || !grid) return
       const deltas = {
         ArrowLeft: [0, -1],
@@ -1239,15 +1289,14 @@ export default function FileView({
       const slots =
         `slots ${count(view.col0)}–${count(view.col0 + view.cols - 1)} ` +
         `of ${count(entry.dims[1] ?? 1)} · one byte per number`
-      if (entry.name === WTE) return `the word table (transformer.wte) · words ${rows} · ${slots}`
+      if (entry.name === WTE) return `${tensorNoun(entry)} · words ${rows} · ${slots}`
       if (entry.name === WPE) {
-        return `the position table (transformer.wpe) · positions ${rows} · ${slots}`
+        return `${tensorNoun(entry)} · positions ${rows} · ${slots}`
       }
-      const name = entry.name.replace(/^transformer\./, '').replace(/\.weight_quantized$/, '')
-      return `${groupOf(entry.name).label} · ${name} · rows ${rows} · ${slots}`
+      return `${tensorNoun(entry)} · rows ${rows} · ${slots}`
     }
     return (
-      `${entry.name} · values ${count(first)}–${count(first + view.data.length - 1)} ` +
+      `${tensorNoun(entry)} · values ${count(first)}–${count(first + view.data.length - 1)} ` +
       `of ${count(entry.elements)} · wrapped at ${grid?.cols ?? WINDOW_COLS} · ${entry.dtype}`
     )
   }
@@ -1282,9 +1331,8 @@ export default function FileView({
   const readout = () => {
     if (!entry || !view || !grid) return { words: 'no tensor selected', arith: '' }
     const idle = { words: NOTHING_PICKED, arith: standoutLine() }
-    if (!cell || cell.row >= grid.drawRows || cell.col >= grid.drawCols) return idle
-    const i = cell.row * grid.drawCols + cell.col
-    if (i >= view.data.length) return idle
+    if (!picked) return idle
+    const { i, q, value } = picked
     if (!entry.quant) {
       const index = view.row0 * WINDOW_COLS + i
       return { words: `index ${count(index)} · ${sig(view.data[i], 6)}`, arith: '' }
@@ -1293,9 +1341,7 @@ export default function FileView({
     // the file is −15 as an i8 — and it is the reading that goes into the
     // arithmetic, so the second line names the dtype rather than calling it a
     // byte. The first line says the byte, because that is what is stored.
-    const q = rawValue(view.dtype, view.data[i])
     const zp = entry.quant.zeroPoint
-    const value = entry.quant.scale * (q - zp)
     const row = view.row0 + cell.row
     const slot = view.col0 + cell.col
     const stored = `slot ${count(slot)} · stored as the byte ${view.data[i]} · means ${signed(value, 2)}`
@@ -1513,7 +1559,7 @@ export default function FileView({
         stacked
         eyebrow="INSTRUMENT E"
         title="The file"
-        purpose="The model file itself — every tensor it holds, one window of its raw bytes, and the spread of one tensor’s values."
+        purpose="The model file itself — every tensor it holds. Choose one, in the list or on the bar, and the window shows its raw bytes, the curve the spread of all its values."
         note={
           <LoadNote
             label={label}
@@ -1557,7 +1603,7 @@ export default function FileView({
         </div>
 
         <div className="label-row">
-          <span className="field-label">the file, drawn to scale</span>
+          <span className="field-label">the bar — the whole file, drawn to scale</span>
           <InfoTag topic="fileHeader" />
         </div>
         <div
@@ -1699,8 +1745,14 @@ export default function FileView({
           <span className="field-label">the bell curve &mdash; every value</span>
           <InfoTag topic="fileCurve" />
         </div>
-        <Curve histogram={histogram} />
+        <p className="file-eyebrow file-curve-eyebrow">
+          {entry ? `every value of ${tensorNoun(entry)} — the whole tensor, not only the window` : '—'}
+        </p>
+        <Curve histogram={histogram} pick={curvePick} />
         <p className="file-curve-stat">{curveStat()}</p>
+        <p className={`file-curve-pick-line${curvePick ? ' is-on' : ''}`}>
+          {curvePick?.line ?? 'click a square in the window and its value is marked here, on the curve'}
+        </p>
 
         <p
           className={`file-proof${proofLine.alert ? ' is-alert' : ''}`}

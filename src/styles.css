@@ -2146,6 +2146,8 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
   color:var(--frozen);letter-spacing:0.02em;margin:0 0 6px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
+/* The curve keeps one reserved line even where the window's eyebrow wraps. */
+.file-eyebrow.file-curve-eyebrow{height:15px;white-space:nowrap;text-overflow:ellipsis;}
 /* 24 rows of 64 values, and three bands around them painted on the same
    canvas: the row labels at the left, the slot labels at the top, the key at
    the bottom. The cells' 252px of height is unchanged — 10.5 px a row — and
@@ -2198,6 +2200,7 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
 .file-curve svg{display:block;width:100%;height:108px;}
 .file-curve-fill{fill:var(--frozen-dim);}
 .file-curve-zero{fill:var(--frozen);}
+.file-curve-pick{fill:var(--moving);}
 .file-curve-axis{fill:var(--rule);}
 /* overflow:hidden because each tick below is a full-axis-wide box shoved to
    the right by a percentage of itself, so the one furthest right hung a whole
@@ -2221,6 +2224,11 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
   font-family:var(--mono);font-size:10px;line-height:15px;height:30px;
   color:var(--ink);letter-spacing:0.02em;margin:6px 0 0;overflow:hidden;
 }
+.file-curve-pick-line{
+  font-family:var(--mono);font-size:10px;line-height:15px;height:30px;
+  color:var(--muted);letter-spacing:0.02em;margin:0;overflow:hidden;
+}
+.file-curve-pick-line.is-on{color:var(--moving-ink);}
 
 /* Where the numbers came from, and whether the copy in this browser is still
    the copy they were read from. */

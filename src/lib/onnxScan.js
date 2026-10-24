@@ -379,6 +379,12 @@ export function quantizedHistogram(bytes, tensor, scale, zeroPoint) {
 /** How many bins an f32 vector's curve gets. */
 export const FLOAT_BINS = 64
 
+/** The same clamped bin for an f32 histogram and a picked value on its curve. */
+export function binOfFloat(value, extent) {
+  const width = (2 * extent) / FLOAT_BINS
+  return Math.max(0, Math.min(FLOAT_BINS - 1, Math.floor((value + extent) / width)))
+}
+
 /**
  * The distribution of an f32 vector, over a range symmetric about zero so the
  * shape can be compared with a weight's without the eye having to correct for
@@ -410,12 +416,8 @@ export function floatHistogram(values) {
 
   const extent = Math.max(Math.abs(min), Math.abs(max)) || 1
   const counts = new Array(FLOAT_BINS).fill(0)
-  const width = (2 * extent) / FLOAT_BINS
   for (let i = 0; i < n; i++) {
-    let bin = Math.floor((values[i] + extent) / width)
-    if (bin < 0) bin = 0
-    if (bin >= FLOAT_BINS) bin = FLOAT_BINS - 1
-    counts[bin]++
+    counts[binOfFloat(values[i], extent)]++
   }
 
   return {
