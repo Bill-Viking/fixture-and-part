@@ -3,6 +3,39 @@
 
 ## Now
 
+HANDOFF CAPTURE (hub button-up 2026-10-24, mechanical — verbatim tail, no model read): claude c571bc88-023a-47f2-a6ff-b2913f514d08 · last message 2026-10-24T12:00:01-07:00
+  the thread's own title: ACT — F&P: ship the F build, then the next pick
+  lane F&P (the folder's only lane) · OPUS · 14.3 min ago at the capture
+  the repo, read before this capture: 1 untracked, not carried: .claude/worktrees/
+  the last exchange, verbatim:
+  --- [2026-10-24T18:33:03.586Z] ASSISTANT
+  **FIXTURE⊕PART** `MAC · OPUS · HIGH`
+
+  The company look is above in three pictures: section 02's opening in the dress, the waterfall's top in the dress, and the same view on today's page for comparison. Astra made it in about 6 minutes, costing neither meter.
+
+  What the company look changes:
+  - **Page:** pure white, with charcoal text.
+  - **Type:** Barlow, the typeface your Word template uses. The data readouts stay in the mono face.
+  - **Labels and frames:** section labels and "INSTRUMENT F" are bold blue capitals, and instrument heads sit on a pale blue-grey panel. Corners are square, there is a thin blue rule under the page's masthead, and the selected buttons are solid blue.
+  - **Colours:** th …[+1088 chars]
+
+  --- [2026-10-24T18:58:46.721Z] USER
+  Yes — rewrite the two commits to remove the employer's name and force-push main.
+
+  --- [2026-10-24T18:59:47.462Z] ASSISTANT
+  The rewrite is pushed; cleaning the local leftovers, then reporting.
+
+  --- [2026-10-24T19:00:01.520Z] ASSISTANT
+  **FIXTURE⊕PART** `MAC · OPUS · HIGH`
+
+  **Done.** This morning's four commits on main are rewritten so the employer's name appears nowhere in their text or titles, and main is force-pushed (now `ea436d1`). The files themselves are byte-for-byte the same as before. The local E branch and the sketch branch were rewritten in the same pass, so they still sit on top of main.
+
+  Two things I found while checking:
+
+  1. **An older mention, from before today.** On 2026-08-20 a to-do line in STATUS named the employer, and it was scrubbed from the file on 2026-09-14. Even so, it is still readable in about 113 public commits from those weeks, on main and several old branches. Removing it would mean rewriting …[+299 chars]
+  this block quotes; it does not explain. A session with a model may upgrade it to plain words (`buttonup.py capture --work-order`).
+
+
 **THE CONTRAST SHIPPED 2026-10-23 (Mac, session "ACT — F&P: ship the F build, then the next pick", the pick on Fable).** Bill's pick from the ranked list and his "Go, and good idea" at 05:0x on `design/the-contrast/WORDS.md` as written. The build: a two-card block in section 07 under the Lisbon paragraph — THE BRAIN (amber, kicker "cited — it cannot be shown here", three paragraphs, the `reopen` EVIDENCE mark reused) and THE FILE (steel, kicker "demonstrated — read live on this page", two paragraphs with the file's sha/size/date filled at build time from fileFacts.json through a `define` in vite.config.js, and a LIVE last line that prints instrument E's own finding handed up through a new `onProof` prop in one of six states — unloaded · reading · same · same-after-run · differs · error — with `no-fingerprint` printing nothing; the line's box reserves the tallest state's height so a change moves nothing). `mb`/`shortSha` moved to `src/lib/fileFormat.js`, shared by E and the card. README and the spec: 28 claim marks (16 EVIDENCE, 8 THEORY, 4 ANALOGY) over 26 notes, two reused. Built by an Opus 5.5 builder on branch `the-contrast` (0738eef · a9a209f · 9592062 · 8fa19db · bd9d3f7 · 766066f, five stills) off main b50261e; the lane's pass 7b3f21f (the kicker tracked 0.10em so both cards' first lines sit level; the contrast stacks with 09's duo at 620, one rule; REPORT.md from the hand-back). The builder's gauntlet: 90/90 strings, every live state driven at 1280 and 390 (the alert branches by a changed byte in the cached file, a rewritten facts module, a held worker, a removed `crypto.subtle`), the mark opening the same note as 05's, CLS 0 on every action with the block in view, contrast ≥ 5.48, the kicker 11.5 px and the line 12 px everywhere. The lane's own re-run in the app's browser pane on the production build: 8/8 strings exact, 28 marks, the real model loaded and the line went unloaded → same beside E's own sentence, the layout at 1280/630/390 measured. Merged fast-forward to main 7b3f21f, built with the base path (gate clean), deployed as gh-pages 5730f65 "Deploy 7b3f21f", pushed 06:28; live bundle `index-5X6Dlb5_.js`, 429,179 bytes, verified live 06:29 (third try, under two minutes). Worth Bill's eye (builder's choice 5): the mismatch route of `differs` prints the build's own sha. Nothing in flight; tree clean; the builder's worktree removed, the branch kept.
 
 **THE F BUILD IS LIVE 2026-10-23 04:47 (Mac, session "ACT — F&P: ship the F build, then the next pick", Opus · High for the deploy).** main 8832c45 (code = b87fc0f; the one commit above it is docs only) built with `VITE_BASE=/fixture-and-part/`, the path gate clean (every `src`/`href` under `/fixture-and-part/` or `https://`), deployed as gh-pages a5e0a44 "Deploy b87fc0f" over 29f4860, pushed 04:45:47; the cache-busted index named the new bundle at 04:47:32 (fourth try, under two minutes): live bundle `index-DpeL6PR0.js`, 425,365 bytes, `SIX STATIONS, TOP TO BOTTOM` and `is honoured and the tour keeps going` each present once. Nothing in flight; tree clean. NEXT: Bill picks what is next from the open candidates in To do (the lane's ranked list is in OPENER.md); that stretch is judgment — FABLE (live meter 04:46: Fable 7 percent of the week).
