@@ -3,6 +3,32 @@
 
 ## Now
 
+HANDOFF CAPTURE (hub button-up 2026-10-24, mechanical — verbatim tail, no model read): codex rollout-2026-10-24T11-24-25-01a16f28-2b6b-76d0-a5ee-ef0550109f6d · last message 2026-10-24T11:30:43-07:00
+  lane F&P (the folder's only lane) · ASTRA · 43.6 min ago at the capture
+  the repo, read before this capture: 1 untracked, not carried: .claude/worktrees/
+  the last exchange, verbatim:
+  --- [2026-10-24T18:25:51.215Z] ASSISTANT
+  **FIXTURE⊕PART** `MAC · ASTRA`
+
+  The worktree is clean on `company-look-sketch`. The waterfall already has its own dark drawing surface, so I’ll preserve that and dress its surrounding headings and controls. I’m checking the reference tokens and existing CSS selectors next.
+
+  --- [2026-10-24T18:27:08.209Z] ASSISTANT
+  **FIXTURE⊕PART** `MAC · ASTRA`
+
+  I’m using Barlow Light for the prose and ExtraBold for small headings, following the document-template reference. IBM Plex Mono stays on readouts. I’ll omit the extra yellow accent so amber keeps its meaning: values in flight. The waterfall’s drawing colours and geometry will remain unchanged.
+
+  --- [2026-10-24T18:28:30.500Z] ASSISTANT
+  **FIXTURE⊕PART** `MAC · ASTRA`
+
+  Lint and build both passed. Lint reported the existing AttentionInspector hook warning; the build reported the large-chunk warning. The paper role colours pass the requested contrast thresholds. I’m finishing the source-preservation checks and report; browser proofs remain unrun.
+
+  --- [2026-10-24T18:30:43.872Z] ASSISTANT
+  [Report written](/private/tmp/claude-501/-Users-bill-Projects-fixture-and-part/c571bc88-023a-47f2-a6ff-b2913f514d08/scratchpad/company-look-brief-REPORT.md).
+
+  DONE LOOK SKETCH — the — Query-gated document dress added; waterfall preserved, lint/build passed, browser proofs unrun.
+  this block quotes; it does not explain. A session with a model may upgrade it to plain words (`buttonup.py capture --work-order`).
+
+
 HANDOFF CAPTURE (hub button-up 2026-10-24, mechanical — verbatim tail, no model read): claude c571bc88-023a-47f2-a6ff-b2913f514d08 · last message 2026-10-24T12:00:01-07:00
   the thread's own title: ACT — F&P: ship the F build, then the next pick
   lane F&P (the folder's only lane) · OPUS · 14.3 min ago at the capture
