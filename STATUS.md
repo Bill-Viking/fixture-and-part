@@ -3,6 +3,39 @@
 
 ## Now
 
+HANDOFF CAPTURE (hub button-up 2026-10-24, mechanical — verbatim tail, no model read): codex rollout-2026-10-24T10-43-11-01a16f02-6b58-7b60-a966-6e69808157a7 · last message 2026-10-24T10:49:48-07:00
+  lane F&P (the folder's only lane) · ASTRA · 84.5 min ago at the capture
+  the repo, read before this capture: 1 untracked, not carried: .claude/worktrees/
+  the last exchange, verbatim:
+  --- [2026-10-24T17:45:59.601Z] ASSISTANT
+  **FIXTURE⊕PART** — Lint passed with the single baseline warning. Build stopped because Vite tried to write its temporary config through the shared `node_modules` symlink, outside this worktree. I’ll use Vite’s native config loader to avoid that write without changing permissions.
+
+  --- [2026-10-24T17:47:35.219Z] ASSISTANT
+  **FIXTURE⊕PART** — Build and all four bundle-string checks passed. The float helper matches the prior histogram code across all 50 shipped float windows. One issue for Part B: I kept the specified 30 px pick-line height, but the long approved wording may need more than two lines at 390 px. Browser fit and layout-shift checks remain unrun.
+
+  --- [2026-10-24T17:49:35.141Z] ASSISTANT
+  **FIXTURE⊕PART** — The report is written with the six byte-share results, sample pick lines, build workaround, and phone-width fit concern. The three source files remain uncommitted. I’m checking the hand-back’s final line and file list.
+
+  --- [2026-10-24T17:49:48.242Z] ASSISTANT
+  **FIXTURE⊕PART** — Part A is built and uncommitted.
+
+  HEAD: `b6c7a97a795b4359639c9a93780a96c8624d8e40`
+
+  | File | +/− | Change |
+  |---|---:|---|
+  | `src/instruments/FileView.jsx` | +69/−17 | Approved wording, shared tensor noun, curve pick and count line, clearing behavior. |
+  | `src/lib/onnxScan.js` | +7/−5 | Shared float-bin helper. |
+  | `src/styles.css` | +8/−0 | Reserved lines and amber marker styles. |
+
+  Lint passed with exactly the baseline AttentionInspector warning. Build passed using `npm run build -- --configLoader native`; plain build hit EPERM writing through shared `node_modules`. No permissions changed.
+
+  All required bundle strings found:
+
+  - `the bar — the whole file, drawn to scale`
+   …[+956 chars]
+  this block quotes; it does not explain. A session with a model may upgrade it to plain words (`buttonup.py capture --work-order`).
+
+
 HANDOFF CAPTURE (hub button-up 2026-10-24, mechanical — verbatim tail, no model read): codex rollout-2026-10-24T11-24-25-01a16f28-2b6b-76d0-a5ee-ef0550109f6d · last message 2026-10-24T11:30:43-07:00
   lane F&P (the folder's only lane) · ASTRA · 43.6 min ago at the capture
   the repo, read before this capture: 1 untracked, not carried: .claude/worktrees/
