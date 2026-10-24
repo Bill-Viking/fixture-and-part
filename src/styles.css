@@ -2453,6 +2453,10 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
   .file-readout{height:75px;}
   .file-curve svg{height:88px;}
   .file-curve-stat{height:45px;}
+  /* Three lines, not two: the picked square's line runs 136 to 146
+     characters (measured over every window of every tensor), and at the 10px
+     floor it takes a third line from a 534px viewport down. */
+  .file-curve-pick-line{height:45px;}
   .file-bar-readout{height:30px;white-space:normal;text-overflow:clip;}
   /* Three lines, not two. The key naming the six regions of the file left to
      right is a fixed sentence, and at the 10px floor it needs a third line at
@@ -2526,6 +2530,12 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
   .kv-note{flex:1 1 100%;margin-left:0;}
   .kv-body{height:calc(100% - 48px);}
   .kv-inspector{height:384px;}
+}
+
+/* The picked square's line takes a fourth line from a 386px viewport down
+   (measured at 375, 360 and 320 on its longest strings). */
+@media(max-width:389px){
+  .file-curve-pick-line{height:60px;}
 }
 
 /* Narrower than a phone. The inspector's two prose lines drop one step so
