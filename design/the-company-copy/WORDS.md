@@ -1,6 +1,6 @@
 # WORDS — the company copy (the no-download forms, and the credit)
 
-PROPOSED 2026-10-25 by the F&P lane on the Mac (Fable) for Bill's go or strike. Every string the company build puts on the page where today's page offers the model download; the builder copies them character for character. A value in ⟨angle brackets⟩ is filled from real data at run time. Nothing else on the page changes a word; the dress (type, colours, page furniture) is a separate pass and touches no words.
+PROPOSED 2026-10-25 by the F&P lane on the Mac (Fable) for Bill's go or strike. APPROVED 2026-10-25 10:0x — Bill: "I agree with all the rest" (§2–§7, and §6's recommended credit); §1's load row AMENDED on his question (the repo and the page are public, so a link is a pointer to his public work, not to anything private; the sentence says the full version is for one's own machine and time, so no download rides on the office network) — the second line of §1 is his to go or strike. Every string the company build puts on the page where today's page offers the model download; the builder copies them character for character. A value in ⟨angle brackets⟩ is filled from real data at run time. Nothing else on the page changes a word; the dress (type, colours, page furniture) is a separate pass and touches no words.
 
 What the company copy is (Bill, 2026-10-24): the same page, one codebase, one build flag — no LOAD THE REAL MODEL door anywhere, every shipped number kept, the illustrative instruments kept, the model's runtime left out of the build, published at its own path. The rule for every line below: say what this copy does and does not do; never send the reader to a download.
 
@@ -8,8 +8,10 @@ What the company copy is (Bill, 2026-10-24): the same page, one codebase, one bu
 - The `illustrative | real` switch goes; the row keeps its label and reads as a plain statement:
   `mode` · `illustrative` · `no model in this copy`
   (today: the two buttons, and the state `no model loaded`)
-- The load row (today the filled button `LOAD THE REAL MODEL (83.5 MB)` and its hint `real mode needs an 83.5 MB download, once`) becomes one plain line, in the hint's own face and muted ink, its height reserved as today:
+- The load row (today the filled button `LOAD THE REAL MODEL (83.5 MB)` and its hint `real mode needs an 83.5 MB download, once`) becomes two plain lines, in the hint's own face and muted ink, the row's height reserved for the two lines at every width (declared in the proof):
   `this copy does not download the model — what it shows of the file was read when this page was built, and the rest is illustrative.`
+  `the full version downloads the model and runs it live, with more to try: bill-viking.github.io/fixture-and-part — public, for your own machine, on your own time.`
+  (the address is a link, `https://bill-viking.github.io/fixture-and-part/`, in the page's own link style; Bill's words 2026-10-25: "mention for consumer version with full model download and more options to check out bill-viking github on free time")
 - The manifest line stays as it is: `everything here is illustrative — deterministic stand-ins, no model running.`
 - The note `switching mode resets the sequence — bpe pieces and word tokens do not line up.` goes (nothing switches).
 
