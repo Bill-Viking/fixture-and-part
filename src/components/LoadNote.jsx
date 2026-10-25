@@ -1,3 +1,4 @@
+import { COMPANY } from '../lib/company.js'
 import { progressLabel } from '../lib/loadProgress.js'
 
 /**
@@ -26,8 +27,9 @@ export default function LoadNote({
   status,
   progress,
   onLoad,
-  action = 'load the real model',
+  action = COMPANY ? undefined : 'load the real model',
 }) {
+  if (COMPANY) return <span className="inst-note">{label}</span>
   if (status === 'loading') {
     return <span className="inst-note is-loading">{progressLabel(progress)}</span>
   }

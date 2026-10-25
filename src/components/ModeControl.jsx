@@ -1,3 +1,4 @@
+import { COMPANY } from '../lib/company.js'
 import TeachPair from './TeachPair.jsx'
 import { progressLabel } from '../lib/loadProgress.js'
 
@@ -29,6 +30,28 @@ export default function ModeControl({
   error,
   onLoad,
 }) {
+  if (COMPANY) {
+    return (
+      <div className="mode-bar">
+        <div className="mode-row">
+          <span className="field-label">mode</span>
+          <span className="mode-illustrative">illustrative</span>
+          <span className="mode-state">no model in this copy</span>
+        </div>
+        <div className="mode-row mode-load is-company">
+          <span className="mode-hint">this copy does not download the model — what it shows of the file was read when this page was built, and the rest is illustrative.</span>
+          <span className="mode-hint">the full version downloads the model and runs it live, with more to try: <a href="https://bill-viking.github.io/fixture-and-part/">bill-viking.github.io/fixture-and-part</a> — public, for your own machine, on your own time.</span>
+        </div>
+        <TeachPair
+          className="mode-manifest"
+          show="a"
+          a="everything here is illustrative — deterministic stand-ins, no model running."
+          b="read from distilgpt2: bpe pieces and ids, embeddings, keys and values, next-token probabilities, generation, attention for every layer and head, the residual stream at all seven depths, and the lens on each of them. the rack drawing and its sweep are diagrams of the mechanism, not measurements."
+        />
+      </div>
+    )
+  }
+
   const loaded = status === 'ready'
   const loading = status === 'loading'
   const percent = Math.max(0, Math.min(100, Math.round(progress.percent || 0)))

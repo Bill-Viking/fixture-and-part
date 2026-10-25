@@ -1,3 +1,4 @@
+import { COMPANY } from './company.js'
 // The one worker, and who is allowed to talk to it.
 //
 // Instruments D and E both read the model file, and the file is 83 MB. Two
@@ -9,7 +10,7 @@
 import { CACHE_KEY, MODEL_ID, ONNX_FILE } from './realModel.js'
 
 /** Where the file came from, and where to look for it again. */
-export const MODEL_CONFIG = {
+export const MODEL_CONFIG = COMPANY ? null : {
   cacheKey: CACHE_KEY,
   onnxFile: ONNX_FILE,
   fallbackUrl: `https://huggingface.co/${MODEL_ID}/resolve/main/onnx/${ONNX_FILE}`,
@@ -29,6 +30,7 @@ function route(event) {
 }
 
 function ensureWorker() {
+  if (COMPANY) return null
   if (worker) return worker
   worker = new Worker(new URL('./modelBytesWorker.js', import.meta.url), {
     type: 'module',
@@ -64,7 +66,7 @@ export function closeRequest(requestId) {
 }
 
 export function postToWorker(message, transfer) {
-  ensureWorker().postMessage(message, transfer ?? [])
+  if (!COMPANY) ensureWorker().postMessage(message, transfer ?? [])
 }
 
 /** Tells the worker to stop, if the caller had not already given up. */

@@ -1,3 +1,5 @@
+import { COMPANY } from '../lib/company.js'
+
 // Inline explainer copy for the InfoTag badges, kept here for the same reason
 // the prose lives in essay.js: content separate from components.
 // House style, per the spec: sentence case, plain verbs, no exclamation points,
@@ -64,7 +66,7 @@ export const explainers = {
   },
   decoding: {
     title: 'decoding',
-    body: 'picking a word out of the scores is a separate decision from producing the scores, and there is more than one rule for it. this mode is pinned to the simplest — take the top one — because the four numbers above it are hand-tuned to make a teaching point, and drawing at random from numbers written by hand would look like a mechanism without being one. load the real model and the choice opens up.',
+    body: 'picking a word out of the scores is a separate decision from producing the scores, and there is more than one rule for it. this mode is pinned to the simplest — take the top one — because the four numbers above it are hand-tuned to make a teaching point, and drawing at random from numbers written by hand would look like a mechanism without being one. ' + (COMPANY ? 'with a model in hand the choice opens up.' : 'load the real model and the choice opens up.'),
   },
   decodingReal: {
     title: 'decoding',

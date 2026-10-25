@@ -1,3 +1,4 @@
+import { COMPANY } from '../lib/company.js'
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import InfoTag from '../components/InfoTag.jsx'
 import LoadNote from '../components/LoadNote.jsx'
@@ -552,7 +553,7 @@ export default function FileView({
   const readoutId = useId()
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 })
 
-  const ready = modelStatus === 'ready'
+  const ready = !COMPANY && modelStatus === 'ready'
 
   const noteMismatch = useCallback((text) => {
     setMismatches((prev) => (prev.includes(text) ? prev : [...prev, text]))
@@ -1419,10 +1420,11 @@ export default function FileView({
     if (!p) return { text: 'reading the file…' }
     if (!ready) {
       return {
-        text:
-          `these numbers were read from the model file on ${p.readAt}, when this ` +
-          `page was built. load the model and the page reads the same file again, ` +
-          `right here.`,
+        text: COMPANY
+          ? `these numbers were read from the model file on ${p.readAt}, when this page was built. this copy does not read the file again.`
+          : `these numbers were read from the model file on ${p.readAt}, when this ` +
+            `page was built. load the model and the page reads the same file again, ` +
+            `right here.`,
       }
     }
     if (liveError) {
@@ -1563,7 +1565,7 @@ export default function FileView({
         note={
           <LoadNote
             label={label}
-            action="load the model to read it live"
+            action={COMPANY ? undefined : 'load the model to read it live'}
             status={modelStatus}
             progress={progress}
             onLoad={onLoad}
@@ -1732,7 +1734,9 @@ export default function FileView({
           </button>
           <span className="file-page">
             {!live && pages > 1
-              ? `window ${page + 1} of ${count(pages)} — load the model to move it`
+              ? COMPANY
+                ? `window ${page + 1} of ${count(pages)} — this copy holds this window only`
+                : `window ${page + 1} of ${count(pages)} — load the model to move it`
               : `window ${page + 1} of ${count(pages)}`}
           </span>
         </div>

@@ -1,3 +1,4 @@
+import { COMPANY, loadTransformers } from './company.js'
 // Phase 2 — the real machine.
 //
 // Wraps transformers.js around `Xenova/distilgpt2` so instruments A, B and C
@@ -283,7 +284,8 @@ function dropStaleCaches() {
 }
 
 async function doLoad() {
-  const transformers = await import('@huggingface/transformers')
+  if (COMPANY) return undefined
+  const transformers = await loadTransformers()
   const { env } = transformers
   env.allowLocalModels = false
   env.cacheKey = CACHE_KEY
@@ -311,6 +313,7 @@ async function doLoad() {
  * @param {(p:{phase:string,loaded:number,total:number,percent:number})=>void} [onProgress]
  */
 export function loadModel(onProgress) {
+  if (COMPANY) return Promise.resolve(null)
   if (typeof onProgress === 'function') progressSink = onProgress
   if (ready) return Promise.resolve(ready)
   if (!inFlight) {

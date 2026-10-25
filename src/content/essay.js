@@ -1,3 +1,4 @@
+import { COMPANY } from '../lib/company.js'
 // Prose extracted verbatim from the-fixture-and-the-part.html.
 // Inline markup is preserved exactly as authored; it is rendered as HTML.
 // Do not refactor the prose.
@@ -210,7 +211,9 @@ export const sections = [
               'Every number on this page comes out the same each time because nothing on this side has changed. What the model knows is still reconstructed from those numbers, and confabulates where training was thin; only the file and the context are recalled exactly.',
             ],
             live: {
-              unloaded: 'load the model in section 01 and this page reads the whole file again, here, and says whether it is still the same.',
+              ...(COMPANY
+                ? { unloadedCompany: 'this copy does not download the model, so the file is not read again here.' }
+                : { unloaded: 'load the model in section 01 and this page reads the whole file again, here, and says whether it is still the same.' }),
               same: 'read again just now in this browser: the same file, byte for byte · sha256 {sha}',
               'same-after-run': 'the text changed and the model ran; the file did not · read again just now, still the same file · sha256 {sha}',
               differs: 'read again just now: not the file these numbers came from · sha256 {sha} · section 01 says what it found',
@@ -366,4 +369,9 @@ export const sections = [
 export const footerHtml =
   'THE FIXTURE AND THE PART &middot; drafted August 2026<br>' +
   'From a conversation between Bill (Seattle) and Claude (Anthropic).<br>' +
+  'Key sources named in text: Nader, Schafe &amp; LeDoux 2000 &middot; Kindt et al. &middot; Loftus &middot; McGaugh (HSAM) &middot; Luria, <em>The Mind of a Mnemonist</em> &middot; Bartol &amp; Sejnowski 2015 &middot; Goldstein / Huth / Schrimpf (brain&ndash;LLM alignment) &middot; Teyler &amp; DiScenna (hippocampal indexing) &middot; Kahneman &middot; Plato, <em>Phaedrus</em>.'
+
+export const footerHtmlCompany =
+  'THE FIXTURE AND THE PART &middot; drafted August 2026<br>' +
+  'From a conversation between Bill and a language model.<br>' +
   'Key sources named in text: Nader, Schafe &amp; LeDoux 2000 &middot; Kindt et al. &middot; Loftus &middot; McGaugh (HSAM) &middot; Luria, <em>The Mind of a Mnemonist</em> &middot; Bartol &amp; Sejnowski 2015 &middot; Goldstein / Huth / Schrimpf (brain&ndash;LLM alignment) &middot; Teyler &amp; DiScenna (hippocampal indexing) &middot; Kahneman &middot; Plato, <em>Phaedrus</em>.'
