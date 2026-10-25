@@ -420,8 +420,10 @@ export function buildTour({
             4200,
             `There is no attention to draw without a pass, so no carrier is drawn anywhere on this sheet.`,
             `The walls below are still the file’s own bytes — they are real in both modes — but the green keys, ` +
-              `the amber carriers and the landing all wait on the model. Load it above and this same tour speaks ` +
-              `this sentence’s own weights.`,
+              `the amber carriers and the landing all wait on the model. ` +
+              (COMPANY
+                ? `With a model in hand this same tour would speak this sentence’s own weights.`
+                : `Load it above and this same tour speaks this sentence’s own weights.`),
             at({ segs: l + 2, cue: l }),
           ),
         )
