@@ -48,6 +48,9 @@ Today the note is a button while the model is absent: `⟨label⟩ — load the 
   - the last stop (today: `Load the real model above and the same tour speaks this sentence’s own numbers at every stop.`):
     `With a model in hand the same tour would speak this sentence’s own numbers at every stop.`
   - the two stops that already say `With the real model in hand …`: unchanged
+- ADDED 2026-10-25 12:3x, two sites the lane's inventory missed (found by the builder), the same form as above — the lane's pick, Bill's to strike:
+  - the decoding explainer in instrument B (today ends `… load the real model and the choice opens up.`): `… with a model in hand the choice opens up.`
+  - F's closing teach-pair, the illustrative side (today ends `… load the real model and the same drawing fills with this sentence’s own numbers.`): `… with a model in hand the same drawing would fill with this sentence’s own numbers.`
 
 ## 5. Section 07 — the contrast's file card, its live line
 Today, unloaded: `load the model in section 01 and this page reads the whole file again, here, and says whether it is still the same.`
