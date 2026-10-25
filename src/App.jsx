@@ -1,5 +1,6 @@
+import { COMPANY } from './lib/company.js'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { header, sections, footerHtml, miniLegend } from './content/essay.js'
+import { header, sections, footerHtml, footerHtmlCompany, miniLegend } from './content/essay.js'
 import Tokenizer from './instruments/Tokenizer.jsx'
 import Stepper from './instruments/Stepper.jsx'
 import AttentionInspector from './instruments/AttentionInspector.jsx'
@@ -126,7 +127,7 @@ const ALERT_STATES = new Set(['differs', 'error'])
  * and announces the same change; two of them would read it twice.
  */
 function LiveLine({ lines, proof }) {
-  const line = lines[proof.state]
+  const line = lines[COMPANY && proof.state === 'unloaded' ? 'unloadedCompany' : proof.state]
   const text = line ? fillValues(line, { ...builtValues, sha: shortSha(proof.sha) }) : ''
   return (
     <div className="contrast-live-box" data-state={proof.state}>
@@ -371,7 +372,8 @@ export default function App() {
   // --- Phase 2 -----------------------------------------------------------
   // 'illustrative' is exactly the Phase 1 page. 'real' swaps every number
   // for one distilgpt2 produced, and is unreachable until the model loads.
-  const [mode, setMode] = useState('illustrative')
+  const [selectedMode, setMode] = useState('illustrative')
+  const mode = COMPANY ? 'illustrative' : selectedMode
   const [modelStatus, setModelStatus] = useState('idle')
   const [progress, setProgress] = useState({ phase: 'files', percent: 0 })
   const [backend, setBackend] = useState(null)
@@ -399,7 +401,7 @@ export default function App() {
   // rendered again for news it already has.
   const handleProof = useCallback(
     (next) =>
-      setFileProof((prev) =>
+      !COMPANY && setFileProof((prev) =>
         prev.state === next.state && prev.sha === next.sha ? prev : next,
       ),
     [],
@@ -409,7 +411,7 @@ export default function App() {
   const textRef = useRef(text)
   textRef.current = text
 
-  const isReal = mode === 'real' && modelStatus === 'ready'
+  const isReal = !COMPANY && mode === 'real' && modelStatus === 'ready'
 
   const wordTokens = useMemo(() => tokenize(text), [text])
   // Memoised because instrument D keys a reset off it: a fresh array every
@@ -484,7 +486,7 @@ export default function App() {
   // where the boundaries are, so a half-generated sequence cannot carry over.
   const handleModeChange = useCallback(
     (next) => {
-      if (next === mode) return
+      if (COMPANY || next === mode) return
       setMode(next)
       resetSequence()
       realBaseKey.current = null
@@ -496,6 +498,7 @@ export default function App() {
   )
 
   const handleLoad = useCallback(() => {
+    if (COMPANY) return
     setModelStatus('loading')
     setProgress({ phase: 'files', percent: 0 })
     loadModel((p) => setProgress(p))
@@ -1031,7 +1034,7 @@ export default function App() {
           </section>
         ))}
 
-        <Html as="div" className="foot" html={footerHtml} />
+        <Html as="div" className="foot" html={COMPANY ? footerHtmlCompany : footerHtml} />
 
         {/* The claim marks are written into the prose above and rendered as
             raw HTML, so they have no component of their own. This is the one

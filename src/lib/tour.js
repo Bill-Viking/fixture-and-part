@@ -1,3 +1,4 @@
+import { COMPANY } from './company.js'
 // Instrument F — the narrated run, and the words the drawing says about itself.
 //
 // The drawing this belongs to used to replay itself in about a second: seven
@@ -362,8 +363,10 @@ export function buildTour({
             `which carries the attention sink. Width, light and grain are that length, on one log law shared by ` +
             `all ${n} streams.`
         : `No pass has run, so the drawing has no length to draw: every stream is at one width and one light, and ` +
-            `the grain inside it is the deterministic stand-in instrument D prints. Load the real model above and ` +
-            `these become this sentence’s own numbers.`,
+            `the grain inside it is the deterministic stand-in instrument D prints. ` +
+            (COMPANY
+              ? `With a model in hand these would be this sentence’s own numbers.`
+              : `Load the real model above and these become this sentence’s own numbers.`),
       at({ segs: 1 }),
     ),
   )
@@ -555,7 +558,9 @@ export function buildTour({
         ? `Nothing above ran twice and nothing was smoothed on the way to the screen. Press play to run it again, ` +
           `step back through it, or click anything on the sheet — a carrier, a ray, a wall cell — and it will say ` +
           `what it is.`
-        : `Load the real model above and the same tour speaks this sentence’s own numbers at every stop.`,
+        : (COMPANY
+            ? `With a model in hand the same tour would speak this sentence’s own numbers at every stop.`
+            : `Load the real model above and the same tour speaks this sentence’s own numbers at every stop.`),
       at({ segs: lastSeg, carriers, bars: splash ? splash.length : 0, aperture: true, pick: true }),
     ),
   )

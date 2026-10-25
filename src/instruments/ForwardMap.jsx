@@ -1,3 +1,4 @@
+import { COMPANY } from '../lib/company.js'
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   MAP_STOPS,
@@ -2557,7 +2558,7 @@ export default function ForwardMap({
       : ''
     const transfers = !live
       ? compact
-        ? `There is no attention to draw without a pass, so no carriers are drawn. Load the real model and each block reads the hero’s own row: green tick = the key that matched, amber carrier = the weight.`
+        ? (COMPANY ? `There is no attention to draw without a pass, so no carriers are drawn. With a model in hand each block would read the hero’s own row: green tick = the key that matched, amber carrier = the weight.` : `There is no attention to draw without a pass, so no carriers are drawn. Load the real model and each block reads the hero’s own row: green tick = the key that matched, amber carrier = the weight.`)
         : `There is no attention until a pass has run, so no carrier is drawn here. With the real model in hand, each block takes the head that sends the most attention away from the first token and away from itself, and draws the hero’s own sources at or above ${TRANSFER_FLOOR}, at most 2: a green tick at the key that matched, an amber carrier whose width and light are that weight, and a brighter hero below the absorption.`
       : compact
         ? `Per block, from the head that sends the most attention away from the first token and away from itself (${heads}), the hero’s own sources at or above ${TRANSFER_FLOOR}, at most 2. Self-attention is never a transfer — it is the stream continuing. Green tick = the key that matched; the carrier’s width and light are that weight; the hero runs brighter below each absorption.${nearMiss} Carriers keep to the dark air and pass behind every other stream. The twelve squares beside an open register are lit by the share of the hero’s attention that leaves itself in each head.`
@@ -2599,8 +2600,8 @@ export default function ForwardMap({
     const SameTrace = `${sameTrace[0].toUpperCase()}${sameTrace.slice(1)}`
     const landing = !live
       ? compact
-        ? `The last position’s vector against all 50,257 words. It needs a pass — load the real model and the bars are this sentence’s own softmax.`
-        : `Where the last position’s vector meets all 50,257 words. There is no distribution without a pass, so no bar is drawn: load the real model and the bars become this sentence’s own softmax, top ${g.splashN}.`
+        ? (COMPANY ? `The last position’s vector against all 50,257 words. It needs a pass, which this copy does not run.` : `The last position’s vector against all 50,257 words. It needs a pass — load the real model and the bars are this sentence’s own softmax.`)
+        : (COMPANY ? `Where the last position’s vector meets all 50,257 words. There is no distribution without a pass, so no bar is drawn; with a model in hand the bars would be this sentence’s own softmax, top ${g.splashN}.` : `Where the last position’s vector meets all 50,257 words. There is no distribution without a pass, so no bar is drawn: load the real model and the bars become this sentence’s own softmax, top ${g.splashN}.`)
       : compact
         ? `The last position’s alone, and the last position’s stream is the one that reaches it${draw?.landingHere ? ' — the hero here' : ', dimmed — the hero is earlier'}. The ${g.splashN} bars are this pass’s own softmax over all 50,257 words. ${argmaxLine} is the machine’s own top, drawn blue; ${pickBar ? `${pickBar.token} at ${(pickBar.p * 100).toFixed(1)}%` : (nextToken ?? '—')} ${tookCompact} and carries the amber mark. ${SameTrace}`
         : `It is the last position’s alone, and the last position’s own stream is the one that reaches it — ${
@@ -2715,7 +2716,7 @@ export default function ForwardMap({
             label={
               armed
                 ? architectureNote(manifest)
-                : 'the walls are real in both modes — the fall needs the model'
+                : (COMPANY ? 'the walls are real — the fall is a schematic in this copy' : 'the walls are real in both modes — the fall needs the model')
             }
             status={modelStatus}
             progress={progress}
@@ -3608,7 +3609,7 @@ export default function ForwardMap({
               >
                 {waiting
                   ? 'the landing is waiting on this pass'
-                  : 'the landing needs the real model — load it above'}
+                  : (COMPANY ? 'the landing needs a pass — this copy runs none' : 'the landing needs the real model — load it above')}
               </text>
             )}
             {draw && !draw.landingHere ? (
@@ -3804,7 +3805,7 @@ export default function ForwardMap({
         <TeachPair
           className="teach dim"
           show={armed ? 'b' : 'a'}
-          a="the six walls are real in this mode too: every cell is one byte of that block's attention weights, read out of the file when this page was built, stretched across the middle 96% of its own window. what is not real is the fall — no model is running, so every stream is drawn at one width, the grain inside it is the deterministic stand-in instrument D prints, and there is no attention to carry and no landing to reach. load the real model and the same drawing fills with this sentence's own numbers."
+          a={`the six walls are real in this mode too: every cell is one byte of that block's attention weights, read out of the file when this page was built, stretched across the middle 96% of its own window. what is not real is the fall — no model is running, so every stream is drawn at one width, the grain inside it is the deterministic stand-in instrument D prints, and there is no attention to carry and no landing to reach. ${COMPANY ? "with a model in hand the same drawing would fill with this sentence's own numbers." : "load the real model and the same drawing fills with this sentence's own numbers."}`}
           b="one drawing, five readings, all of them real. the walls are the file's own weight bytes; a stream's width and light are the length of that token's 768-number vector at each depth; the filaments inside it are those 768 numbers grouped and averaged; a carrier is one attention weight out of the block's chosen head, read at the hero's own row; and the landing is the softmax over all 50,257 words at the last position. the head rule, the floor under a transfer and both normalisations are stated in the legend, because a drawing that does not say what it is doing is a picture rather than an instrument."
         />
       </div>

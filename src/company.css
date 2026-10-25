@@ -336,3 +336,35 @@ html[data-look="company"] .k { color: var(--moving-ink); }
 html[data-look="company"] :is(.wrap > header h1, section > h2, section > p,
   .callout-body, .duo .card > p:not(.card-kicker):not(.contrast-live), .foot
 ) { overflow-wrap: anywhere; }
+
+/* Two approved sentences, each on its own row. Reserve their wrapped lines
+   in the hint's mono face: four lines wide, seven on phones, nine below 390.
+   Part B measures the actual fit with fonts loaded and with the local fallback. */
+html[data-look="company"] .mode-illustrative {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+html[data-look="company"] .mode-load.is-company {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  justify-content: center;
+  gap: 4px;
+  height: 68px;
+}
+html[data-look="company"] .mode-load.is-company .mode-hint {
+  flex: 0 0 auto;
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  line-height: 16px;
+}
+@media (max-width: 640px) {
+  html[data-look="company"] .mode-load.is-company { height: 116px; }
+}
+@media (max-width: 389px) {
+  html[data-look="company"] .mode-load.is-company { height: 148px; }
+}
