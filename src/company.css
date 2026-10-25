@@ -1,6 +1,6 @@
-/* Query-gated sketch: document furniture and section 02's instrument chrome.
-   The drawing keeps its own dark ground, paints, mono metrics and geometry. */
-html[data-look="company"] {
+/* Company dress only; the build flag loads this sheet before the first render.
+   Paper tokens live on body: E's canvas reads the original root palette. */
+html[data-look="company"] body {
   --paper: #FFFFFF;
   --card: #FFFFFF;
   --sunk: #F4F7FB;
@@ -8,7 +8,6 @@ html[data-look="company"] {
   --muted: #54606E;
   --hair: #D5DEE8;
   --rule: #7E8792;
-
   --frozen: #005FB0;
   --frozen-dim: #0072CE;
   --frozen-tint: #EAF3FB;
@@ -18,21 +17,14 @@ html[data-look="company"] {
   --moving-on: #FFFFFF;
   --keys: #23653D;
   --keys-tint: #EAF3ED;
-
   --display: 'Barlow', 'Calibri', Arial, sans-serif;
   --body: 'Barlow', 'Calibri', Arial, sans-serif;
   --company-blue: #0072CE;
+  font-family: var(--body);
+  font-weight: 300;
 }
 
-/* Paper needs a darker amber; the existing dark instruments need their
-   original luminous amber and dark reverse ink. No drawing selector changes. */
-html[data-look="company"] .screen {
-  --moving: #F2B705;
-  --moving-on: #14161A;
-}
-
-/* The masthead is the existing title and legend, treated as a letterhead.
-   Its one blue rule separates the page's key from the numbered sections. */
+/* 01 — The masthead, legend and glossary form a quiet ruled letterhead. */
 html[data-look="company"] .wrap > header {
   padding-top: 56px;
   padding-bottom: 28px;
@@ -40,27 +32,45 @@ html[data-look="company"] .wrap > header {
   font-family: var(--body);
   font-weight: 300;
 }
-
 html[data-look="company"] .wrap > header h1 {
   font-size: clamp(38px, 6vw, 54px);
   font-weight: 600;
   line-height: 1.08;
   letter-spacing: -0.025em;
 }
-
 html[data-look="company"] .wrap > header .sub {
-  color: var(--ink);
+  color: var(--muted);
   line-height: 1.5;
 }
-
 html[data-look="company"] .wrap > header .legend {
   padding-top: 18px;
   border-top: 1px solid var(--hair);
+  font-family: var(--mono);
+  font-weight: 400;
 }
+html[data-look="company"] .mini-legend {
+  border-color: var(--hair);
+  border-radius: 0;
+  font-weight: 400;
+  box-shadow: none;
+}
+html[data-look="company"] :is(.glossary-strip, .glossary, .glossary-row, .glossary-caption) {
+  font-family: var(--body);
+  font-weight: 300;
+  border-color: var(--hair);
+  border-radius: 0;
+}
+html[data-look="company"] .glossary-row {
+  background: linear-gradient(var(--hair), var(--hair)) left bottom / 100% 1px no-repeat;
+}
+html[data-look="company"] .glossary dt {
+  font-family: var(--mono);
+  font-weight: 400;
+}
+html[data-look="company"] .glossary-caption { color: var(--muted); }
 
-/* The sketch's prose and heading grammar stop at section 02. Its instrument
-   labels and live readouts retain the existing mono face and reservations. */
-html[data-look="company"] #s02 > .eyebrow {
+/* 02 — Every numbered section shares the sketch's heading and prose grammar. */
+html[data-look="company"] section > .eyebrow {
   font-family: var(--display);
   font-size: 12.5px;
   font-weight: 800;
@@ -68,8 +78,7 @@ html[data-look="company"] #s02 > .eyebrow {
   color: var(--frozen);
   margin-bottom: 10px;
 }
-
-html[data-look="company"] #s02 > h2 {
+html[data-look="company"] section > h2 {
   font-size: clamp(27px, 3.5vw, 32px);
   font-weight: 600;
   line-height: 1.22;
@@ -78,15 +87,37 @@ html[data-look="company"] #s02 > h2 {
   margin-bottom: 24px;
   border-bottom-color: var(--hair);
 }
-
-html[data-look="company"] #s02 > p {
+html[data-look="company"] section > :is(p, ul, ol) {
   font-family: var(--body);
   font-size: 18px;
   font-weight: 300;
   line-height: 1.65;
 }
+html[data-look="company"] section > :is(ul, ol) { list-style-position: inside; }
+html[data-look="company"] :is(section > p, section > ul, section > ol, .callout, .duo) strong {
+  font-weight: 600;
+}
+html[data-look="company"] :is(section > p, section > ul, section > ol, .callout, .duo) em {
+  font-family: var(--body);
+  font-weight: 300;
+  font-style: italic;
+}
+html[data-look="company"] :is(section > p, .callout) code { border-radius: 0; }
+html[data-look="company"] .duo .card {
+  font-family: var(--body);
+  font-weight: 300;
+  border-radius: 0;
+  border-color: var(--hair);
+  background: var(--sunk);
+}
+html[data-look="company"] .duo .card h3 { font-weight: 600; }
+html[data-look="company"] .card :is(.card-kicker, .contrast-live, .contrast-live-ghost) {
+  font-family: var(--mono);
+  font-weight: 400;
+}
 
-html[data-look="company"] #s02 .callout {
+/* 03 — All callouts use a square paper panel with their warm or cool edge. */
+html[data-look="company"] .callout {
   font-family: var(--body);
   font-weight: 300;
   background: var(--sunk);
@@ -94,90 +125,214 @@ html[data-look="company"] #s02 .callout {
   border-left-color: var(--moving);
   border-radius: 0;
 }
-
-html[data-look="company"] #s02 .callout.cool {
-  border-left-color: var(--company-blue);
-}
-
-html[data-look="company"] #s02 .callout .lbl {
+html[data-look="company"] .callout.cool { border-left-color: var(--company-blue); }
+html[data-look="company"] .callout .lbl {
   font-family: var(--display);
   font-weight: 800;
 }
+html[data-look="company"] :is(.callout-body, .callout p) {
+  font-family: var(--body);
+  font-size: 18px;
+  font-weight: 300;
+  line-height: 1.65;
+}
 
-/* The section's two instruments share a document frame. Only F receives
-   the detailed control treatment; no other section is a completed sketch. */
-html[data-look="company"] #s02 .instrument {
+/* 04 — Figure frames and captions are ruled; the loop's SVG paints stay its own. */
+html[data-look="company"] figure { border-radius: 0; }
+html[data-look="company"] figcaption {
+  border-top: 1px solid var(--hair);
+  padding-top: 12px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-weight: 400;
+}
+
+/* 05 — Claim marks keep their named kinds; notes and info tags are flat on white. */
+html[data-look="company"] :is(.claim-mark, .info-tag, .claim-pop, .info-pop) {
+  border-radius: 0;
+  box-shadow: none;
+  font-family: var(--mono);
+  font-weight: 400;
+}
+html[data-look="company"] .claim-mark {
+  color: var(--keys);
+  text-decoration-color: currentColor;
+}
+html[data-look="company"] .claim-mark[aria-label^="theory:"] { color: var(--frozen); }
+html[data-look="company"] .claim-mark[aria-label^="analogy:"] { color: var(--moving-ink); }
+html[data-look="company"] .claim-mark[aria-expanded="true"] { background: var(--keys-tint); }
+html[data-look="company"] .claim-mark[aria-label^="theory:"][aria-expanded="true"] {
+  background: var(--frozen-tint);
+}
+html[data-look="company"] .claim-mark[aria-label^="analogy:"][aria-expanded="true"] {
+  background: var(--moving-tint);
+}
+html[data-look="company"] .claim-mark:is(:hover, :focus-visible) { color: var(--ink); }
+html[data-look="company"] :is(.info-tag, .info-pop, .claim-pop) {
+  border-color: var(--hair);
+  background: var(--card);
+}
+html[data-look="company"] .info-tag[aria-expanded="true"] {
+  border-color: var(--frozen);
+  background: var(--frozen);
+  color: #FFFFFF;
+}
+html[data-look="company"] .info-pop-title { color: var(--frozen); }
+html[data-look="company"] .claim-pop .info-pop-title { color: var(--keys); }
+html[data-look="company"] .claim-pop[aria-label^="THEORY"] .info-pop-title { color: var(--frozen); }
+html[data-look="company"] .claim-pop[aria-label^="ANALOGY"] .info-pop-title { color: var(--moving-ink); }
+html[data-look="company"] .claim-sources {
+  font-family: var(--mono);
+  font-weight: 400;
+}
+html[data-look="company"] .claim-sources li {
+  background: linear-gradient(var(--hair), var(--hair)) left top / 100% 1px no-repeat;
+}
+
+/* 06 — Every instrument has the same document frame; readout reservations stay intact. */
+html[data-look="company"] .instrument {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-weight: 400;
   border-radius: 0;
   border-color: var(--rule);
 }
-
-html[data-look="company"] #s02 .inst-head {
+html[data-look="company"] .inst-head {
   background: var(--sunk);
   border-bottom-color: var(--hair);
 }
-
-html[data-look="company"] #s02 .inst-eyebrow {
+html[data-look="company"] .inst-eyebrow {
   font-family: var(--display);
   font-weight: 800;
   letter-spacing: 0.14em;
 }
-
-html[data-look="company"] #s02 .inst-title {
+html[data-look="company"] :is(.inst-title, .inst-title-tail) {
+  font-family: var(--display);
   font-weight: 600;
   letter-spacing: 0;
 }
-
-html[data-look="company"] #s02 .inst-purpose {
+html[data-look="company"] .inst-purpose {
   font-family: var(--body);
-  font-size: 15px;
-  font-weight: 400;
-  line-height: 21px;
+  font-weight: 300;
 }
+html[data-look="company"] .inst-note { border-radius: 0; }
+html[data-look="company"] button.inst-note:hover { background: var(--moving-tint); }
+html[data-look="company"] .inst-body { background: var(--card); }
+html[data-look="company"] .inst-reading { color: var(--muted); }
 
-html[data-look="company"] #s02 .inst-note {
-  border-radius: 0;
-}
-
-html[data-look="company"] #s02 figcaption {
-  border-top: 1px solid var(--hair);
-  padding-top: 12px;
-  color: var(--muted);
-}
-
-html[data-look="company"] #inst-forward-figure :is(.btn, .mr-chip, .mr-open) {
+/* 07 — Controls and file chrome are square, with solid blue selections and hairline rows. */
+html[data-look="company"] :is(
+  .btn, .chip, .chip-btn, .mode-bar, .mode-seg, .mode-btn, .text-input,
+  .token-pill, .query-token, .seq-box, .attn-sel select,
+  .kv-empty, .kv-die, .kv-vec, .file-list, .file-row, .file-bar, .file-curve,
+  .mr-chip, .mr-open
+) {
   border-radius: 0;
   box-shadow: none;
 }
-
-html[data-look="company"] #inst-forward-figure .mr-chip.is-on {
+html[data-look="company"] :is(.mode-bar, .kv-inspector, .file-proof:not(.is-alert)) {
+  border-color: var(--hair);
+}
+html[data-look="company"] :is(.file-list, .file-curve, .kv-empty) {
+  border-color: var(--hair);
+  background: var(--sunk);
+}
+html[data-look="company"] .file-row { border-bottom-color: var(--hair); }
+html[data-look="company"] :is(.btn-primary, .btn-on, .mode-btn.is-on,
+  .mr-chip.is-on, .mr-play[aria-pressed="true"], .query-token.is-query, .file-row.is-on
+) {
   background: var(--frozen);
   border-color: var(--frozen);
-  color: var(--card);
+  color: #FFFFFF;
+  box-shadow: none;
 }
-
-/* Selection and running state are visible even when the pointer is absent.
-   Inset rules don't consume any of the reserved caption or readout space. */
-html[data-look="company"] #inst-forward-figure .mr-play {
-  color: var(--frozen);
-  border-color: var(--frozen);
-  font-weight: 500;
-}
-
-html[data-look="company"] #inst-forward-figure .mr-play[aria-pressed="true"] {
-  color: var(--card);
+html[data-look="company"] :is(.btn-primary, .btn-on):hover:not(:disabled),
+html[data-look="company"] :is(.mode-btn.is-on, .mr-chip.is-on, .query-token.is-query, .file-row.is-on):hover {
   background: var(--frozen);
+  border-color: var(--frozen);
+  color: #FFFFFF;
 }
-
-html[data-look="company"] #inst-forward-figure .mr-docent {
+html[data-look="company"] .file-row.is-on :is(
+  .file-row-name, .file-row-shape, .file-row-type, .file-row-bytes, .file-row-note
+) { color: #FFFFFF; }
+html[data-look="company"] .chip-btn.is-sel {
+  background: #005FB0;
+  border-color: #005FB0;
+  color: #FFFFFF;
+  box-shadow: none;
+}
+html[data-look="company"] .mr-play { color: var(--frozen); border-color: var(--frozen); }
+html[data-look="company"] .mr-play[aria-pressed="true"] { color: #FFFFFF; }
+html[data-look="company"] .mr-docent {
   background: var(--sunk);
   border-top-color: var(--company-blue);
   border-bottom-color: var(--hair);
 }
-
-html[data-look="company"] #inst-forward-figure .map-readout-row {
-  box-shadow: inset 0 1px var(--hair);
+html[data-look="company"] .map-readout-row {
+  background: linear-gradient(var(--hair), var(--hair)) left top / 100% 1px no-repeat;
 }
+html[data-look="company"] :is(.mode-hint, .mode-note, .mode-manifest,
+  .kv-note, .kv-stage-label, .kv-die-note, .kv-prov, .file-bar-invite, .file-bar-key,
+  .file-readout-arith
+) { color: var(--muted); }
+html[data-look="company"] .mode-hint.is-error { color: var(--alert-ink); }
+html[data-look="company"] :is(.file-bar-readout, .file-readout, .file-curve-stat,
+  .file-curve-pick-line, .mr-caption
+) { color: var(--ink); }
 
-html[data-look="company"] #inst-forward-figure .map-screen {
+/* 08 — Drawings retain the original palette, fonts and geometry, including the loop and byte ramp. */
+html[data-look="company"] :is(
+  .screen, .map-screen, .file-canvas-box, .loop-svg,
+  .file-seg, .file-ticks, .file-curve svg, .file-curve-ticks,
+  .cand-track, .budget-track
+) {
+  --paper: #F4F5F7;
+  --card: #FFFFFF;
+  --sunk: #EBEDF0;
+  --ink: #14161A;
+  --muted: #585F6A;
+  --hair: #DCDFE4;
+  --frozen: #1E5AA8;
+  --frozen-dim: #5588C4;
+  --frozen-tint: #E8EFF8;
+  --moving: #F2B705;
+  --moving-ink: #7A5900;
+  --moving-tint: #FCF3D8;
+  --moving-on: #14161A;
+  --keys: #2C7539;
+  --keys-tint: #E1ECE3;
+  --display: 'Space Grotesk', sans-serif;
+  font-weight: 400;
+}
+html[data-look="company"] :is(.screen, .map-screen, .file-canvas-box) { border-radius: 0; }
+
+/* 09 — The harness readout is a white table with a blue header and ruled rows. */
+html[data-look="company"] .harness-readout {
+  background: var(--card);
+  border-color: var(--hair);
   border-radius: 0;
+  font-family: var(--mono);
+  font-weight: 400;
 }
+html[data-look="company"] .hr-title { background: var(--frozen); color: #FFFFFF; }
+html[data-look="company"] .hr-row {
+  background: linear-gradient(var(--hair), var(--hair)) left bottom / 100% 1px no-repeat;
+}
+html[data-look="company"] :is(.hr-label, .hr-note) { color: var(--muted); }
+html[data-look="company"] .hr-value { color: var(--ink); }
+
+/* 10 — The footer is muted body type above the page's closing hairline. */
+html[data-look="company"] .foot {
+  font-family: var(--body);
+  font-weight: 300;
+  color: var(--muted);
+  border-top-color: var(--hair);
+}
+
+/* 11 — Small paper text uses the dark blue or amber inks, never the blue fill token. */
+html[data-look="company"] :is(.s, .counter, .blend, .file-eyebrow) { color: var(--frozen); }
+html[data-look="company"] .k { color: var(--moving-ink); }
+
+/* 12 — Static prose may break long words; measured instrument boxes keep their own rules. */
+html[data-look="company"] :is(.wrap > header h1, section > h2, section > p,
+  .callout-body, .duo .card > p:not(.card-kicker):not(.contrast-live), .foot
+) { overflow-wrap: anywhere; }
