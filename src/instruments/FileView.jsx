@@ -1735,7 +1735,7 @@ export default function FileView({
           <span className="file-page">
             {!live && pages > 1
               ? COMPANY
-                ? `window ${page + 1} of ${count(pages)} — this copy holds this window only`
+                ? `window ${page + 1} of ${count(pages)} — fixed in this copy`
                 : `window ${page + 1} of ${count(pages)} — load the model to move it`
               : `window ${page + 1} of ${count(pages)}`}
           </span>

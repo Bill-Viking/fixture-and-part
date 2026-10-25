@@ -24,9 +24,26 @@ const { provenance } = JSON.parse(
   readFileSync(new URL('./src/content/fileFacts.json', import.meta.url), 'utf8'),
 )
 
+// The company entry loads these faces after its local dress, under one deadline.
+// Keep the preconnects and leave the consumer HTML entirely untouched.
+const companyFonts = {
+  name: 'company-nonblocking-fonts',
+  apply: 'build',
+  transformIndexHtml: {
+    order: 'pre',
+    handler(html) {
+      const pageFonts = /<link\b(?=[^>]*\brel="stylesheet")(?=[^>]*\bhref="https:\/\/fonts\.googleapis\.com\/css2\?family=Space\+Grotesk[^"]*")[^>]*>/g
+      if (html.match(pageFonts)?.length !== 1) {
+        throw new Error('Expected exactly one page-font stylesheet in index.html')
+      }
+      return html.replace(pageFonts, '')
+    },
+  },
+}
+
 export default defineConfig(() => ({
   base: process.env.VITE_BASE || '/',
-  plugins: [react()],
+  plugins: [react(), ...(process.env.VITE_COMPANY === '1' ? [companyFonts] : [])],
   define: {
     __FILE_PROVENANCE__: JSON.stringify({
       sha256: provenance.sha256,
