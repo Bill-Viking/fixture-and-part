@@ -9,7 +9,7 @@ export const explainers = {
     body: 'the list below is every tensor in the model — a tensor being a named grid of numbers. the file is a header naming each grid and its shape, and then all the numbers, one after another. the big grids are stored as single bytes rather than as full decimals, with one multiplier per grid, so a weight is recovered as multiplier × (byte − zero point). 82 of the file’s 83.5 megabytes are the numbers.',
   },
   fileHeader: {
-    title: 'the file, drawn to scale',
+    title: 'the bar — the whole file, drawn to scale',
     body: 'the bar is the whole file left to right, byte for byte, in the order it stores things. the plan of the calculation comes first — 1703 steps saying what multiplies what — and everything after it is weights, with the 50,257-row word table taking nearly half of the file on its own. a piece too small to be a pixel wide is not widened to make it visible; it gets a tick above the bar instead.',
   },
   fileBlob: {
