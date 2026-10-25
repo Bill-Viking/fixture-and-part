@@ -26,7 +26,8 @@ Today the note is a button while the model is absent: `⟨label⟩ — load the 
 - The proof sentence under the window (today: `these numbers were read from the model file on ⟨date⟩, when this page was built. load the model and the page reads the same file again, right here.`):
   `these numbers were read from the model file on ⟨date⟩, when this page was built. this copy does not read the file again.`
 - The window line (today: `window ⟨15⟩ of ⟨2,095⟩ — load the model to move it`):
-  `window ⟨15⟩ of ⟨2,095⟩ — this copy holds this window only`
+  `window ⟨15⟩ of ⟨2,095⟩ — fixed in this copy`
+  (AMENDED 2026-10-25 13:0x: the first form, `this copy holds this window only`, was cut off with an ellipsis at 390 and 360 — 334 px needed, 320 and 290 available; the new form is 39 characters, shorter than today's 46, which fits at every width; the lane's pick, Bill's to strike)
 - The source word over the readout stays `from the build`.
 
 ## 4. Instrument F — the forward pass
@@ -50,7 +51,8 @@ Today the note is a button while the model is absent: `⟨label⟩ — load the 
   - the two stops that already say `With the real model in hand …`: unchanged
 - ADDED 2026-10-25 12:3x, two sites the lane's inventory missed (found by the builder), the same form as above — the lane's pick, Bill's to strike:
   - the decoding explainer in instrument B (today ends `… load the real model and the choice opens up.`): `… with a model in hand the choice opens up.`
-  - F's closing teach-pair, the illustrative side (today ends `… load the real model and the same drawing fills with this sentence’s own numbers.`): `… with a model in hand the same drawing would fill with this sentence’s own numbers.`
+  - F's closing teach-pair, the illustrative side (today ends `… load the real model and the same drawing fills with this sentence's own numbers.`): `… with a model in hand the same drawing would fill with this sentence's own numbers.` (a straight apostrophe, as the rest of that paragraph in the source has — the proof read it so, 2026-10-25 12:5x)
+- ADDED 2026-10-25 13:0x, found by the proof (the tour's stop 5 of 19, the one with no pass; today ends `… the amber carriers and the landing all wait on the model. Load it above and this same tour speaks this sentence’s own weights.`): `… the amber carriers and the landing all wait on the model. With a model in hand this same tour would speak this sentence’s own weights.`
 
 ## 5. Section 07 — the contrast's file card, its live line
 Today, unloaded: `load the model in section 01 and this page reads the whole file again, here, and says whether it is still the same.`
