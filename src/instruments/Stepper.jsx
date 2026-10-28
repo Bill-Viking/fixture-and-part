@@ -447,7 +447,7 @@ export default function Stepper({
       </div>
 
       <figcaption>
-        FIG.4 — Each STEP appends exactly one row. The sweep is the new
+        FIG.6 — Each STEP appends exactly one row. The sweep is the new
         token&rsquo;s query reading every entry already staged.
       </figcaption>
     </figure>

@@ -154,17 +154,20 @@ src/content/claimNotes.js          the notes behind the essay's 28 claim marks (
                                    claim rests on, and its sources; driven by
                                    components/ClaimNotes.jsx, mounted once
 src/content/fileFacts.json         the model file, read ahead of time
+src/content/figFacts.json          the two figures, baked from the file and pass
 src/instruments/FileView.jsx       E — the file            FIG.1     (section 01)
 src/instruments/Tokenizer.jsx      A — tokenizer strip     FIG.2     (section 02)
+src/figures/LadderFigure.jsx       FIG.3 — the ladder (section 02)
 src/instruments/ForwardMap.jsx     F — the forward pass,
-                                       live                FIG.3     (section 02)
+                                       live                FIG.4     (section 02)
+src/figures/LedgerFigure.jsx       FIG.5 — the ledger (section 03)
 src/instruments/Stepper.jsx        B — forward pass + KV rack
-                                                           FIG.4     (section 03)
+                                                           FIG.6     (section 03)
 src/instruments/AttentionInspector.jsx
-                                   C — attention inspector FIG.5     (section 04)
+                                   C — attention inspector FIG.7     (section 04)
 src/instruments/GlassPass.jsx      D — residual stream + logit lens
-                                                           FIG.6     (section 04)
-src/figures/LoopFigure.jsx         FIG.7 — the loop (section 10)
+                                                           FIG.8     (section 04)
+src/figures/LoopFigure.jsx         FIG.9 — the loop (section 10)
 src/figures/HarnessReadout.jsx     the harness, read at build (section 10)
 src/lib/forwardMap.js              F — the architecture, band by band, and the
                                    three scalars per pass the drawing moves on

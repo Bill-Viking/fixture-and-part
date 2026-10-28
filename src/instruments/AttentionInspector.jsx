@@ -289,7 +289,7 @@ export default function AttentionInspector({
       </div>
 
       <figcaption>
-        FIG.5 — One head&rsquo;s view of one lookup. Softmax forces the weights
+        FIG.7 — One head&rsquo;s view of one lookup. Softmax forces the weights
         to a budget of 1.0.
       </figcaption>
     </figure>

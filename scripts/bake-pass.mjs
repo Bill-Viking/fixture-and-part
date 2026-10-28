@@ -9,6 +9,7 @@ import { gzipSync } from 'node:zlib'
 import { AutoTokenizer, env } from '@huggingface/transformers'
 import { InferenceSession, Tensor } from 'onnxruntime-node'
 import { PROMOTED_OUTPUTS, REAL_HIDDEN, displayToken, runPass, withAttentionOutputs } from '../src/lib/passCore.js'
+import { feedFor, tensorData, KV_LAYER } from '../src/lib/passCore.js'
 import { DEFAULT_SENTENCE } from '../src/lib/toyModel.js'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -142,10 +143,104 @@ try {
   const json = `${JSON.stringify(packet)}\n`
   await writeFile(resolve(ROOT, 'src/content/passFacts.json'), json)
   await line(`src/content/passFacts.json · ${Buffer.byteLength(json)} bytes · gzip ${gzipSync(json).length} bytes`)
+
+  // A separate, small packet for the static figures. The pass packet above
+  // and its writes are unchanged; neither figure imports that large packet.
+  phase = 'the figures'
+  const file = JSON.parse(await readFile(resolve(ROOT, 'src/content/fileFacts.json'), 'utf8'))
+  const heroIndex = 4
+  const hero = { index: heroIndex, token: run.tokens[heroIndex], id: run.ids[heroIndex] }
+  if (hero.id !== 340) throw new Error(`unexpected hero id: ${hero.id}`)
+  const tensorFacts = (name) => {
+    const tensor = file.manifest.tensors.find((t) => t.name === name)
+    const stem = name.replace(/_quantized$/, '')
+    const scalar = (suffix) => file.manifest.tensors.find((t) => t.name === `${stem}_${suffix}`).value
+    const { row0, col0, rows, cols, base64 } = file.windows[name]
+    return {
+      rows: tensor.dims[0], cols: tensor.dims[1], dtype: tensor.dtype,
+      scale: scalar('scale'), zeroPoint: scalar('zero_point'), bytes: tensor.byteLength,
+      window: { row0, col0, rows, cols, base64 },
+    }
+  }
+  const wte = tensorFacts('transformer.wte.weight_quantized')
+  const byteWindow = Buffer.from(wte.window.base64, 'base64')
+  const rowOffset = (hero.id - wte.window.row0) * wte.window.cols
+  wte.heroRowFirst6Bytes = Array.from(byteWindow.subarray(rowOffset, rowOffset + run.embeddings[heroIndex].length))
+  wte.heroRowFirst6 = wte.heroRowFirst6Bytes.map((q) => (q - wte.zeroPoint) * wte.scale)
+  if (wte.heroRowFirst6.some((v, i) => Math.abs(v - packet.run.embeddings[heroIndex][i]) > 1e-6)) {
+    throw new Error('the word-table bytes do not agree with the pass embedding')
+  }
+  const heroRow = (stop) => stop.subarray(heroIndex * REAL_HIDDEN, (heroIndex + 1) * REAL_HIDDEN)
+  const length = (row) => Math.sqrt(row.reduce((sum, v) => sum + v * v, 0))
+  const wallName = 'transformer.h.0.attn.c_attn.weight_quantized'
+  const readRack = async (input) => {
+    const outputs = await session.run(feedFor(PassTensor, input))
+    const rack = {}
+    for (const [short, suffix] of [['k', 'key'], ['v', 'value']]) {
+      const tensor = outputs[`present.${KV_LAYER}.${suffix}`]
+      const [batch, heads, positions, width] = tensor.dims
+      if (batch !== 1 || positions !== input.length || heads * width !== REAL_HIDDEN) {
+        throw new Error(`unexpected rack shape: ${tensor.dims}`)
+      }
+      const data = await tensorData(tensor)
+      // [batch, head, position, dimension] → one full-width row per position.
+      rack[short] = Array.from({ length: positions }, (_, i) =>
+        Array.from({ length: heads * width }, (_, d) =>
+          data[(Math.floor(d / width) * positions + i) * width + d % width]))
+      rack.headWidth = width
+    }
+    for (const tensor of Object.values(outputs)) tensor.dispose?.()
+    return rack
+  }
+  const after = await readRack(ids)
+  const before = await readRack(ids.slice(0, -1))
+  const moved = { k: [], v: [], max: 0, maxAbsValue: 0 }
+  // ASSUMES: causal masking prevents semantic reads of later tokens, but this
+  // export dynamically quantizes whole-sequence activations. A longer prefix
+  // may change rounding in old rows; measure all heads, never assume zero drift.
+  for (const role of ['k', 'v']) {
+    moved[role] = before[role].map((row, i) => compareRows(row, after[role][i]))
+    moved.max = Math.max(moved.max, ...moved[role])
+    for (let i = 0; i < before[role].length; i++) {
+      for (const row of [before[role][i], after[role][i]]) {
+        for (const v of row) moved.maxAbsValue = Math.max(moved.maxAbsValue, Math.abs(v))
+      }
+    }
+    if (run[role].some((row, i) => row.some((v, d) => v !== after[role][i][d]))) {
+      throw new Error('the repeated full-width pass differs from the baked preview')
+    }
+  }
+  const figFacts = {
+    readAt: new Date().toISOString(), sentence: DEFAULT_SENTENCE, tokens: run.tokens, ids: run.ids,
+    hero, wte,
+    rim: { heroFirst6: Array.from(heroRow(run.residuals[0]).subarray(0, run.embeddings[heroIndex].length)), heroLength: length(heroRow(run.residuals[0])) },
+    stream: { heroLengths: run.residuals.map((stop) => length(heroRow(stop))) },
+    wall: { name: wallName, ...tensorFacts(wallName) },
+    rack: {
+      layer: KV_LAYER, head: 0, headWidth: after.headWidth, k: run.k, v: run.v,
+      before: Object.fromEntries(['k', 'v'].map((role) => [role, before[role].map((row) => row.slice(0, run[role][0].length))])),
+      moved,
+    },
+  }
+  const figJson = `${JSON.stringify(figFacts)}\n`
+  if (Buffer.byteLength(figJson) >= 16 * 1024) throw new Error('figFacts exceeds its 16 KB budget')
+  await writeFile(resolve(ROOT, 'src/content/figFacts.json'), figJson)
+  await line(`src/content/figFacts.json · ${Buffer.byteLength(figJson)} bytes · hero ${hero.id} verified · largest rack move ${moved.max} · values up to ${moved.maxAbsValue}`)
 } catch (error) {
   await line(`STOP · ${error.message}`)
   process.exitCode = 1
 } finally {
   clearInterval(heartbeat)
   if (session) await session.release()
+}
+
+// Kept pure so the node proof can exercise the actual comparison in isolation.
+function compareRows(before, after) {
+  if (before.length !== after.length || before.length === 0) throw new Error('rack row widths differ or are empty')
+  let max = 0
+  for (let d = 0; d < before.length; d++) {
+    if (!Number.isFinite(before[d]) || !Number.isFinite(after[d])) throw new Error('non-finite rack value')
+    max = Math.max(max, Math.abs(after[d] - before[d]))
+  }
+  return max
 }

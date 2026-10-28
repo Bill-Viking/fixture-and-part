@@ -19,6 +19,7 @@ export const header = {
   glossary: [
     { word: 'FIXTURE', role: 'frozen', gloss: 'the weights: the file, machined once, never changed by use' },
     { word: 'PART', role: 'moving', gloss: 'your sentence\'s numbers in flight, one stream per token' },
+    { word: 'TENSOR', role: null, gloss: 'a grid of numbers in any number of dimensions: one row is a vector, rows × columns a matrix; the file\'s weights are tensors, frozen, and the stream\'s vectors are tensors too, moving' },
     { word: 'TOKEN', role: null, gloss: 'one piece of text, a word or a fragment of one' },
     { word: 'EMBED', role: null, gloss: 'to embed a piece is to look its id up in the word table: a row comes out, and that row is the piece\'s starting vector' },
     { word: 'PASS', role: null, gloss: 'one fall of the whole sentence through the fixture, one word out' },
@@ -82,6 +83,7 @@ export const sections = [
         html: 'Take &ldquo;it&rdquo; from the sentence below. Its starting vector is the lit row from section 01, and this page follows that one word from here.',
       },
       { type: 'instrument', name: 'tokenizer' },
+      { type: 'figure', name: 'ladder' },
       { type: 'instrument', name: 'forward' },
     ],
   },
@@ -103,6 +105,7 @@ export const sections = [
         type: 'p',
         html: 'Would it be worth letting them change? Machines that can exist. <button type="button" class="claim-mark" data-claim="reinterpret">EVIDENCE</button> An encoder like BERT lets every token see the whole sentence, so an early &ldquo;bank&rdquo; learns which bank it was — but it cannot continue a text. An encoder–decoder like T5 reads the input whole and writes its answer forward; a prefix model does the same inside one stack. The diffusion language models of 2025 write every token at once and revise all of them over several steps, so early words really do change in light of later ones; the price is the rack itself — no append-only cache, every step touching the whole text again. What the freeze buys is perfect inheritance, generation that costs one position per step instead of the whole text, and a record that cannot be rewritten. What it costs is a rack that grows with every token of a life and is never consolidated, compressed or corrected — which is exactly the move the next two sections give the brain: check the memory out, edit it, write it back, forget most of it. The brain pays for that move in fidelity; a memory that is rewritten is a memory that can be wrong. Neither design is the better one. One keeps everything and cannot reconsider; the other reconsiders and cannot keep everything.',
       },
+      { type: 'figure', name: 'ledger' },
       {
         type: 'p',
         html: 'On the rack below, &ldquo;it&rdquo; is the fifth entry staged, and the entries above it are all it can read.',

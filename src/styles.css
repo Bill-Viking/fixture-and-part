@@ -422,7 +422,7 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 .inst-body{padding:18px 16px 20px;}
 .instrument figcaption{padding:0 16px 14px;margin-top:0;}
 
-/* The head's title with a "?" badge after it. Only FIG.7 has one. The
+/* The head's title with a "?" badge after it. Only FIG.9 has one. The
    badge rides with the title's last word, so it can never wrap onto a line
    of its own. It sits 1px low rather than the badge's usual 3px: at -3px it
    pushed the title's 24px line to 25.5px, at -1px the title measures 24px a
@@ -430,7 +430,7 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 .inst-title-tail{white-space:nowrap;}
 .inst-title-tail .info-tag{margin-left:8px;vertical-align:-1px;}
 
-/* --- FIG.7, the loop: a drawing, not an instrument ----------------------- */
+/* --- FIG.9, the loop: a drawing, not an instrument ----------------------- */
 
 /* Two layouts of one drawing, each with a fixed viewBox chosen from the
    breakpoint alone, and each SVG given its viewBox's own ratio here, so its
@@ -460,6 +460,38 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 .lf-label.is-moving{fill:var(--moving-ink);}
 .lf-note{fill:var(--muted);}
 .lf-word{fill:var(--ink);}
+
+/* --- FIG.3 / FIG.5: file-backed drawings, fixed boxes like the loop ------ */
+.ladder-svg,.ledger-svg{display:block;width:100%;height:auto;overflow:visible;}
+.ladder-wide{aspect-ratio:680/700;}
+.ledger-wide{aspect-ratio:680/1260;}
+.ladder-stacked{aspect-ratio:300/1540;}
+.ledger-stacked{aspect-ratio:300/1930;}
+.ladder-stacked,.ledger-stacked{display:none;max-width:360px;margin:0 auto;}
+@media(max-width:640px){
+  .ladder-wide,.ledger-wide{display:none;}
+  .ladder-stacked,.ledger-stacked{display:block;}
+}
+.ff-frame,.ff-panel{fill:none;stroke:var(--hair);stroke-width:1;}
+.ff-frozen{fill:var(--frozen-tint);stroke:var(--frozen);stroke-width:1;}
+.ff-moving{fill:var(--moving);stroke:var(--moving-ink);stroke-width:0.5;}
+.ff-byte-ground{fill:var(--screen);}
+.ff-hero-row{fill:none;stroke:var(--moving);stroke-width:1.5;}
+.ff-window-mark{fill:none;stroke:var(--frozen);stroke-width:0.5;}
+.ff-guide{fill:none;stroke:var(--muted);stroke-width:0.75;}
+.ff-arrow{fill:none;stroke:var(--ink);stroke-width:1;stroke-linejoin:round;}
+.ff-head{fill:var(--ink);}
+.ff-label,.ff-note,.ff-value,.ff-token,.ff-role,.ff-move{font-family:var(--mono);font-weight:400;}
+.ff-label,.ff-value,.ff-token,.ff-move{fill:var(--ink);}
+.ff-label,.ff-token{font-weight:500;}
+.ff-note{fill:var(--muted);}
+.ff-role.is-k{fill:var(--keys);}
+.ff-role.is-v{fill:var(--moving-ink);}
+.ff-arrival{fill:var(--moving-tint);stroke:var(--moving-ink);stroke-width:1;stroke-dasharray:3 3;}
+.ff-stamp{stroke:var(--rule);stroke-width:1;}
+.ff-sheet{fill:var(--card);stroke:var(--muted);stroke-width:1;}
+.ff-edit{fill:none;stroke:var(--ink);stroke-width:1.5;}
+.fact-company-note{font:12px/18px var(--mono);color:var(--muted);margin:0;padding:0 16px 14px;}
 
 /* --- section 10: the harness, read at build ------------------------------ */
 

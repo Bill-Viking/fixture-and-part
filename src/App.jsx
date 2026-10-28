@@ -9,6 +9,8 @@ import GlassPass from './instruments/GlassPass.jsx'
 import ForwardMap from './instruments/ForwardMap.jsx'
 import FileView from './instruments/FileView.jsx'
 import LoopFigure from './figures/LoopFigure.jsx'
+import LadderFigure from './figures/LadderFigure.jsx'
+import LedgerFigure from './figures/LedgerFigure.jsx'
 import HarnessReadout from './figures/HarnessReadout.jsx'
 import ModeControl from './components/ModeControl.jsx'
 import ClaimNotes from './components/ClaimNotes.jsx'
@@ -340,6 +342,8 @@ function realQueryIndex(text, tokens) {
  * state and run nothing, so they are made once, here, outside the app.
  */
 const figures = {
+  ladder: <LadderFigure />,
+  ledger: <LedgerFigure />,
   loop: <LoopFigure />,
 }
 

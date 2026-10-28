@@ -2,7 +2,7 @@ import InstrumentHead from '../components/InstrumentHead.jsx'
 import InfoTag from '../components/InfoTag.jsx'
 
 /**
- * FIG.7 — the loop. A drawing, not an instrument: nothing in it runs, nothing
+ * FIG.9 — the loop. A drawing, not an instrument: nothing in it runs, nothing
  * in it is focusable, nothing in it moves.
  *
  * One data description of the five parts and the arrows between them, and two
@@ -274,7 +274,7 @@ export default function LoopFigure() {
   return (
     <figure className="instrument loop-figure">
       <InstrumentHead
-        eyebrow="FIG.7 — THE LOOP"
+        eyebrow="FIG.9 — THE LOOP"
         title={TITLE}
         purpose={READING}
         info={<InfoTag topic="loop" />}
@@ -285,7 +285,7 @@ export default function LoopFigure() {
           <Drawing name="stacked" />
         </div>
       </div>
-      <figcaption>FIG.7 — {CAPTION}</figcaption>
+      <figcaption>FIG.9 — {CAPTION}</figcaption>
     </figure>
   )
 }

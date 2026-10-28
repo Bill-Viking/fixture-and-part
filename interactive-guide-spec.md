@@ -232,11 +232,13 @@ instruments were built. Adding an instrument renumbers the ones below it.
 |---|---|---|
 | 1 | E — the file | 01 |
 | 2 | A — tokenizer strip | 02 |
-| 3 | F — the forward pass, live | 02 |
-| 4 | B — forward-pass stepper + KV rack | 03 |
-| 5 | C — attention inspector | 04 |
-| 6 | D — the glass pass | 04 |
-| 7 | the loop — a drawing, not an instrument | 10 |
+| 3 | the ladder — a drawing from the file’s bytes | 02 |
+| 4 | F — the forward pass, live | 02 |
+| 5 | the ledger — the rack before and after | 03 |
+| 6 | B — forward-pass stepper + KV rack | 03 |
+| 7 | C — attention inspector | 04 |
+| 8 | D — the glass pass | 04 |
+| 9 | the loop — a drawing, not an instrument | 10 |
 
 Single scrolling page, sections 01–11 mirroring the essay. Prose imported from the HTML. Three sections get live instruments replacing their static figures:
 
@@ -627,13 +629,13 @@ granular light. Redrawn in arc 4 from comp-a3; the data layer is unchanged.
 ### Static sections
 01, 05–11 keep essay prose. The Section 09 duo cards and the two callouts port as-is. Add a fixed mini-legend naming the three roles and their colours, which appears once instruments are on screen.
 
-### Section 10 — the loop, and FIG.7
+### Section 10 — the loop, and FIG.9
 
-Eyebrow `10 — THE LOOP` (cool), title "The fixture never learns; the harness takes notes": four paragraphs and a cool callout (`THE OTHER SHOP — WHERE THE NOTES GO`), with FIG.7 after the first paragraph. The charioteer follows it as section 11 (`11 — THE CHARIOTEER`, `#s11`).
+Eyebrow `10 — THE LOOP` (cool), title "The fixture never learns; the harness takes notes": four paragraphs and a cool callout (`THE OTHER SHOP — WHERE THE NOTES GO`), with FIG.9 after the first paragraph. The charioteer follows it as section 11 (`11 — THE CHARIOTEER`, `#s11`).
 
 After THE OTHER SHOP comes the cool callout `SPECIMEN — THE HARNESS` and, under it, the harness readout: the essay's `{ type: 'readout', name: 'harness' }` block, which `App.jsx` renders as `.instrument-slot.readout-slot#readout-harness` holding `readouts[name]` — `src/figures/HarnessReadout.jsx`. It is a readout, not an instrument: mono on the page ground inside a `--rule` border, the title `THE HARNESS, READ ON ⟨readAt⟩ FROM THIS REPOSITORY` in `--frozen`, six rows — the model file, the status file, the opener, the memory folder, commits on this page, carried inside the model between sittings — labels and notes `--muted`, readings `--ink`, numbers with thousands separators. Every number is read at build time by `scripts/read-harness.mjs` into `src/content/harnessFacts.json` (README, "Reading the model file"); a reading the script could not take prints `not read at build`. From 760px each row is one line, the words file's own layout with its spaces, seven lines; narrower, the label, the reading and the note each take a line and the title and the commit count fold at fixed points, nineteen lines (twenty-one under 350px). Its height is that line count and nothing else. Nothing in it is focusable or moves. Every string is WORDS §3 of `design/the-readers-footing`.
 
-FIG.7 is a drawing, not an instrument: `src/figures/LoopFigure.jsx`, placed by the essay's `{ type: 'figure', name: 'loop' }` block, which `App.jsx` renders as `.instrument-slot.figure-slot#fig-loop` holding `figures[name]`. Its head is an instrument's — eyebrow `FIG.7 — THE LOOP`, title `One pass, and the harness around it`, purpose = the reading line, no note — with a "?" badge (topic `loop`) held to the title's last word, and a `FIG.7 — ` caption under the drawing. The drawing is one inline SVG on a hairline frame: THE FIXTURE a steel box (`--frozen` 2px on `--frozen-tint`); THE PART an amber band entering it, THE LANDING eight amber bars with one standing clear leaving it (`--moving` fills, `--moving-ink` edges and labels); THE HARNESS an ink loop (1.5px) from the landing back to the part's entry, carrying `append`, with `run again` where the part enters the fixture and a `tool` arrow into the part; THE NOTES three offset sheets (`--card` on `--rule`) with `write` into them and `read` out of them into the part. Each label in mono with its one-line note under it in `--muted`; one arrowhead marker, ink. Two layouts from one data description — wide (viewBox 680×312) and stacked at ≤ 640 px (300×404, at most 360px wide) — each SVG given its viewBox's ratio in CSS, so the slot's height is known before any glyph is drawn. Type is set in viewBox units so the smallest rendering of each layout keeps labels ≥ 11px and notes and arrow words ≥ 10px. Nothing inside is focusable or animated; each SVG is `role="img"` named by the title and the five labels. Every string is WORDS §4 of `design/the-loop-and-the-landing`.
+FIG.9 is a drawing, not an instrument: `src/figures/LoopFigure.jsx`, placed by the essay's `{ type: 'figure', name: 'loop' }` block, which `App.jsx` renders as `.instrument-slot.figure-slot#fig-loop` holding `figures[name]`. Its head is an instrument's — eyebrow `FIG.9 — THE LOOP`, title `One pass, and the harness around it`, purpose = the reading line, no note — with a "?" badge (topic `loop`) held to the title's last word, and a `FIG.9 — ` caption under the drawing. The drawing is one inline SVG on a hairline frame: THE FIXTURE a steel box (`--frozen` 2px on `--frozen-tint`); THE PART an amber band entering it, THE LANDING eight amber bars with one standing clear leaving it (`--moving` fills, `--moving-ink` edges and labels); THE HARNESS an ink loop (1.5px) from the landing back to the part's entry, carrying `append`, with `run again` where the part enters the fixture and a `tool` arrow into the part; THE NOTES three offset sheets (`--card` on `--rule`) with `write` into them and `read` out of them into the part. Each label in mono with its one-line note under it in `--muted`; one arrowhead marker, ink. Two layouts from one data description — wide (viewBox 680×312) and stacked at ≤ 640 px (300×404, at most 360px wide) — each SVG given its viewBox's ratio in CSS, so the slot's height is known before any glyph is drawn. Type is set in viewBox units so the smallest rendering of each layout keeps labels ≥ 11px and notes and arrow words ≥ 10px. Nothing inside is focusable or animated; each SVG is `role="img"` named by the title and the five labels. Every string is WORDS §4 of `design/the-loop-and-the-landing`.
 
 ### Claim marks (the honest pass, 2026-09-12)
 

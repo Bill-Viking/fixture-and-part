@@ -3813,7 +3813,7 @@ export default function ForwardMap({
       </div>
 
       <figcaption>
-        FIG.3 — one pass through distilgpt2, drawn as a memory room. Six walls
+        FIG.4 — one pass through distilgpt2, drawn as a memory room. Six walls
         of the file&rsquo;s own weight bytes; the sentence falling through them
         as light; the transfers attention makes into the last word; and the
         landing, where that word&rsquo;s vector meets all 50,257 of them.

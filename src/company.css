@@ -281,7 +281,7 @@ html[data-look="company"] :is(.file-bar-readout, .file-readout, .file-curve-stat
 
 /* 08 — Drawings retain the original palette, fonts and geometry, including the loop and byte ramp. */
 html[data-look="company"] :is(
-  .screen, .map-screen, .file-canvas-box, .loop-svg,
+  .screen, .map-screen, .file-canvas-box, .loop-svg, .ladder-svg, .ledger-svg,
   .file-seg, .file-ticks, .file-curve svg, .file-curve-ticks,
   .cand-track, .budget-track
 ) {
