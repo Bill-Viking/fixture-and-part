@@ -3,6 +3,9 @@
 
 ## Now
 
+RULED 2026-10-27 evening (Bill, looking at the company build in the app's pane, then at the live consumer page with the model loaded — «with the model it's so rich and beautiful»): (1) F's hole in the company copy — no side flows, no landing — is filled by BAKING IN ONE REAL PASS: at build time, on the Mac, the page's own sentence («The engine roared and it shut down.») runs through the real model once and its numbers ship with the company copy, so the curves draw at their real widths and the landing shows the real top eight with the amber mark, for that sentence; a reader's own sentence still gets the straight sheet. The lane offered a simulated road and disagreed with it out loud (every mark a real byte); Bill: «goood idea: Bake in one real pass. My pick.» (2) The company copy points at the consumer version on his GitHub — the mode bar's public link (WORDS §1 line 2) already does — AND carries a DISCLAIMER not to download the full version on a work computer: the exact line is his to approve, the next words ask. (3) Open from the same look, after the pass: the terms a coworker meets cold (UNEMBED · WTEᵀ, the wall label ATTN.C_ATTN.WEIGHT 24 × 64, «hero», «the fall a schematic») — a words ruling. The dress itself is not struck: «I don't like it» was the empty waterfall, not the dress; his go/strike on the dress stays open. Machine's next: a Sonnet reader maps the live pass's producer and consumer (design/the-company-copy/PASS-MAP.md), then the lane writes the build brief for the baked pass.
+
+
 HANDOFF CAPTURE (hub button-up 2026-10-26, mechanical — verbatim tail, no model read): claude a8639c82-3069-49c1-a9f3-07f6cf49ee19 · last message 2026-10-26T11:36:43-07:00
   the thread's own title: ARCH — F&P: E shipped; the company copy built and proven
   lane F&P (the folder's only lane) · FABLE · 8.1 min ago at the capture
