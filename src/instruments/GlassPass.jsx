@@ -42,6 +42,26 @@ function motionNumber(value) {
   })
 }
 
+/** Read the same pieces and shares the table prints, including illustrative data. */
+function readingSummary(live) {
+  // ASSUMES: stops are rim, then blocks 0–5; trace prices the last row's winner.
+  // A missing/partial reading supplies no sentence; its reserved box stays put.
+  if (!live || live.status === 'error' || live.stops?.length !== LENS_STOPS ||
+      live.trace?.length !== LENS_STOPS ||
+      !live.trace.every((share) => Number.isFinite(share) && share >= 0 && share <= 1)) return ''
+  const tops = [1, 4, LAST_STOP].map((stop) => live.stops[stop]?.[0])
+  if (tops.some((row) => typeof row?.token !== 'string' ||
+      !Number.isFinite(row.weight) || row.weight < 0 || row.weight > 1)) return ''
+  const [start, middle, end] = tops.map((row) => `${row.token} (${row.weight.toFixed(2)})`)
+  const firstTenth = live.trace.findIndex((share) => share >= 0.10)
+  const tail = firstTenth === 0
+    ? 'the final word is above a tenth from the start'
+    : firstTenth > 0 && firstTenth < LAST_STOP
+      ? `the final word first passes a tenth after block ${firstTenth - 1}`
+      : 'the final word passes a tenth only in the last row'
+  return `at the start it says ${start} · by the middle ${middle} · at the end it chooses ${end} — ${tail}`
+}
+
 /**
  * The winner's share, painted the frozen blue where it is still a rumour and
  * the moving yellow where it has become the answer. The colour is doing the
@@ -253,6 +273,9 @@ export default function GlassPass({
 
         <p className="lens-note" aria-live="polite">
           {note()}
+        </p>
+        <p className="lens-note lens-reading" aria-live="polite">
+          {readingSummary(hasReading ? live : null)}
         </p>
 
         <TeachPair

@@ -177,7 +177,7 @@ function Contrast({ cards, proof }) {
  * the word and never the gloss.
  *
  * Where the strip is two columns the first holds the first half of the
- * words, rounded up (four of seven), and the row that opens the second column
+ * words, rounded up from the entry count, and the row that opens the second column
  * says so.
  *
  * The strip's height is decided here, from the strings, and never by a font.

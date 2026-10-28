@@ -94,10 +94,7 @@ export function tensorFacts(manifest, name) {
  */
 export function partReadout(facts) {
   if (!facts) {
-    return (
-      'nothing chosen yet — click a wall, a cell, a carrier, a landing bar or a plate ' +
-      'and this line says what it is'
-    )
+    return 'nothing chosen yet — click a ray, a carrier or a wall cell: this line says what it is, and the buttons beside it open it in the file or in its own instrument'
   }
   const parts = [
     `${facts.display} ${facts.shape} ${facts.dtype}`,
@@ -106,7 +103,7 @@ export function partReadout(facts) {
     parts.push(`scale ${sig(facts.scale, 3)}`, `zero point ${facts.zeroPoint}`)
   }
   parts.push(`${count(facts.byteLength)} bytes`)
-  return parts.join(' · ')
+  return parts.join(' · ') + ' · open it in the file to read it at length'
 }
 
 /** The status note, derived from the file rather than typed out. */

@@ -2008,6 +2008,14 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
   font-family:var(--mono);font-size:10.5px;line-height:15px;height:30px;
   color:var(--muted);letter-spacing:0.03em;margin:10px 0 0;overflow:hidden;
 }
+/* The generated reading changes with the position and arriving shares.
+   Two 15px lines above 640px; five at/below it (four used by the default
+   145-character reading at 320px, plus one spare). Keep the box even when
+   shares are unavailable, and clip longer pieces so nothing below moves. */
+.lens-reading{height:30px;margin-top:0;overflow:hidden;}
+@media(max-width:640px){
+  .lens-reading{height:75px;}
+}
 .lens-final{
   font-family:var(--mono);font-size:10.5px;line-height:1.55;
   color:var(--ink);letter-spacing:0.02em;margin:0;
