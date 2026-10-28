@@ -91,3 +91,18 @@ Ruling the same evening: the company copy carries ONE real pass of the page's ow
   the landing card (compact), today `… It needs a pass, which this copy does not run.`
   `… It needs a pass; this copy carries one, for the page's own sentence.`
 - Unchanged by this ruling: the tour's three «With a model in hand …» forms of §4 (still true for a typed sentence), the live residual line `real pass · ‖residual‖ …` (true), the architecture line, the greedy pick line. Any further line the build finds that claims an in-browser run comes to Bill with the proof, one more ask.
+
+## §9 The company notice, once; the bar, one line (APPROVED 2026-10-28 14:3x — Bill, on the live /company/ page: «we should maybe make it a bit more explicit how there's no LLM model downloadable in this version but there is a consumer version, full featured on the github page … "no model in this copy" could be explained a bit better for the office reader»; his pick of the three shapes: «1 · banner + one line»)
+
+A. THE NOTICE — one block, company copy only, directly under the page header (after the glossary strip, before section 01), in the page's callout shape, label `THE COMPANY COPY`:
+
+`This is the company copy of The Fixture and the Part. No language model runs here and nothing downloads: every number on this page was read from the model file when the page was built, plus one real pass of the page’s own sentence, kept and replayed in instrument F. The full version runs a real model inside your browser, an 83.5 MB download it keeps there. It is public at bill-viking.github.io/fixture-and-part — for a personal machine, never a company one.`
+
+(the address is a link, as in the bar today; the size comes from the file facts, never typed)
+
+B. THE BAR, every instrument, company copy only — the two chips and ONE line replace today's two chips, three hint lines and the teach line:
+- left chip `mode illustrative` → `company copy`
+- right chip `no model in this copy` → `no model · nothing downloads`
+- the one line: `company copy · no model here · the numbers are stand-ins except where a label says they are the file’s own`
+
+§8 C and D (the three-line bar) are retired by this section; §8 A, B and E stand (they live in the instruments' own labels, not the bar).
