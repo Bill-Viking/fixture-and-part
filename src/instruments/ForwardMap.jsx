@@ -325,7 +325,9 @@ function geometryFor(compact, full) {
   // worst, the way the legend and the caption are reserved. The tour's stops
   // are no longer among them: the tour says its words in the sticky bar and
   // marks the block it is on, and puts no card on the drawing at all.
-  const cardLines = per(7, 8, 6)
+  // R3 ray leads, counted by the same wrapText/cardCols road in a node
+  // check: sheet 5, column 9, phone 7 used; one spare line in each band.
+  const cardLines = per(8, 10, 6)
   const cardH = cardLines * cardLine + 2 * cardPad + fs.leg * 0.3
 
   // How much air a card leaves around the words it may not stand on. The
@@ -2710,7 +2712,7 @@ export default function ForwardMap({
       <InstrumentHead
         eyebrow="INSTRUMENT F"
         title="The forward pass, live"
-        purpose="The walls are the fixture: the file’s own frozen tooling, one station for each of the six blocks. Your sentence is the part — one stream for each word, falling through the stations; every word passes through every station in order, and a stream never leaves its column. A transfer is the tooling touching the part — the solid curves, the only thing that crosses: attention picks a source in green and carries its value in amber. The hero is the piece finished at the last station, rich enough to say what comes next."
+        purpose="This is the model guessing the next word: your sentence falls through the six blocks once, and the landing at the foot is its guess — the eight words it rates highest, and the one it took. The walls are the fixture: the file’s own frozen tooling, one station for each of the six blocks. Your sentence is the part — one stream for each word, falling through the stations; every word passes through every station in order, and a stream never leaves its column. A transfer is the tooling touching the part — the solid curves, the only thing that crosses: attention picks a source in green and carries its value in amber. The hero is the piece finished at the last station, rich enough to say what comes next."
         note={
           <LoadNote
             label={

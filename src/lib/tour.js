@@ -163,15 +163,11 @@ export function rayLead(bar, argmaxToken, pickToken, decode = 'sampled') {
       : argmaxToken
         ? ` The machine’s own top is ${q(argmaxToken)}; ${took} ${q(pickToken ?? '—')}.`
         : ''
-  return `Landing ray — ${q(bar.token)} at ${pc(bar.p)}.${role}`
+  return `One candidate for the next word — ${q(bar.token)} at ${pc(bar.p)}: the last word’s finished vector held against this word’s own row of the table — the same 768 numbers instrument A shows for it — and shared out among all 50,257 by a softmax.${role}`
 }
 
 export function rayDetail() {
-  return (
-    `The ray is one word’s share of a softmax over the whole vocabulary, counted from the last position’s ` +
-    `vector and from no other. The bar’s height is that share against the tallest bar, and the rows of dots ` +
-    `are how the height is counted, so read the number rather than the dots.`
-  )
+  return "Counted from the last position’s vector and from no other. The bar’s height is that share against the tallest bar, and the rows of dots are how the height is counted, so read the number rather than the dots."
 }
 
 export function rayWhy(bar, argmaxToken, pickToken, decode = 'sampled') {

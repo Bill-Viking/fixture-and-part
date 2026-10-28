@@ -7,7 +7,7 @@ import {
   illustrativeLens,
   residualVector,
 } from '../lib/toyModel.js'
-import { formatRealVector, residualPreview } from '../lib/realModel.js'
+import { REAL_HIDDEN, formatRealVector, residualPreview } from '../lib/realModel.js'
 import InfoTag from '../components/InfoTag.jsx'
 import LoadNote from '../components/LoadNote.jsx'
 import ReadingLine from '../components/ReadingLine.jsx'
@@ -16,6 +16,31 @@ import InstrumentHead from '../components/InstrumentHead.jsx'
 
 const SLOTS = Array.from({ length: CANDIDATE_COUNT }, (_, i) => i)
 const LAST_STOP = LENS_STOPS - 1
+
+/** Full-vector norms, never the six-number preview's length. */
+function vectorMotion(run, stop, index) {
+  const current = run?.residuals?.[stop]
+  const previous = stop > 0 ? run?.residuals?.[stop - 1] : null
+  if (!current || index < 0 || index >= run.n ||
+      current.length !== run.n * REAL_HIDDEN ||
+      (stop > 0 && previous?.length !== current.length)) return null
+  const base = index * REAL_HIDDEN
+  let length2 = 0
+  let moved2 = 0
+  for (let d = 0; d < REAL_HIDDEN; d++) {
+    const value = current[base + d]
+    length2 += value * value
+    if (previous) moved2 += (value - previous[base + d]) ** 2
+  }
+  return { length: Math.sqrt(length2), moved: previous ? Math.sqrt(moved2) : null }
+}
+
+function motionNumber(value) {
+  return value == null ? '—' : value.toLocaleString('en-US', {
+    minimumFractionDigits: value < 100 ? 1 : 0,
+    maximumFractionDigits: value < 100 ? 1 : 0,
+  })
+}
 
 /**
  * The winner's share, painted the frozen blue where it is still a rumour and
@@ -81,6 +106,7 @@ export default function GlassPass({
   onSelect,
   real,
   run,
+  bakedRun,
   reading,
   stale,
   pending,
@@ -101,10 +127,13 @@ export default function GlassPass({
   const live = real ? reading : toyReading
   const hasReading = Boolean(live) && !stale
   const trace = hasReading ? live.trace : null
+  // The baked pass is for the shipped sentence only. App withholds it as
+  // soon as the sentence changes or generation appends another position.
+  const vectorRun = real ? run : bakedRun
 
   const residual = (stop) => {
-    if (real) {
-      const row = residualPreview(run, stop, lensIndex)
+    if (real || bakedRun) {
+      const row = residualPreview(vectorRun, stop, lensIndex)
       return row ? formatRealVector(row) : '—'
     }
     return token === undefined ? '—' : formatVector(residualVector(token, stop))
@@ -171,15 +200,16 @@ export default function GlassPass({
 
         <div className="lens-head">
           <span className="field-label">depth</span>
-          <span className="lens-head-res">residual stream</span>
-          <span className="lens-head-cand">what it would say next</span>
-          <span className="lens-head-trace">winner</span>
+          <span className="lens-head-res">the vector so far</span>
+          <span className="lens-head-cand">if it stopped here it would say</span>
+          <span className="lens-head-trace">final word’s share</span>
         </div>
 
         <div className="lens-rows screen">
           {STOP_LABELS.map((label, stop) => {
             const rows = shortlist(stop)
             const share = trace ? trace[stop] : null
+            const motion = vectorMotion(vectorRun, stop, lensIndex)
             return (
               <div
                 className={`lens-row${stop === LAST_STOP ? ' is-final' : ''}`}
@@ -213,6 +243,9 @@ export default function GlassPass({
                     />
                   </span>
                 </span>
+                <span className="lens-motion">
+                  {`length ${motionNumber(motion?.length)} · moved ${motionNumber(motion?.moved)}`}
+                </span>
               </div>
             )
           })}
@@ -233,7 +266,7 @@ export default function GlassPass({
           className="teach dim"
           show={real ? 'b' : 'a'}
           a="illustrative lens. the shortlists are hand-tuned on the default sentence and deterministic otherwise; no model is running. the last row is pinned to the token instrument B commits, so the two instruments cannot disagree."
-          b="real lens. each depth is distilgpt2’s own running vector for this position, pushed through its own final layernorm and its own embedding table used backwards — the arithmetic the stack performs once at the end, performed seven times instead."
+          b="real lens. at each depth the half-finished vector is taken out and held up to the word table as if the pass had ended there; the last row is what the model does say — the same numbers instrument B’s shortlist reads for this position. in the model’s terms: its own running vector, pushed through its own final layernorm and its own embedding table used backwards."
         />
       </div>
 

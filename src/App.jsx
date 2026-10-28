@@ -23,7 +23,9 @@ import {
 } from './lib/toyModel.js'
 import {
   RESIDUAL_STOPS,
+  CACHE_KEY,
   attentionRows,
+  cacheHasModel,
   chooseNext,
   loadModel,
   realForward,
@@ -376,6 +378,10 @@ export default function App() {
   const [selectedMode, setMode] = useState('illustrative')
   const mode = COMPANY ? 'illustrative' : selectedMode
   const [modelStatus, setModelStatus] = useState('idle')
+  const [loadingFromCache, setLoadingFromCache] = useState(false)
+  const modelLoadStarted = useRef(false)
+  const modelLoadAttempted = useRef(false)
+  const cacheProbe = useRef(null)
   const [progress, setProgress] = useState({ phase: 'files', percent: 0 })
   const [backend, setBackend] = useState(null)
   const [generatedIds, setGeneratedIds] = useState([])
@@ -513,8 +519,14 @@ export default function App() {
     [mode, resetSequence, text],
   )
 
-  const handleLoad = useCallback(() => {
-    if (COMPANY) return
+  const handleLoad = useCallback((source) => {
+    if (COMPANY || modelLoadStarted.current ||
+        (source === 'cache' && modelLoadAttempted.current)) return
+    // Shared by the click and the probe; set synchronously before either
+    // road can start another load, including React's effect replay.
+    modelLoadStarted.current = true
+    modelLoadAttempted.current = true
+    setLoadingFromCache(source === 'cache')
     setModelStatus('loading')
     setProgress({ phase: 'files', percent: 0 })
     loadModel((p) => setProgress(p))
@@ -530,8 +542,24 @@ export default function App() {
         // the mode bar is the only thing the reader sees.
         console.error('[fixture-and-part] real model unavailable:', err)
         setModelStatus('error')
+        modelLoadStarted.current = false
       })
   }, [resetSequence])
+
+  useEffect(() => {
+    if (COMPANY || typeof caches === 'undefined') return
+    // One read-only presence probe per mount, shared across effect replay.
+    // An unavailable/partial cache is not permission to fetch a model.
+    cacheProbe.current ??= caches.open(CACHE_KEY)
+      .then((cache) => cache.keys())
+      .then(cacheHasModel)
+      .catch(() => false)
+    let active = true
+    cacheProbe.current.then((present) => {
+      if (active && present) handleLoad('cache')
+    })
+    return () => { active = false }
+  }, [handleLoad])
 
   // Real BPE for whatever is typed. Debounced so a fast typist does not queue
   // one tokenizer call per keystroke.
@@ -862,6 +890,7 @@ export default function App() {
             mode={mode}
             onModeChange={handleModeChange}
             status={modelStatus}
+            loadingFromCache={loadingFromCache}
             progress={progress}
             backend={backend}
             error={modelStatus === 'error'}
@@ -967,6 +996,7 @@ export default function App() {
         onSelect={handleLensSelect}
         real={isReal}
         run={isReal && runReady ? realRun : null}
+        bakedRun={baked && generated.length === 0 ? baked.run : null}
         reading={lensReading}
         stale={lensStale}
         pending={realPending}

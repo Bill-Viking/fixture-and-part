@@ -58,7 +58,7 @@ export const explainers = {
   },
   embeddingReal: {
     title: 'the embedding numbers',
-    body: 'these are the first six of the 768 numbers distilgpt2 stores for this token id, read out of its own embedding table. the id selects a row; the row is the vector. nothing about the sentence changes them — the same piece anywhere gives the same 768 numbers.',
+    body: "the piece’s starting vector. the id is a row number in the embedding table — 50,257 rows, one per piece, 768 numbers each — and that row is the vector; these are its first six. it means where this piece starts in the space before any block has touched it. nothing about the sentence changes it: the same piece anywhere starts from the same row.",
   },
   candidatesReal: {
     title: 'considering next',
@@ -78,7 +78,7 @@ export const explainers = {
   },
   lensReal: {
     title: 'the glass pass',
-    body: 'each depth is distilgpt2’s own running vector for this position, pushed through its own final layernorm and its own embedding table used backwards. that is the arithmetic the stack runs once at the end, run seven times instead — which is why the last row is not an estimate of the model’s output but literally is it.',
+    body: "at each depth the half-finished vector is taken out and held up to the word table as if the pass had ended there, to see what it would say; the last row is what it does say. in the model’s own terms: distilgpt2’s running vector for this position, pushed through its own final layernorm and its own embedding table used backwards — the arithmetic the stack runs once at the end, run seven times instead.",
   },
   map: {
     title: 'the forward pass',

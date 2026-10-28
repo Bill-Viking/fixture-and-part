@@ -734,7 +734,16 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
    the button holds the place so the hint beside it — and the line under it at
    phone width — does not move when the button goes. Laid out, not painted,
    the same trick .teach-pair uses for its unused wording. */
-.mode-load .btn.is-ghost{visibility:hidden;}
+.mode-command-box{display:grid;flex:none;}
+.mode-command-box > *{grid-area:1 / 1;}
+.mode-command-measure{visibility:hidden;pointer-events:none;}
+.mode-load .mode-loaded{cursor:default;text-align:center;}
+.mode-load .mode-loaded:hover{
+  color:var(--moving-on);background:var(--moving);border-color:var(--moving-ink);
+}
+/* The return-visit hint wraps inside the existing 38px row: two 15px
+   lines beside the track. The narrow load row below reserves three. */
+.mode-progress{white-space:normal;line-height:15px;height:30px;display:flex;align-items:center;}
 /* What is real and what is not, in one line that changes with the mode. */
 .mode-manifest{
   font-family:var(--mono);font-size:10px;color:var(--muted);
@@ -1321,7 +1330,7 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 /* What the selected wall is, read out of the file's own manifest, and the
    button that opens it there. One reserved box, one fixed button. */
 .map-readout-row{
-  display:flex;align-items:center;gap:10px;height:89px;margin-top:10px;
+  display:flex;align-items:center;gap:10px;height:104px;margin-top:10px;
 }
 /* Reserved per breakpoint band, from the longest sentence a click on the
    drawing can print rather than from the longest tensor name. Two lines held
@@ -1330,33 +1339,33 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
    and a wall cell's answer is around 360 characters. Measured as LINE BOXES
    over a clone of this element by `__readoutLines()`, which walks every cell
    of every wall, every carrier, every ray, both plates and the idle line:
-   worst 4 lines at this band's own narrowest, 1200 px, so five are reserved.
-   Reserved either way, so a readout that grows moves nothing. */
+   R3's longer ray answer has a shell mono-wrap estimate of 5 lines at
+   1200px; reserve 6. Browser __readoutLines() is UNRUN in the headless build
+   and must confirm these provisional reservations before acceptance. */
 .map-readout{
   flex:1 1 auto;min-width:0;
   display:flex;align-items:center;
   font-family:var(--mono);font-size:10.5px;line-height:15px;
   color:var(--ink);letter-spacing:0.02em;margin:0;
-  height:75px;overflow:hidden;
+  height:90px;overflow:hidden;
 }
 /* Below the breakout the figure is the essay's own column, and a readout
    that shared its line with two buttons had 368 px of it: a wall cell's
    answer took seven lines there and eleven at 641. It takes the whole width
    here, the way it already did on the phone, and the buttons drop under it —
-   four lines used of five reserved at 1199 and at 800. */
+   R3 shell estimate: 6 lines at both 1199 and 800; reserve 7. */
 @media(max-width:1199px){
-  .map-readout-row{height:112px;flex-wrap:wrap;align-content:center;}
+  .map-readout-row{height:142px;flex-wrap:wrap;align-content:center;}
   .map-readout{
     flex:1 1 100%;white-space:normal;overflow:hidden;text-overflow:clip;
-    height:75px;
+    height:105px;
   }
 }
 /* The column keeps shrinking with the window below 760 px, so this band is
-   reserved from its own narrowest edge, 641 px: five lines used, six
-   reserved. */
+   R3 shell estimate at its narrowest edge, 641px: 7 used, 8 reserved. */
 @media(max-width:799px){
-  .map-readout-row{height:127px;}
-  .map-readout{height:90px;}
+  .map-readout-row{height:157px;}
+  .map-readout{height:120px;}
 }
 /* Two selectors deep, because `.btn` is defined further down this file and
    would otherwise win the font size and the padding at equal specificity. */
@@ -1580,6 +1589,9 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
   background:color-mix(in srgb,var(--moving) 14%,var(--screen));
 }
 .chip-v.off{opacity:.4;}
+/* C reports whether a value is on the table; B's chip buttons stay intact. */
+.value-mark{color:var(--moving);border:0;background:none;}
+.value-mark.off{opacity:.4;}
 /* The legend above the rack is on card, not on a screen. */
 .chip-legend .chip-k{
   color:var(--keys);border-color:var(--keys);background:var(--keys-tint);
@@ -1792,7 +1804,7 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 }
 .attn-row{
   display:grid;
-  grid-template-columns:78px minmax(0,1fr) 46px 152px 26px;
+  grid-template-columns:78px minmax(0,1fr) 46px 152px 34px;
   align-items:center;gap:10px;
   height:32px;padding:0 10px;
   border-bottom:1px solid var(--screen-hair);
@@ -1843,7 +1855,9 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
   font-variant-numeric:tabular-nums;width:44px;text-align:right;flex:none;
 }
 .c-v{display:flex;justify-content:flex-end;}
+.attn-head .c-v{white-space:nowrap;}
 .c-v .chip{width:26px;}
+.teach.attn-key{margin:0 0 8px;}
 .attn-row.locked{background:var(--screen-sunk);}
 .attn-row.locked .c-tok,.attn-row.locked .c-k,.attn-row.locked .wt{color:var(--screen-muted);}
 /* A row the mask hides spent none of the budget and is not going to, so its
@@ -1888,24 +1902,37 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
    three lines: a real residual can be four digits wide. */
 .lens-head,.lens-row{
   display:grid;
-  grid-template-columns:96px 156px minmax(0,1fr) 54px;
+  grid-template-columns:96px 156px minmax(0,1fr) 110px;
   align-items:center;gap:10px;padding:0 10px;
 }
 .lens-head{
-  height:18px;
-  font-family:var(--mono);font-size:9.5px;letter-spacing:0.14em;color:var(--muted);
+  height:30px;line-height:12px;
+  font-family:var(--mono);font-size:9.5px;letter-spacing:0.02em;color:var(--muted);
 }
 .lens-head .field-label{margin-bottom:0;}
 .lens-head-res,.lens-head-cand,.lens-head-trace{
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .lens-head-trace{text-align:right;}
+/* The middle heading takes two 12px lines at the narrowest visible band.
+   Phone headers remain hidden by the existing rule below. */
+.lens-head-cand{white-space:normal;text-overflow:clip;}
 /* Seven depths of running vector, shortlist and share: a field of values, so
    a screen. */
 .lens-rows{
   margin-top:6px;
 }
-.lens-row{height:72px;border-bottom:1px solid var(--screen-hair);}
+/* R8: the existing 72px depth plus one 14px metric line and a 4px gap.
+   The metric spans the vector and shortlist columns, keeping it one line. */
+.lens-row{
+  height:90px;grid-template-rows:minmax(0,1fr) 14px;row-gap:4px;
+  border-bottom:1px solid var(--screen-hair);
+}
+.lens-motion{
+  grid-column:2 / -1;font-family:var(--mono);font-size:9.5px;line-height:14px;
+  height:14px;color:var(--screen-muted);font-variant-numeric:tabular-nums;
+  white-space:nowrap;overflow:hidden;
+}
 .lens-row:last-child{border-bottom:0;}
 /* The last row is not another sample of the stack: it is the end of it, and
    the numbers on it are the model's own output. Blue, because the seam it
@@ -2351,13 +2378,12 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
      row centres its contents, so a readout that grew from one line to two
      would move itself and the button under it even though the row's own
      height never changed. */
-  /* The phone's row. Three lines held the idle line and nothing else: a wall
-     cell's answer takes eight of them at 320 px of width. Measured the same
-     way as every other band and reserved one line over the worst. */
-  .map-readout-row{height:172px;flex-wrap:wrap;align-content:center;}
+  /* R3 shell mono-wrap estimate at 381px: ray 13 lines; reserve 14.
+     __readoutLines() browser proof remains required. */
+  .map-readout-row{height:247px;flex-wrap:wrap;align-content:center;}
   .map-readout{
     flex:1 1 100%;white-space:normal;overflow:hidden;text-overflow:clip;
-    height:135px;
+    height:210px;
   }
   .wrap{padding:0 18px 90px;}
   header{padding:60px 0 36px;}
@@ -2368,7 +2394,7 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
   .controls-note{margin-left:0;width:100%;flex:1 1 100%;}
 
   .attn-row{
-    grid-template-columns:minmax(0,1fr) 46px 26px;
+    grid-template-columns:minmax(0,1fr) 46px 34px;
     grid-template-areas:
       "tok score v"
       "k   k     k"
@@ -2403,11 +2429,14 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
     grid-template-areas:
       "stop  trace"
       "res   res"
+      "motion motion"
       "cands cands";
-    height:142px;row-gap:5px;padding:8px 10px;align-content:center;
+    grid-template-rows:14px 36px 14px 65px;
+    height:162px;row-gap:5px;padding:8px 10px;align-content:center;
   }
   .lens-stop{grid-area:stop;}
   .lens-res{grid-area:res;}
+  .lens-motion{grid-area:motion;}
   .lens-cands{grid-area:cands;}
   .lens-trace{grid-area:trace;flex-direction:row;align-items:center;gap:6px;}
   .lens-trace-val{font-size:10px;}
@@ -2494,10 +2523,11 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
      row's own width in both wordings. */
   .mode-row{flex-wrap:wrap;height:54px;align-content:center;}
   .mode-state{flex:1 1 100%;text-align:left;}
-  /* Two reserved lines: the button or the track on one, the status on the
-     other. The ready state uses only one and centres inside the same box. */
-  .mode-load{height:60px;flex-wrap:wrap;align-content:center;}
+  /* The command/track plus up to three 15px lines of the return-visit hint.
+     All states use the same 78px row. */
+  .mode-load{height:78px;flex-wrap:wrap;align-content:center;}
   .mode-hint,.mode-progress{flex:1 1 100%;}
+  .mode-progress{height:45px;}
   .token-strip{height:300px;}
   /* Selectors on one line, their note on the next two, in both modes. The
      note is a whole sentence in either mode — "Q·K is printed relative to the
@@ -2541,9 +2571,9 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
 /* Narrower than a phone. The inspector's two prose lines drop one step so
    they still fit the height reserved for them at this breakpoint. */
 @media(max-width:380px){
-  /* Narrower still: at 320 px a wall cell's answer runs to eleven lines. */
-  .map-readout-row{height:217px;}
-  .map-readout{height:180px;}
+  /* R3 shell estimate at 320px: ray 16 lines; reserve 17. */
+  .map-readout-row{height:292px;}
+  .map-readout{height:255px;}
   .kv-inspector{height:408px;}
   .kv-goes,.kv-prov{font-size:9.5px;}
   /* At 320 the longest word line takes a fourth line. */

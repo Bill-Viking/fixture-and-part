@@ -9,6 +9,19 @@
 // publisher's wall.
 
 export const claimNotes = {
+  reinterpret: {
+    kind: 'evidence',
+    title: 'machines that reinterpret',
+    body: "an encoder reads a sentence both ways and cannot continue it; an encoder–decoder reads the input whole and writes forward; a diffusion language model writes every token at once and revises all of them over steps. the papers below are the sources for what each machine does. what each design buys and costs is this page’s own reading, not theirs.",
+    sources: [
+      { label: "Devlin et al. 2018 · BERT", url: "https://arxiv.org/abs/1810.04805" },
+      { label: "Raffel et al. 2020 · T5, the text-to-text transformer", url: "https://arxiv.org/abs/1910.10683" },
+      { label: "Wang et al. 2022 · which architecture and objective", url: "https://arxiv.org/abs/2204.05832" },
+      { label: "Nie et al. 2025 · Large language diffusion models (LLaDA)", url: "https://arxiv.org/abs/2502.09992" },
+      { label: "Inception Labs 2025 · Mercury", url: "https://arxiv.org/abs/2506.17298" },
+      { label: "Google DeepMind 2025 · Gemini Diffusion", url: "https://deepmind.google/models/gemini-diffusion/" },
+    ],
+  },
   rome: {
     kind: 'evidence',
     title: 'finding a fact in the file',

@@ -154,6 +154,8 @@ export default function AttentionInspector({
           <InfoTag topic="mask" />
         </div>
 
+        <p className="teach dim attn-key">K — the key a row advertises · V — the value it hands over · a lit V is on the table for this query</p>
+
         <div className="attn-table screen" role="table" aria-label="attention lookup">
           <div className="attn-row attn-head" role="row">
             <span className="c-tok" role="columnheader">token</span>
@@ -164,7 +166,7 @@ export default function AttentionInspector({
               {real ? 'Q·K rel' : 'Q·K'}
             </span>
             <span className="c-bar" role="columnheader">softmax weight</span>
-            <span className="c-v" role="columnheader">V</span>
+            <span className="c-v" role="columnheader">value</span>
           </div>
 
           {pending && (
@@ -177,7 +179,7 @@ export default function AttentionInspector({
                 <span className="wt">&mdash;</span>
               </span>
               <span className="c-v" role="cell">
-                <span className="chip chip-v off">V</span>
+                <span className="chip value-mark off">V</span>
               </span>
             </div>
           )}
@@ -209,7 +211,7 @@ export default function AttentionInspector({
                       <span className="wt">{row.weight.toFixed(2)}</span>
                     </span>
                     <span className="c-v" role="cell">
-                      <span className="chip chip-v">V</span>
+                      <span className="chip value-mark">V</span>
                     </span>
                   </div>
                 )
@@ -245,7 +247,7 @@ export default function AttentionInspector({
                     </span>
                   </span>
                   <span className="c-v" role="cell">
-                    <span className="chip chip-v off">V</span>
+                    <span className="chip value-mark off">V</span>
                   </span>
                 </div>
               )

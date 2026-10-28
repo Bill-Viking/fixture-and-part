@@ -3,6 +3,8 @@ import TeachPair from './TeachPair.jsx'
 import { progressLabel } from '../lib/loadProgress.js'
 import { mb } from '../lib/fileFormat.js'
 
+const LOAD_LABEL = 'LOAD THE REAL MODEL (83.5 MB)'
+
 /**
  * The mode switch that governs all three instruments.
  *
@@ -26,6 +28,7 @@ export default function ModeControl({
   mode,
   onModeChange,
   status,
+  loadingFromCache,
   progress,
   backend,
   error,
@@ -100,20 +103,25 @@ export default function ModeControl({
               role="status"
               aria-live="polite"
             >
-              {progressLabel(progress)}
+              {loadingFromCache
+                ? 'the model is already on this machine — loading it from the browser’s own store'
+                : progressLabel(progress)}
             </span>
           </>
         ) : (
           <>
-            <button
-              type="button"
-              className={`btn btn-primary${loaded ? ' is-ghost' : ''}`}
-              onClick={loaded ? undefined : onLoad}
-              aria-hidden={loaded}
-              tabIndex={loaded ? -1 : undefined}
-            >
-              LOAD THE REAL MODEL (83.5 MB)
-            </button>
+            <span className="mode-command-box">
+              <span className="btn btn-primary mode-command-measure" aria-hidden="true">
+                {LOAD_LABEL}
+              </span>
+              {loaded ? (
+                <span className="btn btn-primary mode-loaded" role="status">LOADED</span>
+              ) : (
+                <button type="button" className="btn btn-primary" onClick={onLoad}>
+                  {LOAD_LABEL}
+                </button>
+              )}
+            </span>
             <span className={`mode-hint${error ? ' is-error' : ''}`}>
               {error
                 ? 'real model unavailable — showing illustrative weights'

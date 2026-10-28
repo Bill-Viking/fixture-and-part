@@ -31,7 +31,7 @@ import { COMPANY, loadTransformers } from './company.js'
 
 import { MAX_GENERATED } from './toyModel.js'
 import {
-  REAL_LAYERS, REAL_HEADS, REAL_HIDDEN, RESIDUAL_STOPS, PROMOTED_OUTPUTS,
+  REAL_LAYERS, REAL_HEADS, REAL_HIDDEN, RESIDUAL_STOPS, PREVIEW_DIMS, PROMOTED_OUTPUTS,
   withAttentionOutputs, displayToken, isSkippedToken, feedFor, tensorData, runPass,
 } from './passCore.js'
 export {
@@ -79,6 +79,14 @@ export const ONNX_FILE = 'decoder_model_quantized.onnx'
 // version whenever PROMOTED_OUTPUTS changes: the cached copy carries the
 // fragment that was current when it was written.
 export const CACHE_KEY = 'fixture-and-part-distilgpt2-v3'
+
+// ASSUMES: keys come from CACHE_KEY, whose responses are the current patched
+// model and tokenizer; a filename alone does not validate response bytes.
+export function cacheHasModel(keys) {
+  const urls = keys.map((key) => typeof key === 'string' ? key : key.url)
+  return urls.some((url) => url.endsWith(ONNX_FILE)) &&
+    urls.some((url) => url.endsWith('tokenizer.json'))
+}
 // Buckets an earlier fragment wrote. Nothing will ever read them again, and
 // each one holds 83 MB, so the load drops them on its way past.
 const STALE_CACHE_KEYS = ['fixture-and-part-distilgpt2-v2']
