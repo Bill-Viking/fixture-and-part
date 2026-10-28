@@ -2600,7 +2600,7 @@ export default function ForwardMap({
     const SameTrace = `${sameTrace[0].toUpperCase()}${sameTrace.slice(1)}`
     const landing = !live
       ? compact
-        ? (COMPANY ? `The last position’s vector against all 50,257 words. It needs a pass, which this copy does not run.` : `The last position’s vector against all 50,257 words. It needs a pass — load the real model and the bars are this sentence’s own softmax.`)
+        ? (COMPANY ? `The last position’s vector against all 50,257 words. It needs a pass; this copy carries one, for the page’s own sentence.` : `The last position’s vector against all 50,257 words. It needs a pass — load the real model and the bars are this sentence’s own softmax.`)
         : (COMPANY ? `Where the last position’s vector meets all 50,257 words. There is no distribution without a pass, so no bar is drawn; with a model in hand the bars would be this sentence’s own softmax, top ${g.splashN}.` : `Where the last position’s vector meets all 50,257 words. There is no distribution without a pass, so no bar is drawn: load the real model and the bars become this sentence’s own softmax, top ${g.splashN}.`)
       : compact
         ? `The last position’s alone, and the last position’s stream is the one that reaches it${draw?.landingHere ? ' — the hero here' : ', dimmed — the hero is earlier'}. The ${g.splashN} bars are this pass’s own softmax over all 50,257 words. ${argmaxLine} is the machine’s own top, drawn blue; ${pickBar ? `${pickBar.token} at ${(pickBar.p * 100).toFixed(1)}%` : (nextToken ?? '—')} ${tookCompact} and carries the amber mark. ${SameTrace}`
@@ -2659,7 +2659,7 @@ export default function ForwardMap({
   const fine = live
     ? `real distilgpt2 · ${REAL_LAYERS} blocks · ${REAL_HEADS} heads · d ${REAL_HIDDEN}${
         manifest ? ` · ${(manifest.parameters / 1e6).toFixed(1)}M parameters` : ''
-      } · one pass on the sentence above, run in this browser · nothing in the picture is a stand-in: the only marks that carry no number are the aperture outline, the bloom around the light, and the sweep that travels down the sheet while it runs itself.`
+      } · one pass on the sentence above, ${COMPANY ? 'run once when this copy was built' : 'run in this browser'} · nothing in the picture is a stand-in: the only marks that carry no number are the aperture outline, the bloom around the light, and the sweep that travels down the sheet while it runs itself.`
     : `real distilgpt2 · ${REAL_LAYERS} blocks · ${REAL_HEADS} heads · d ${REAL_HIDDEN}${
         manifest ? ` · ${(manifest.parameters / 1e6).toFixed(1)}M parameters` : ''
       } · the walls are the real file in every mode; the fall, the transfers and the landing wait on a pass. The only marks that carry no number are the aperture outline, the bloom around the light, and the sweep that travels down the sheet while it runs itself.`
@@ -2716,7 +2716,7 @@ export default function ForwardMap({
             label={
               armed
                 ? architectureNote(manifest)
-                : (COMPANY ? 'the walls are real — the fall is a schematic in this copy' : 'the walls are real in both modes — the fall needs the model')
+                : (COMPANY ? 'the walls are real — the fall is a schematic for any sentence but the page’s own' : 'the walls are real in both modes — the fall needs the model')
             }
             status={modelStatus}
             progress={progress}
@@ -3609,7 +3609,7 @@ export default function ForwardMap({
               >
                 {waiting
                   ? 'the landing is waiting on this pass'
-                  : (COMPANY ? 'the landing needs a pass — this copy runs none' : 'the landing needs the real model — load it above')}
+                  : (COMPANY ? 'the landing needs a pass — this copy carries one, for the page’s own sentence' : 'the landing needs the real model — load it above')}
               </text>
             )}
             {draw && !draw.landingHere ? (

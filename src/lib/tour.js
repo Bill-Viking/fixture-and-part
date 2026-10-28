@@ -557,9 +557,11 @@ export function buildTour({
         ? `That is one pass: the file frozen, one sentence moving through it, one next word.`
         : `That is the shape of one pass, with the walls real and the fall a schematic.`,
       live
-        ? `Nothing above ran twice and nothing was smoothed on the way to the screen. Press play to run it again, ` +
-          `step back through it, or click anything on the sheet — a carrier, a ray, a wall cell — and it will say ` +
-          `what it is.`
+        ? (COMPANY
+            ? `It ran once, when this copy was built, and nothing was smoothed on the way to the screen. Press play to watch it again, step back through it, or click anything on the sheet — a carrier, a ray, a wall cell — and it will say what it is.`
+            : `Nothing above ran twice and nothing was smoothed on the way to the screen. Press play to run it again, ` +
+              `step back through it, or click anything on the sheet — a carrier, a ray, a wall cell — and it will say ` +
+              `what it is.`)
         : (COMPANY
             ? `With a model in hand the same tour would speak this sentence’s own numbers at every stop.`
             : `Load the real model above and the same tour speaks this sentence’s own numbers at every stop.`),

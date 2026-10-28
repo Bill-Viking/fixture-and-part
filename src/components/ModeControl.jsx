@@ -1,6 +1,7 @@
 import { COMPANY } from '../lib/company.js'
 import TeachPair from './TeachPair.jsx'
 import { progressLabel } from '../lib/loadProgress.js'
+import { mb } from '../lib/fileFormat.js'
 
 /**
  * The mode switch that governs all three instruments.
@@ -39,8 +40,9 @@ export default function ModeControl({
           <span className="mode-state">no model in this copy</span>
         </div>
         <div className="mode-row mode-load is-company">
-          <span className="mode-hint">this copy does not download the model — what it shows of the file was read when this page was built, and the rest is illustrative.</span>
+          <span className="mode-hint">this copy does not download the model — what it shows of the file was read when this page was built, one pass of the page’s own sentence was run then and kept, and the rest is illustrative.</span>
           <span className="mode-hint">the full version downloads the model and runs it live, with more to try: <a href="https://bill-viking.github.io/fixture-and-part/">bill-viking.github.io/fixture-and-part</a> — public, for your own machine, on your own time.</span>
+          <span className="mode-hint">the full version downloads an {mb(__FILE_PROVENANCE__.bytes)} model file into the browser and keeps it there: for your own machine, never a company one.</span>
         </div>
         <TeachPair
           className="mode-manifest"
