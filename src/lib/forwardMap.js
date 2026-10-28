@@ -194,7 +194,7 @@ export function topOfFinalLogits(run) {
   if (!row || row.length === 0) return null
   let best = 0
   for (let id = 1; id < row.length; id++) if (row[id] > row[best]) best = id
-  return { id: best, token: tokenText(best) }
+  return { id: best, token: run.tokenNames?.[best] ?? tokenText(best) }
 }
 
 /**
@@ -243,7 +243,7 @@ export function finalSplash(run, count = 8) {
   }
   return top.map((id) => ({
     id,
-    token: tokenText(id),
+    token: run.tokenNames?.[id] ?? tokenText(id),
     p: Math.exp(row[id] - max) / total,
   }))
 }

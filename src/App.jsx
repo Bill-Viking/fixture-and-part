@@ -1,4 +1,5 @@
 import { COMPANY } from './lib/company.js'
+import { loadBakedPass } from './lib/bakedPass.js'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { header, sections, footerHtml, footerHtmlCompany, miniLegend } from './content/essay.js'
 import Tokenizer from './instruments/Tokenizer.jsx'
@@ -414,6 +415,21 @@ export default function App() {
   const isReal = !COMPANY && mode === 'real' && modelStatus === 'ready'
 
   const wordTokens = useMemo(() => tokenize(text), [text])
+  const [bakedPass, setBakedPass] = useState(null)
+  const bakedLoad = useRef(null)
+  useEffect(() => {
+    if (!COMPANY || !loadBakedPass) return
+    // One load and one error report, including React's development effect replay.
+    bakedLoad.current ??= loadBakedPass().catch((error) => {
+      console.error(error)
+      return null
+    })
+    let active = true
+    bakedLoad.current.then((pass) => { if (active) setBakedPass(pass) })
+    return () => { active = false }
+  }, [])
+  // ASSUMES: only the page's exact sentence owns these numbers, never another eight-token text.
+  const baked = COMPANY && bakedPass && text === DEFAULT_SENTENCE ? bakedPass : null
   // Memoised because instrument D keys a reset off it: a fresh array every
   // render would throw the glass pass back to its default position on every
   // render rather than on every retokenization.
@@ -903,7 +919,7 @@ export default function App() {
     forward: (
       <ForwardMap
         text={text}
-        sequence={sequence}
+        sequence={baked ? baked.run.tokens : sequence}
         lensIndex={safeLens}
         onSelect={handleLensSelect}
         layer={layer}
@@ -920,14 +936,14 @@ export default function App() {
         // goes false for the third of a second a pass takes — during which
         // the map draws its stream flat and says the pass is running,
         // rather than claiming numbers it does not yet have.
-        armed={isReal}
-        real={isReal && Boolean(ranKey)}
-        run={isReal && runReady ? realRun : null}
+        armed={isReal || Boolean(baked)}
+        real={(isReal && Boolean(ranKey)) || Boolean(baked)}
+        run={isReal && runReady ? realRun : (baked ? baked.run : null)}
         nextToken={
           // The token B will append. In real mode that is the sampler's own
           // pick, which is not always in the printed shortlist — the draw
           // reaches forty deep and the list shows four.
-          pick?.token ?? candidates.find((c) => c.wins)?.token ?? null
+          baked ? baked.nextToken : (pick?.token ?? candidates.find((c) => c.wins)?.token ?? null)
         }
         // The same value instrument B is given, so the drawing narrates the
         // rule the reader actually selected rather than the shipped default.
