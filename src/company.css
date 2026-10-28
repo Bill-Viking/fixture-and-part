@@ -353,7 +353,7 @@ html[data-look="company"] .mode-load.is-company {
   align-items: stretch;
   justify-content: center;
   gap: 4px;
-  height: 120px;
+  height: 48px;
 }
 html[data-look="company"] .mode-load.is-company .mode-hint {
   flex: 0 0 auto;
@@ -363,8 +363,8 @@ html[data-look="company"] .mode-load.is-company .mode-hint {
   line-height: 16px;
 }
 @media (max-width: 640px) {
-  html[data-look="company"] .mode-load.is-company { height: 184px; }
+  html[data-look="company"] .mode-load.is-company { height: 64px; }
 }
 @media (max-width: 389px) {
-  html[data-look="company"] .mode-load.is-company { height: 232px; }
+  html[data-look="company"] .mode-load.is-company { height: 64px; }
 }

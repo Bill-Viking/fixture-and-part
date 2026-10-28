@@ -9,6 +9,46 @@
 // publisher's wall.
 
 export const claimNotes = {
+  scaling: {
+    kind: "evidence",
+    title: "the scaling curves",
+    body: "loss falls as a smooth power law in parameters, data and compute, and the best use of a compute budget grows the data with the model. two papers set the curves; neither says anything about rules or steps — that reading is this page's own.",
+    sources: [
+      { label: "Kaplan et al. 2020 · Scaling laws for neural language models", url: "https://arxiv.org/abs/2001.08361" },
+      { label: "Hoffmann et al. 2022 · Training compute-optimal large language models", url: "https://arxiv.org/abs/2203.15556" },
+    ],
+  },
+  horizon: {
+    kind: "evidence",
+    title: "the task horizon",
+    body: "the length of software task — measured by how long it takes a person — that a model completes half the time has doubled roughly every seven months since 2019, across frontier models. one group's measure on one kind of work; the page uses it as the shape, not the number.",
+    sources: [
+      { label: "METR 2025 · Measuring AI ability to complete long software tasks", url: "https://arxiv.org/abs/2503.14499" },
+    ],
+  },
+  mirage: {
+    kind: "theory",
+    title: "steps or a curve?",
+    body: "whether abilities appear in sudden steps or on a smooth curve depends on the yardstick: a sharp metric shows steps, a graded one shows a curve. the page sides with the curve for how a rule is kept; the argument is open.",
+    sources: [
+      { label: "Wei et al. 2022 · Emergent abilities of large language models", url: "https://arxiv.org/abs/2206.07682" },
+      { label: "Schaeffer et al. 2023 · Are emergent abilities of large language models a mirage?", url: "https://arxiv.org/abs/2304.15004" },
+    ],
+  },
+  middle: {
+    kind: "theory",
+    title: "lost in the middle",
+    body: "models use information at the start and the end of a long context better than information in the middle; measured on retrieval and question answering, not on rules kept over steps. the step from that finding to a rulebook slipping from the spotlight is this page's analogy.",
+    sources: [
+      { label: "Liu et al. 2023 · Lost in the middle: how language models use long contexts", url: "https://arxiv.org/abs/2307.03172" },
+    ],
+  },
+  count: {
+    kind: "theory",
+    title: "one count is not a measurement",
+    body: "a single observation, 2026-10-28, in the harness that builds this page: four replies against one, same rules, two sizes of one family. a count of one says the shape; it measures nothing until it is repeated and scored.",
+    sources: [],
+  },
   reinterpret: {
     kind: 'evidence',
     title: 'machines that reinterpret',
