@@ -1,0 +1,7 @@
+# BRIEF 3 — the rate: size and the long horizon, into section 10 (2026-10-28)
+
+Same rules as `BRIEF-1.md` in this folder (never commit or stage; no browser; `--configLoader native`; words verbatim; both copies; protected files; the report shape). Run ONLY after BRIEF-2's edits are committed by the lane (one writer per file: BRIEF-2 edits `essay.js` and `claimNotes.js` too). Report to `BRIEF-3-REPORT.md` here, last line `DONE — …` or `FAIL — …`.
+
+Insert, in `src/content/essay.js` section id '10', directly AFTER the callout labelled `THE CONVERSATION — THE CLERK AND THE LIFE` and before the section ends: the two paragraphs P1 and P2 and the callout, exactly as `WORDS-LONG-HORIZON.md` in this folder gives them (encode `’` / `—` / `“ ”` the way the surrounding file does). Attach the five claim notes it lists, in `src/content/claimNotes.js`, in the page's existing kinds (`evidence`, `theory`), each on the exact phrase named, with the sources exactly as given (every URL was verified by title on 2026-10-28; invent none; the `count` note has no sources).
+
+Checks: lint (one existing warning); both builds; counts in both bundles — `The dial that does move is how far a rule carries` 1 · `One morning’s count` 1 · `THE CONVERSATION — THE RATE` 1 · `the task horizon` 1 · `lost in the middle` 1 · `one count is not a measurement` 1 · `steps or a curve?` 1 · `the scaling curves` 1; no model name of any house in the new text (grep the new strings for `Fable|Opus|Sonnet|Haiku|Claude|GPT|Astra|Sol` → 0); protected files unchanged; `git status --short` last.
