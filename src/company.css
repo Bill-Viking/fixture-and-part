@@ -4,7 +4,8 @@ html[data-look="company"] body {
   --paper: #FFFFFF;
   --card: #FFFFFF;
   --sunk: #F4F7FB;
-  --ink: #1D1D1B;
+  --company-ink: #1D1D1B;
+  --ink: var(--company-ink);
   --muted: #54606E;
   --hair: #D5DEE8;
   --rule: #7E8792;
@@ -367,4 +368,173 @@ html[data-look="company"] .mode-load.is-company .mode-hint {
 }
 @media (max-width: 389px) {
   html[data-look="company"] .mode-load.is-company { height: 64px; }
+}
+
+/* Number provenance belongs to the company copy, beside the zone it describes.
+   The hidden wider wording reserves the exact font width through a live swap. */
+html[data-look="company"] .number-status {
+  display: inline-grid;
+  flex: none;
+  grid-template-columns: max-content;
+  margin-left: auto;
+  padding: 0 5px;
+  border: 1px solid var(--hair);
+  color: var(--muted);
+  background: none;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 14px;
+  letter-spacing: 0.03em;
+  text-align: left;
+  white-space: nowrap;
+}
+html[data-look="company"] .number-status > span { grid-area: 1 / 1; }
+html[data-look="company"] .number-status-measure { visibility: hidden; }
+html[data-look="company"] .number-status.is-standin { border-style: dashed; }
+html[data-look="company"] .number-zone-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  line-height: 13px;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+/* These are inline-size containers only: the table keeps its rows and the
+   map keeps its existing aspect-ratio. The overlay never contributes height. */
+html[data-look="company"] :is(.attn-table, .map-screen) {
+  position: relative;
+  container-type: inline-size;
+}
+html[data-look="company"] .illustrative-watermark {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--mono);
+  font-size: clamp(18px, 3cqw, 42px);
+  line-height: 1;
+  letter-spacing: 0.12em;
+  color: var(--company-ink);
+  opacity: 0.10;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+}
+html[data-look="company"] .controls-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 236px;
+}
+html[data-look="company"] .cand-note { width: auto; flex: 1; }
+html[data-look="company"] :is(.counter, .blend) {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+html[data-look="company"] .budget { display: grid; grid-template-columns: auto auto 1fr auto; }
+html[data-look="company"] .budget .number-status { grid-column: 4; grid-row: 1; }
+html[data-look="company"] .budget-track { grid-column: 3; grid-row: 1; }
+/* Both vector labels gain a 16px chip, within a fixed 46px label. At the
+   narrowest side-by-side pipe (701px) the text uses at most three 13px lines.
+   Parallel labels add 20px once; stacked labels add 33px twice. */
+html[data-look="company"] .kv-stage-label:has(.number-status) { height: 46px; font-size: 10.5px; }
+html[data-look="company"] .kv-stage-label .number-status { float: right; margin: 0 0 4px 5px; }
+html[data-look="company"] .kv-inspector { height: 248px; }
+/* D has two sources: its baked vectors, and its illustrative lens. Keep the
+   separate column labels visible on the phone too, in three reserved rows. */
+html[data-look="company"] .lens-head { height: 64px; font-size: 10.5px; }
+html[data-look="company"] :is(.lens-head-res, .lens-head-cand, .lens-head-trace) {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: visible;
+  white-space: normal;
+  text-align: left;
+}
+html[data-look="company"] .lens-head .number-status { align-self: flex-end; }
+/* E's labels are static; the byte-window label also keeps its changing
+   source note on its own fixed second row at the phone band. */
+html[data-look="company"] .file-label .number-status { order: 0; }
+html[data-look="company"] .file-label .file-source { order: 1; }
+@media (max-width: 700px) {
+  html[data-look="company"] .kv-inspector { height: 428px; }
+}
+@media (max-width: 640px) {
+  html[data-look="company"] .controls-note { width: 100%; }
+  html[data-look="company"] .counter {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 22px 16px;
+    gap: 6px;
+    height: 44px;
+  }
+  html[data-look="company"] .counter > .number-status { justify-self: end; }
+  html[data-look="company"] .budget { grid-template-columns: auto auto 1fr; }
+  html[data-look="company"] .budget .number-status { grid-column: 3; }
+  html[data-look="company"] .budget-track { grid-column: 1 / -1; grid-row: 2; }
+  html[data-look="company"] .kv-inspector { height: 450px; }
+  html[data-look="company"] .lens-head {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(3, 32px);
+    gap: 0;
+    height: 96px;
+    padding: 0;
+  }
+  html[data-look="company"] .lens-head > .field-label { display: none; }
+  html[data-look="company"] :is(.lens-head-res, .lens-head-cand, .lens-head-trace) {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+  html[data-look="company"] .lens-head .number-status { align-self: center; }
+  html[data-look="company"] .file-label { height: 64px; }
+  html[data-look="company"] .file-label .field-label { flex: 0 0 calc(100% - 23px); }
+  html[data-look="company"] .file-label .file-source { flex: 0 0 100px; order: 1; }
+  html[data-look="company"] .file-label .number-status { order: 2; }
+}
+@media (max-width: 480px) {
+  html[data-look="company"] .cand-note { display: none; }
+}
+
+@media (max-width: 380px) {
+  /* Keep the original extra prose line as well as both 33px label gains. */
+  html[data-look="company"] .kv-inspector { height: 474px; }
+}
+
+/* F's range and filament readout has its own source. Its widest chip is
+   reserved independently of the text: two 14px lines in the column, four on
+   the phone. The controls keep their original three fixed selector rows. */
+html[data-look="company"] .map-controls { height: 118px; }
+html[data-look="company"] .map-controls .mr-chiprow { flex: none; }
+html[data-look="company"] .map-ctl-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex: none;
+  height: 28px;
+  line-height: 14px;
+  white-space: normal;
+}
+html[data-look="company"] .map-ctl-note > span:first-child { flex: 1; min-width: 0; }
+@media (max-width: 640px) {
+  html[data-look="company"] .map-controls { height: 155px; }
+  html[data-look="company"] .map-ctl-note { height: 56px; }
+}
+
+/* The two lens readouts are illustrative even while its vector column has
+   baked data. A 62.4px chip plus 5px gap leaves 182.6px at 320px: the
+   default summary takes six 15px lines by the mono estimate; reserve seven. */
+html[data-look="company"] .lens-note { height: 32px; }
+html[data-look="company"] .lens-reading { height: 60px; }
+html[data-look="company"] .lens-note .number-status { float: right; margin: 0 0 4px 5px; }
+html[data-look="company"] .map-ctl-note { font-size: 10.5px; }
+@media (max-width: 640px) {
+  html[data-look="company"] .lens-reading { height: 105px; }
 }

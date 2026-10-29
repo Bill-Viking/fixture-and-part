@@ -1,3 +1,5 @@
+import NumberStatus from '../components/NumberStatus.jsx'
+import { COMPANY } from '../lib/company.js'
 import { memo, useEffect, useRef, useState } from 'react'
 import { LAYERS } from '../lib/toyModel.js'
 import { DECODING } from '../lib/realModel.js'
@@ -156,6 +158,7 @@ function Candidates({
               ? 'scripted · illustrative'
               : 'illustrative'}
         </span>
+        {COMPANY && <NumberStatus source="standin" />}
       </div>
       <div className="cand-list" key={stepTick}>
         {pending && <p className="empty-note">running distilgpt2&hellip;</p>}
@@ -362,6 +365,7 @@ export default function Stepper({
             {generatedCount === 0
               ? 'no tokens generated yet'
               : `${generatedCount} token${generatedCount === 1 ? '' : 's'} generated`}
+            {COMPANY && <NumberStatus source="standin" />}
           </span>
         </div>
 
@@ -408,6 +412,7 @@ export default function Stepper({
                 <span className="chip chip-v">V</span>
                 <InfoTag topic="value" />
               </span>
+              {COMPANY && <NumberStatus source="standin" />}
             </div>
             <div className="pane-box rack-box screen">
               {stepTick > 0 && <span className="sweep" key={stepTick} />}
@@ -431,9 +436,20 @@ export default function Stepper({
         </div>
 
         <p className="counter">
-          cache entries: <span className="counter-n">{sequence.length}</span>{' '}
-          &times; {LAYERS} layers
-          <InfoTag topic="cache" />
+          {COMPANY ? (
+            <span>
+              cache entries: <span className="counter-n">{sequence.length}</span>{' '}
+              &times; {LAYERS} layers
+              <InfoTag topic="cache" />
+            </span>
+          ) : (
+            <>
+              cache entries: <span className="counter-n">{sequence.length}</span>{' '}
+              &times; {LAYERS} layers
+              <InfoTag topic="cache" />
+            </>
+          )}
+          {COMPANY && <NumberStatus source="standin" />}
         </p>
 
         <KVInspector selection={selection} real={real} vectors={vectors} />

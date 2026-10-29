@@ -1,3 +1,4 @@
+import NumberStatus from '../components/NumberStatus.jsx'
 import { COMPANY } from '../lib/company.js'
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import InfoTag from '../components/InfoTag.jsx'
@@ -1577,6 +1578,7 @@ export default function FileView({
         <div className="label-row tight">
           <span className="field-label">the header &mdash; every tensor</span>
           <InfoTag topic="file" />
+          {COMPANY && <NumberStatus source="file" />}
         </div>
         <p className="file-stat">{header?.stat ?? '—'}</p>
 
@@ -1607,6 +1609,7 @@ export default function FileView({
         <div className="label-row">
           <span className="field-label">the bar — the whole file, drawn to scale</span>
           <InfoTag topic="fileHeader" />
+          {COMPANY && <NumberStatus source="file" />}
         </div>
         <div
           className="file-bar-wrap"
@@ -1682,6 +1685,7 @@ export default function FileView({
           <span className="field-label">the bytes &mdash; one small window</span>
           <InfoTag topic="fileBlob" />
           <span className="file-source">{source()}</span>
+          {COMPANY && <NumberStatus source="file" />}
         </div>
         {/* One plain line for the word table; empty, at the same height, for
             any other tensor, so a tensor switch moves nothing. */}
@@ -1748,6 +1752,7 @@ export default function FileView({
         <div className="label-row">
           <span className="field-label">the bell curve &mdash; every value</span>
           <InfoTag topic="fileCurve" />
+          {COMPANY && <NumberStatus source="file" />}
         </div>
         <p className="file-eyebrow file-curve-eyebrow">
           {entry ? `every value of ${tensorNoun(entry)} — the whole tensor, not only the window` : '—'}

@@ -20,7 +20,7 @@ import react from '@vitejs/plugin-react'
 // moves the page under a reader who reloads in section 07. Three fields, read
 // here at build time, are in the first paint instead. Read once when the
 // config loads: a dev server picks up a regenerated fileFacts.json on restart.
-const { provenance } = JSON.parse(
+const { provenance, manifest } = JSON.parse(
   readFileSync(new URL('./src/content/fileFacts.json', import.meta.url), 'utf8'),
 )
 
@@ -45,6 +45,7 @@ export default defineConfig(() => ({
   base: process.env.VITE_BASE || '/',
   plugins: [react(), ...(process.env.VITE_COMPANY === '1' ? [companyFonts] : [])],
   define: {
+    __FILE_PARAMETERS__: JSON.stringify(manifest.parameters),
     __FILE_PROVENANCE__: JSON.stringify({
       sha256: provenance.sha256,
       bytes: provenance.bytes,

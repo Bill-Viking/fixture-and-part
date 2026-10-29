@@ -2,8 +2,6 @@ import { COMPANY } from '../lib/company.js'
 import TeachPair from './TeachPair.jsx'
 import { progressLabel } from '../lib/loadProgress.js'
 
-const LOAD_LABEL = 'LOAD THE REAL MODEL (83.5 MB)'
-
 /**
  * The mode switch that governs all three instruments.
  *
@@ -27,6 +25,9 @@ export default function ModeControl({
   mode,
   onModeChange,
   status,
+  parameterCount,
+  modelSize,
+  firstTokenId,
   loadingFromCache,
   progress,
   backend,
@@ -47,6 +48,10 @@ export default function ModeControl({
     )
   }
 
+  const loadLabel = `LOAD THE REAL MODEL (${modelSize})`
+  const receipt = `distilgpt2 is here in your browser — ${parameterCount} parameters · ${modelSize}` +
+    (firstTokenId == null ? '' : ` · first id ${firstTokenId} = GPT-2’s “The”`) +
+    ' — switch freely'
   const loaded = status === 'ready'
   const loading = status === 'loading'
   const percent = Math.max(0, Math.min(100, Math.round(progress.percent || 0)))
@@ -82,11 +87,14 @@ export default function ModeControl({
         </span>
       </div>
 
-      <div className="mode-row mode-load">
+      <div className="mode-row mode-load has-receipt-space">
         {loading ? (
           <>
-            <span className="mode-track" aria-hidden="true">
-              <span className="mode-fill" style={{ width: `${percent}%` }} />
+            <span className="mode-command-box">
+              <span className="btn btn-primary mode-command-measure" aria-hidden="true">{loadLabel}</span>
+              <span className="mode-track" aria-hidden="true">
+                <span className="mode-fill" style={{ width: `${percent}%` }} />
+              </span>
             </span>
             <span
               className="mode-progress"
@@ -102,13 +110,13 @@ export default function ModeControl({
           <>
             <span className="mode-command-box">
               <span className="btn btn-primary mode-command-measure" aria-hidden="true">
-                {LOAD_LABEL}
+                {loadLabel}
               </span>
               {loaded ? (
                 <span className="btn btn-primary mode-loaded" role="status">LOADED</span>
               ) : (
                 <button type="button" className="btn btn-primary" onClick={onLoad}>
-                  {LOAD_LABEL}
+                  {loadLabel}
                 </button>
               )}
             </span>
@@ -116,8 +124,8 @@ export default function ModeControl({
               {error
                 ? 'real model unavailable — showing illustrative weights'
                 : loaded
-                  ? 'distilgpt2 is here in your browser — switch freely'
-                  : 'real mode needs an 83.5 MB download, once'}
+                  ? receipt
+                  : `real mode needs an ${modelSize} download, once`}
             </span>
           </>
         )}

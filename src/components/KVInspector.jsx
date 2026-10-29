@@ -1,3 +1,5 @@
+import { COMPANY } from '../lib/company.js'
+import NumberStatus from './NumberStatus.jsx'
 import {
   formatVector,
   hashTokenToVector,
@@ -79,6 +81,7 @@ export default function KVInspector({ selection, real, vectors }) {
             <div className="kv-pipe">
               <div className="kv-stage">
                 <span className="kv-stage-label">
+                  {COMPANY && <NumberStatus source="standin" />}
                   embedding &mdash; the token&rsquo;s vector, x
                 </span>
                 <span className="token-pill kv-pill">
@@ -129,7 +132,7 @@ export default function KVInspector({ selection, real, vectors }) {
               </span>
 
               <div className="kv-stage">
-                <span className="kv-stage-label">{role.outLabel}</span>
+                <span className="kv-stage-label">{COMPANY && <NumberStatus source="standin" />}{role.outLabel}</span>
                 <span
                   className={`kv-vec ${role.outClass}`}
                   title={showReal ? 'first 6 of 768 real dims' : 'illustrative vector'}

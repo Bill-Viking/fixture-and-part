@@ -1,3 +1,5 @@
+import NumberStatus, { IllustrativeWatermark } from '../components/NumberStatus.jsx'
+import { COMPANY } from '../lib/company.js'
 import { useMemo } from 'react'
 import {
   attention,
@@ -152,11 +154,13 @@ export default function AttentionInspector({
             b="lookup — rows past the query are locked"
           />
           <InfoTag topic="mask" />
+          {COMPANY && <NumberStatus source="standin" />}
         </div>
 
         <p className="teach dim attn-key">K — the key a row advertises · V — the value it hands over · a lit V is on the table for this query</p>
 
         <div className="attn-table screen" role="table" aria-label="attention lookup">
+          {COMPANY && <IllustrativeWatermark />}
           <div className="attn-row attn-head" role="row">
             <span className="c-tok" role="columnheader">token</span>
             <span className="c-k" role="columnheader">
@@ -257,6 +261,7 @@ export default function AttentionInspector({
         <div className="budget">
           <span className="field-label">budget of 1.0</span>
           <InfoTag topic="budget" />
+          {COMPANY && <NumberStatus source="standin" />}
           <span className="budget-track">
             {rows.map((row) => (
               <span
@@ -274,6 +279,7 @@ export default function AttentionInspector({
           <span className="blend-target">
             {queryToken ? `“${queryToken}”` : '—'}
           </span>
+          {COMPANY && <NumberStatus source="standin" />}
         </p>
         <p className="blend-plain">
           {best

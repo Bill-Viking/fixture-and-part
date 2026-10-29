@@ -1,3 +1,4 @@
+import NumberStatus, { IllustrativeWatermark } from '../components/NumberStatus.jsx'
 import { COMPANY } from '../lib/company.js'
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
@@ -2800,7 +2801,9 @@ export default function ForwardMap({
               {openWindow('E', 'file', 'open instrument E, the file')}
             </span>
           </div>
-          <span className="map-ctl-note">{note()}</span>
+          <span className="map-ctl-note">
+            {COMPANY ? <><span>{note()}</span><NumberStatus source={real ? 'pass' : 'standin'} changing /></> : note()}
+          </span>
         </div>
 
         {/* The docent. It rides at the top of the window while the drawing —
@@ -2873,6 +2876,13 @@ export default function ForwardMap({
           </p>
         </div>
 
+        {COMPANY && (
+          <div className="number-zone-labels">
+            <div className="number-zone-label"><span>walls</span><NumberStatus source="file" /></div>
+            <div className="number-zone-label"><span>fall · carriers · landing</span><NumberStatus source={real ? 'pass' : 'standin'} changing /></div>
+          </div>
+        )}
+
         <div
           className={`map-screen screen${ambient ? ' is-ambient' : ''}`}
           style={{
@@ -2908,6 +2918,7 @@ export default function ForwardMap({
             '--mr-hero-ms': `${MOTION.ambient.heroMs}ms`,
           }}
         >
+          {COMPANY && !real && <IllustrativeWatermark />}
           <svg
             ref={svgRef}
             className="map-svg"
@@ -3759,6 +3770,16 @@ export default function ForwardMap({
             the reader to wherever that answer can be read at length. Both are
             fixed width and the box is two reserved lines, so no wording of
             any readout moves anything. */}
+        {COMPANY && (
+          <div className="number-zone-label">
+            <span>readout</span>
+            <NumberStatus
+              source={!inspect || inspect.kind === 'cell' || (inspect.kind === 'plate' && !inspect.aimed)
+                ? 'file' : real ? 'pass' : 'standin'}
+              changing reserve="file"
+            />
+          </div>
+        )}
         <div className="map-readout-row">
           <p className="map-readout">{readout}</p>
           <button

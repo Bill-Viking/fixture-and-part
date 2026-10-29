@@ -2661,3 +2661,30 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
      walking every element under prefers-reduced-motion: reduce and finding
      none that reports a running animation or a transition. */
 }
+
+/* Public model receipt. Mono advance + tracking = 6.4px at 10px type.
+   At 641px: 272.21px beside the measured 276.79px command, 3 receipt lines.
+   At 390px: 320px / 3 lines; at 320px: 250px / 4 lines. A fifth-digit id
+   was included in the bound. Reserve one spare 15px line in every band.
+   The command, track, progress and hint keep their boxes in every state;
+   adding the tokenizer id never changes the hint's height or left edge.
+   Browser fit and CLS are the caller's unrun proofs. */
+.mode-load.has-receipt-space { height: 53px; }
+.has-receipt-space :is(.mode-hint, .mode-progress) {
+  height: 45px;
+  line-height: 15px;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  display: flex;
+  align-items: flex-start;
+}
+.has-receipt-space .mode-track { width: 100%; align-self: center; }
+@media (max-width: 760px) {
+  .mode-load.has-receipt-space { height: 68px; }
+  .has-receipt-space :is(.mode-hint, .mode-progress) { height: 60px; }
+}
+@media (max-width: 640px) {
+  .mode-load.has-receipt-space { height: 128px; }
+  .has-receipt-space :is(.mode-hint, .mode-progress) { height: 75px; }
+}

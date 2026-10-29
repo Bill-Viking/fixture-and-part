@@ -382,6 +382,8 @@ export default function App() {
   const [selectedMode, setMode] = useState('illustrative')
   const mode = COMPANY ? 'illustrative' : selectedMode
   const [modelStatus, setModelStatus] = useState('idle')
+  const [firstTokenId, setFirstTokenId] = useState(null)
+  const receiptToken = useRef(null)
   const [loadingFromCache, setLoadingFromCache] = useState(false)
   const modelLoadStarted = useRef(false)
   const modelLoadAttempted = useRef(false)
@@ -564,6 +566,16 @@ export default function App() {
     })
     return () => { active = false }
   }, [handleLoad])
+
+  // One reading from the loaded tokenizer, independent of the reader's sentence.
+  useEffect(() => {
+    if (COMPANY || modelStatus !== 'ready') return
+    receiptToken.current ??= realTokenize('The').then(({ ids }) => ids[0] ?? null)
+      .catch(() => null)
+    let active = true
+    receiptToken.current.then((id) => { if (active) setFirstTokenId(id) })
+    return () => { active = false }
+  }, [modelStatus])
 
   // Real BPE for whatever is typed. Debounced so a fast typist does not queue
   // one tokenizer call per keystroke.
@@ -894,6 +906,9 @@ export default function App() {
             mode={mode}
             onModeChange={handleModeChange}
             status={modelStatus}
+            parameterCount={COMPANY ? undefined : __FILE_PARAMETERS__.toLocaleString('en-US')}
+            modelSize={builtValues.mb}
+            firstTokenId={firstTokenId}
             loadingFromCache={loadingFromCache}
             progress={progress}
             backend={backend}

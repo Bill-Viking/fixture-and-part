@@ -1,3 +1,5 @@
+import NumberStatus from '../components/NumberStatus.jsx'
+import { COMPANY } from '../lib/company.js'
 import { useMemo } from 'react'
 import {
   CANDIDATE_COUNT,
@@ -220,9 +222,9 @@ export default function GlassPass({
 
         <div className="lens-head">
           <span className="field-label">depth</span>
-          <span className="lens-head-res">the vector so far</span>
-          <span className="lens-head-cand">if it stopped here it would say</span>
-          <span className="lens-head-trace">final word’s share</span>
+          <span className="lens-head-res">the vector so far{COMPANY && <NumberStatus source={bakedRun ? 'pass' : 'standin'} changing />}</span>
+          <span className="lens-head-cand">if it stopped here it would say{COMPANY && <NumberStatus source="standin" />}</span>
+          <span className="lens-head-trace">final word’s share{COMPANY && <NumberStatus source="standin" />}</span>
         </div>
 
         <div className="lens-rows screen">
@@ -272,9 +274,11 @@ export default function GlassPass({
         </div>
 
         <p className="lens-note" aria-live="polite">
+          {COMPANY && <NumberStatus source="standin" />}
           {note()}
         </p>
         <p className="lens-note lens-reading" aria-live="polite">
+          {COMPANY && <NumberStatus source="standin" />}
           {readingSummary(hasReading ? live : null)}
         </p>
 

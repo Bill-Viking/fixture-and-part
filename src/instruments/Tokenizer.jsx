@@ -1,3 +1,5 @@
+import NumberStatus from '../components/NumberStatus.jsx'
+import { COMPANY } from '../lib/company.js'
 import { useId } from 'react'
 import { hashTokenToVector, formatVector } from '../lib/toyModel.js'
 import { formatRealVector, realEmbedding } from '../lib/realModel.js'
@@ -89,6 +91,7 @@ export default function Tokenizer({
             b="embedding — first 6 of 768 dims"
           />
           <InfoTag topic={real ? 'embeddingReal' : 'embedding'} />
+          {COMPANY && <NumberStatus source="standin" />}
         </div>
 
         <div className="token-strip" role="list">
