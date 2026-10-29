@@ -410,20 +410,35 @@ html[data-look="company"] :is(.attn-table, .map-screen) {
   container-type: inline-size;
 }
 html[data-look="company"] .illustrative-watermark {
+  /* A layer over the whole drawing; the word inside it is centred on a short
+     drawing and, on the tall fall, rides the middle of the viewport while the
+     reader scrolls through it. Both drawings sit on the dark screen, so the
+     word is the screen's own text colour at low opacity. */
   position: absolute;
+  inset: 0;
   z-index: 2;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  user-select: none;
+}
+html[data-look="company"] .illustrative-watermark > span {
   font-family: var(--mono);
   font-size: clamp(18px, 3cqw, 42px);
   line-height: 1;
   letter-spacing: 0.12em;
-  color: var(--company-ink);
-  opacity: 0.10;
+  color: var(--screen-text);
+  opacity: 0.14;
   white-space: nowrap;
-  pointer-events: none;
-  user-select: none;
+}
+html[data-look="company"] .illustrative-watermark.is-tall {
+  align-items: flex-start;
+}
+html[data-look="company"] .illustrative-watermark.is-tall > span {
+  position: sticky;
+  top: calc(50vh - 0.5em);
+  margin: 45vh 0;
 }
 html[data-look="company"] .controls-note {
   display: flex;
@@ -537,4 +552,10 @@ html[data-look="company"] .lens-note .number-status { float: right; margin: 0 0 
 html[data-look="company"] .map-ctl-note { font-size: 10.5px; }
 @media (max-width: 640px) {
   html[data-look="company"] .lens-reading { height: 105px; }
+}
+/* `hidden` makes the screen a scroll container and pins the fall's sticky
+   watermark to it; `clip` cuts the same edge without that, so the word can
+   ride the viewport. */
+html[data-look="company"] .map-screen {
+  overflow: clip;
 }

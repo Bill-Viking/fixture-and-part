@@ -16,6 +16,10 @@ export default function NumberStatus({ source, changing = false, reserve = 'pass
 
 const WATERMARK = 'ILLUSTRATIVE'
 
-export function IllustrativeWatermark() {
-  return <span className="illustrative-watermark" aria-hidden="true">{WATERMARK}</span>
+export function IllustrativeWatermark({ tall = false }) {
+  return (
+    <span className={`illustrative-watermark${tall ? ' is-tall' : ''}`} aria-hidden="true">
+      <span>{WATERMARK}</span>
+    </span>
+  )
 }

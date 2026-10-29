@@ -2918,7 +2918,7 @@ export default function ForwardMap({
             '--mr-hero-ms': `${MOTION.ambient.heroMs}ms`,
           }}
         >
-          {COMPANY && !real && <IllustrativeWatermark />}
+          {COMPANY && !real && <IllustrativeWatermark tall />}
           <svg
             ref={svgRef}
             className="map-svg"
