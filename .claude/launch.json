@@ -4,8 +4,39 @@
     {
       "name": "fixture-and-part-dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "port": 5173
+    },
+    {
+      "name": "company-preview",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "preview",
+        "--outDir",
+        "/Users/bill/Projects/fixture-and-part/.claude/worktrees/company-look/dist-co",
+        "--port",
+        "5202",
+        "--strictPort"
+      ],
+      "port": 5202
+    },
+    {
+      "name": "public-preview",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "preview",
+        "--outDir",
+        "/Users/bill/Projects/fixture-and-part/.claude/worktrees/company-look/dist",
+        "--port",
+        "5203",
+        "--strictPort"
+      ],
+      "port": 5203
     }
   ]
 }
