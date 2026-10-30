@@ -406,7 +406,7 @@ export const sections = [
 
 export const footerHtml =
   'THE FIXTURE AND THE PART &middot; drafted August 2026<br>' +
-  'From a conversation between Bill (Seattle) and Claude (Anthropic).<br>' +
+  'From a conversation between Bill (Seattle) and a language model.<br>' +
   'Key sources named in text: Nader, Schafe &amp; LeDoux 2000 &middot; Kindt et al. &middot; Loftus &middot; McGaugh (HSAM) &middot; Luria, <em>The Mind of a Mnemonist</em> &middot; Bartol &amp; Sejnowski 2015 &middot; Goldstein / Huth / Schrimpf (brain&ndash;LLM alignment) &middot; Teyler &amp; DiScenna (hippocampal indexing) &middot; Kahneman &middot; Plato, <em>Phaedrus</em>.'
 
 export const footerHtmlCompany =
