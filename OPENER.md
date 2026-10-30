@@ -2,7 +2,7 @@ lane: F&P
 written: 2026-10-30T13:26:44-07:00
 by: ACT — F&P: the next cut (Bill's pick) · arc closed 2026-10-30
 on: MAC
-head: 8680460
+head: 04f9788
 status_updated: 2026-10-30T13:26:44-07:00
 where: look pass live in all three copies; the next pick is his
 next: bill
