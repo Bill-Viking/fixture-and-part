@@ -39,3 +39,12 @@ export function Arrowhead({ id }) {
 export function Arrow({ d, id, ...props }) {
   return <path className="ff-arrow" d={d} markerEnd={`url(#${id})`} {...props} />
 }
+// The same full notes accompany both geometry variants, once in the caption.
+export function Detail({ panels }) {
+  return <dl className="ff-detail">
+    {panels.map((panel) => <div key={panel.key}>
+      <dt>{panel.label}</dt>
+      <dd>{panel.tensorName && `${panel.tensorName} · `}{(panel.notes || [panel.note]).join(' · ')}</dd>
+    </div>)}
+  </dl>
+}

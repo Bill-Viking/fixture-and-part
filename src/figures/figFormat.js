@@ -13,6 +13,11 @@ export function textLines(text, width, size) {
   return lines
 }
 
+export const shortTensorName = (name) => name
+  .replace(/^transformer\./, '')
+  .replace(/\.weight_quantized$/, '')
+  .replace(/^(h\.\d+)\./, '$1 ')
+
 export const integer = (n) => n.toLocaleString('en-US')
 export const lengthLabel = (n) => n.toFixed(n < 100 ? 1 : 0)
 

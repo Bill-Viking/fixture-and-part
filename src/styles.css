@@ -463,14 +463,23 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 
 /* --- FIG.3 / FIG.5: file-backed drawings, fixed boxes like the loop ------ */
 .ladder-svg,.ledger-svg{display:block;width:100%;height:auto;overflow:visible;}
-.ladder-wide{aspect-ratio:680/700;}
-.ledger-wide{aspect-ratio:680/1260;}
-.ladder-stacked{aspect-ratio:300/1540;}
-.ledger-stacked{aspect-ratio:300/1930;}
-.ladder-stacked,.ledger-stacked{display:none;max-width:360px;margin:0 auto;}
+.ladder-wide{aspect-ratio:680/390;}
+.ladder-stacked{aspect-ratio:300/1370;}
+.ledger-wide-3{aspect-ratio:680/720;}
+.ledger-wide-all{aspect-ratio:680/1390;}
+.ledger-stacked-3{aspect-ratio:300/1135;}
+.ledger-stacked-all{aspect-ratio:300/1695;}
+.ladder-stacked,.ledger-stacked-3,.ledger-stacked-all{max-width:360px;margin:0 auto;}
+.ladder-stacked,.ledger-svg{display:none;}
+.ledger-figure[data-rows="3"] .ledger-wide-3,
+.ledger-figure[data-rows="all"] .ledger-wide-all{display:block;}
 @media(max-width:640px){
-  .ladder-wide,.ledger-wide{display:none;}
-  .ladder-stacked,.ledger-stacked{display:block;}
+  .ladder-wide,
+  .ledger-figure[data-rows="3"] .ledger-wide-3,
+  .ledger-figure[data-rows="all"] .ledger-wide-all{display:none;}
+  .ladder-stacked,
+  .ledger-figure[data-rows="3"] .ledger-stacked-3,
+  .ledger-figure[data-rows="all"] .ledger-stacked-all{display:block;}
 }
 .ff-frame,.ff-panel{fill:none;stroke:var(--hair);stroke-width:1;}
 .ff-frozen{fill:var(--frozen-tint);stroke:var(--frozen);stroke-width:1;}
@@ -492,6 +501,15 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 .ff-sheet{fill:var(--card);stroke:var(--muted);stroke-width:1;}
 .ff-edit{fill:none;stroke:var(--ink);stroke-width:1.5;}
 .fact-company-note{font:12px/18px var(--mono);color:var(--muted);margin:0;padding:0 16px 14px;}
+.ff-detail{font:12px/18px var(--mono);color:var(--muted);margin:14px 0 0;}
+.ff-detail > div{padding-left:16px;margin-top:8px;}
+.ff-detail dt{color:var(--ink);margin-left:-16px;}
+.ff-detail dd{margin:0;overflow-wrap:anywhere;}
+.ff-toolrow{display:flex;justify-content:flex-end;align-items:center;height:24px;padding:0 16px;}
+/* 13-character reserve: 13 × (9.5 × .6 + 9.5 × .06) + 10 padding + 2 border
+   = 93.51 px, rounded up. Explicit sizing survives the phone chip rule. */
+.ff-toolrow .mr-chip{font-size:9.5px;letter-spacing:0.06em;min-width:94px;height:22px;padding:0 5px;white-space:nowrap;}
+
 
 /* --- section 10: the harness, read at build ------------------------------ */
 
@@ -958,12 +976,14 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
    band carries two spare lines at the top of it and one at the bottom. The
    two column bands are one law with a boundary in it rather than two laws:
    the same words, wrapped into a narrower box, take one more line. */
+/* Border-box reserve: 24 + 4 + caption (64/80/96) + 13 padding + 2 borders
+   = 107/123/139 px. The phone keeps its existing 145 px reserve. */
 .mr-docent{
   position:sticky;top:0;z-index:3;
   background:var(--card);
   border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);
   padding:7px 0 6px;margin-bottom:10px;
-  height:98px;overflow:hidden;
+  height:107px;overflow:hidden;
 }
 .mr-tourrow{
   display:flex;align-items:center;gap:3px;height:24px;overflow:hidden;
@@ -1002,11 +1022,11 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
    which is the right way round: the narrower the column, the more of it a
    sentence needs. */
 @media(max-width:1199px){
-  .mr-docent{height:114px;}
+  .mr-docent{height:123px;}
   .mr-caption{height:80px;}
 }
 @media(max-width:799px){
-  .mr-docent{height:130px;}
+  .mr-docent{height:139px;}
   .mr-caption{height:96px;}
 }
 
