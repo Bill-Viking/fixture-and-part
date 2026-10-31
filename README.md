@@ -32,20 +32,20 @@ Three colours carry that thesis through every figure:
 
 *The header and section 01, "The file", as the page renders them at 1280 pixels wide.*
 
-![Instrument F, the forward pass, at 1280 pixels wide](docs/readme/forward-pass-1280.png)
+![The forward pass (FIG.4) at 1280 pixels wide](docs/readme/forward-pass-1280.png)
 
-*The top of instrument F, "The forward pass, live", in section 02, as the page renders it at 1280 pixels wide with reduced motion on and no model loaded (illustrative mode: the walls are the real file, the fall is a schematic). The drawing runs on below this crop; the page has all of it.*
+*The top of the forward pass (FIG.4), "The forward pass, live", in section 02, as the page renders it at 1280 pixels wide with reduced motion on and no model loaded (illustrative mode: the walls are the real file, the fall is a schematic). The drawing runs on below this crop; the page has all of it.*
 
 ## The instruments
 
 | | Instrument | Section | What it shows |
 |---|---|---|---|
-| E | The file | 01 — The file | the model file itself: every tensor, a window of its raw bytes, the spread of one tensor's values |
-| A | The tokenizer | 02 — Fixture & part | the tokenizer strip: your sentence cut into the pieces the model reads |
-| F | The forward pass, live | 02 — Fixture & part | a drawing of the whole model with your sentence running down through it |
-| B | The forward pass and the KV rack | 03 — The moment | one forward pass per token, and the KV rack it leaves behind |
-| C | The attention inspector | 04 — The lookup | which earlier tokens each head attends to, at a layer you pick |
-| D | The glass pass | 04 — The lookup | the residual stream at one position, read through the logit lens |
+| FIG.1 | The file | 01 — The file | the model file itself: every tensor, a window of its raw bytes, the spread of one tensor's values |
+| FIG.2 | The tokenizer | 02 — Fixture & part | the tokenizer strip: your sentence cut into the pieces the model reads |
+| FIG.4 | The forward pass, live | 02 — Fixture & part | a drawing of the whole model with your sentence running down through it |
+| FIG.6 | The forward pass and the KV rack | 03 — The moment | one forward pass per token, and the KV rack it leaves behind |
+| FIG.7 | The attention inspector | 04 — The lookup | which earlier tokens each head attends to, at a layer you pick |
+| FIG.8 | The glass pass | 04 — The lookup | the residual stream at one position, read through the logit lens |
 
 ## Run it on your machine
 
@@ -155,18 +155,15 @@ src/content/claimNotes.js          the notes behind the essay's 28 claim marks (
                                    components/ClaimNotes.jsx, mounted once
 src/content/fileFacts.json         the model file, read ahead of time
 src/content/figFacts.json          the two figures, baked from the file and pass
-src/instruments/FileView.jsx       E — the file            FIG.1     (section 01)
-src/instruments/Tokenizer.jsx      A — tokenizer strip     FIG.2     (section 02)
+src/instruments/FileView.jsx       the file                FIG.1     (section 01)
+src/instruments/Tokenizer.jsx      the tokenizer           FIG.2     (section 02)
 src/figures/LadderFigure.jsx       FIG.3 — the ladder (section 02)
-src/instruments/ForwardMap.jsx     F — the forward pass,
-                                       live                FIG.4     (section 02)
+src/instruments/ForwardMap.jsx     the forward pass, live  FIG.4     (section 02)
 src/figures/LedgerFigure.jsx       FIG.5 — the ledger (section 03)
-src/instruments/Stepper.jsx        B — forward pass + KV rack
-                                                           FIG.6     (section 03)
+src/instruments/Stepper.jsx        the stepper             FIG.6     (section 03)
 src/instruments/AttentionInspector.jsx
-                                   C — attention inspector FIG.7     (section 04)
-src/instruments/GlassPass.jsx      D — residual stream + logit lens
-                                                           FIG.8     (section 04)
+                                   the attention inspector FIG.7     (section 04)
+src/instruments/GlassPass.jsx      the glass pass          FIG.8     (section 04)
 src/figures/LoopFigure.jsx         FIG.9 — the loop (section 10)
 src/figures/HarnessReadout.jsx     the harness, read at build (section 10)
 src/lib/forwardMap.js              F — the architecture, band by band, and the
@@ -192,9 +189,9 @@ scripts/read-harness.mjs           writes src/content/harnessFacts.json
 src/styles.css                     design tokens + all styling
 ```
 
-Instruments A, B, C, D and F share one sequence, lifted into `App.jsx`: text
-typed into A is tokenized, B appends generated tokens to it, C queries
-whatever that sequence currently is, and D reads the stack at one position of
+The tokenizer, the stepper, the attention inspector, the glass pass and the forward pass share one sequence, lifted into `App.jsx`: text
+typed into the tokenizer is tokenized, the stepper appends generated tokens to it, the attention inspector queries
+whatever that sequence currently is, and the glass pass reads the stack at one position of
 it. B, C, D and F each say which sentence they are reading, in one reserved
 line at the top of the instrument, because A's input box is two or three
 sections above them by the time they are on screen.
@@ -223,7 +220,7 @@ of model file, and a second worker would mean a second copy of it.
 
 ### Reading the model file
 
-Instrument E shows the real `decoder_model_quantized.onnx` — the same file the
+The file (FIG.1) shows the real `decoder_model_quantized.onnx` — the same file the
 page downloads for real mode — and nothing on it is illustrative. So that it
 can show it to a reader who has not downloaded anything,
 `scripts/read-model-file.mjs` reads the file ahead of time and writes
@@ -278,7 +275,7 @@ column numbers are compared at 1e-4 and its 24 row labels against the model's
 tokenizer, through the same line.
 
 It goes back a second time. When the reader changes the sentence in instrument
-A and the model runs on the new one, instrument E hashes the whole file again
+A and the model runs on the new one, the file instrument hashes the whole file again
 and says what it found: the reader has just watched every other instrument
 change and is entitled to know, at that moment, that this one did not. The
 claim is a reading rather than a memory, which is why `readSha` in
@@ -303,8 +300,8 @@ committed, so the page shows the reading of the day it was built.
 ### Design
 
 The page is a white page ground with ink drawn on it. Dense fields of data —
-instrument B's KV rack, instrument C's lookup table, instrument D's lens rows,
-instrument E's byte window — are set into it on dark panels, the way a manual
+the stepper's KV rack, the attention inspector's lookup table, the glass pass's lens rows,
+the file's byte window — are set into it on dark panels, the way a manual
 sets a code block into a page. Everything else is ink and role colour on card.
 
 The card is one twentieth of a stop off the page (`#FFFFFF` on `#F4F5F7`), so
