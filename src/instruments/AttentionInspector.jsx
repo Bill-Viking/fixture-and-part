@@ -64,7 +64,7 @@ export default function AttentionInspector({
   return (
     <figure className="instrument">
       <InstrumentHead
-        eyebrow="INSTRUMENT C"
+        eyebrow="FIG.7 — THE ATTENTION INSPECTOR"
         title="The attention inspector"
         purpose="Which earlier tokens the chosen token reads, and how much of its attention each one gets."
         note={

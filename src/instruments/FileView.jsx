@@ -181,7 +181,7 @@ function readRamp() {
     const value = style.getPropertyValue(token).trim()
     if (!value) {
       if (import.meta.env.DEV) {
-        console.error(`instrument E: ${token} is not defined; the byte window cannot be painted`)
+        console.error(`the file: ${token} is not defined; the byte window cannot be painted`)
       }
       return null
     }
@@ -218,7 +218,7 @@ function readToken(token) {
   const value = getComputedStyle(document.documentElement).getPropertyValue(token).trim()
   if (!value) {
     if (import.meta.env.DEV) {
-      console.error(`instrument E: ${token} is not defined; the window's labels cannot be painted`)
+      console.error(`the file: ${token} is not defined; the window's labels cannot be painted`)
     }
     return null
   }
@@ -709,7 +709,7 @@ export default function FileView({
       .catch((error) => {
         // Without it the labels print as instrument B prints them; nothing
         // claims a spelling it did not read.
-        if (import.meta.env.DEV) console.error('instrument E: the vocabulary could not be read', error)
+        if (import.meta.env.DEV) console.error('the file: the vocabulary could not be read', error)
       })
     return () => {
       cancelled = true
@@ -763,7 +763,7 @@ export default function FileView({
       .catch((error) => {
         // A sentence that could not be tokenized is not a disagreement, and
         // the panel does not call it one.
-        if (import.meta.env.DEV) console.error('instrument E: the lit row could not be checked', error)
+        if (import.meta.env.DEV) console.error('the file: the lit row could not be checked', error)
       })
     return () => {
       cancelled = true
@@ -1567,7 +1567,7 @@ export default function FileView({
     <figure className="instrument">
       <InstrumentHead
         stacked
-        eyebrow="INSTRUMENT E"
+        eyebrow="FIG.1 — THE FILE"
         title="The file"
         purpose="The model file itself — every tensor it holds. Choose one, in the list or on the bar, and the window shows its raw bytes, the curve the spread of all its values."
         note={

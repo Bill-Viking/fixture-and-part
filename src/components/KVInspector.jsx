@@ -31,14 +31,14 @@ const ROLES = {
     outLabel: 'K vector — how this token advertises itself',
     outClass: 'kv-vec-k',
     vector: kVector,
-    goes: 'racked as searchable metadata. every later token scores its Q against this row — the Q·K column in instrument C — and it never changes once racked.',
+    goes: 'racked as searchable metadata. every later token scores its Q against this row — the Q·K column in the attention inspector — and it never changes once racked.',
   },
   v: {
     die: 'W_v',
     outLabel: 'V vector — the payload this token hands over',
     outClass: 'kv-vec-v',
     vector: vVector,
-    goes: 'staged as the payload, handed over weighted by softmax when a later lookup selects this row. the blend line in instrument C is made of these.',
+    goes: 'staged as the payload, handed over weighted by softmax when a later lookup selects this row. the blend line in the attention inspector is made of these.',
   },
 }
 

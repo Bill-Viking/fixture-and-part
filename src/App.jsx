@@ -1064,7 +1064,7 @@ export default function App() {
         {COMPANY && (
           <Callout
             label="THE COMPANY COPY"
-            html={`This is the company copy of The Fixture and the Part. No language model runs here and nothing downloads: every number on this page was read from the model file when the page was built, plus one real pass of the page&rsquo;s own sentence, kept and replayed in instruments A, D and F. The full version runs a real model inside your browser, an ${mb(__FILE_PROVENANCE__.bytes)} download it keeps there. It is public at <a href="https://bill-viking.github.io/fixture-and-part/">bill-viking.github.io/fixture-and-part</a> — for a personal machine, never a company one.`}
+            html={`This is the company copy of The Fixture and the Part. No language model runs here and nothing downloads: every number on this page was read from the model file when the page was built, plus one real pass of the page&rsquo;s own sentence, kept and replayed in the tokenizer (FIG.2), the glass pass (FIG.8) and the forward pass (FIG.4). The full version runs a real model inside your browser, an ${mb(__FILE_PROVENANCE__.bytes)} download it keeps there. It is public at <a href="https://bill-viking.github.io/fixture-and-part/">bill-viking.github.io/fixture-and-part</a> — for a personal machine, never a company one.`}
           />
         )}
         <div ref={sentinelRef} className="sentinel" aria-hidden="true" />

@@ -73,7 +73,7 @@ export const claimNotes = {
   lens: {
     kind: 'evidence',
     title: 'the glass window is a probe',
-    body: 'reading the running vector at an early depth through the model’s final output head is a trick called the logit lens. it was found by looking rather than built in, and on some models its early readings are poor or skewed, which is why later work fitted a small corrector per depth. instrument D shows the plain version.',
+    body: 'reading the running vector at an early depth through the model’s final output head is a trick called the logit lens. it was found by looking rather than built in, and on some models its early readings are poor or skewed, which is why later work fitted a small corrector per depth. the glass pass shows the plain version.',
     sources: [
       { label: 'nostalgebraist 2020 · Interpreting GPT: the logit lens', url: 'https://www.lesswrong.com/posts/AcKRB8wDpdaN6v6ru/interpreting-gpt-the-logit-lens' },
       { label: 'Belrose et al. 2023 · Eliciting latent predictions from transformers with the tuned lens', url: 'https://arxiv.org/abs/2303.08112' },

@@ -23,7 +23,7 @@ const finish = lengthLabel(stream.heroLengths.at(-1))
 const PANELS = [
   { key: 'piece', label: 'the piece', note: `id ${hero.id} · piece ${integer(hero.id + 1)} of ${integer(wte.rows)} in the word table` },
   { key: 'table', label: `the table · ${shortTensorName(wteName)}`, tensorName: wteName, note: `${integer(wte.rows)} rows × ${integer(wte.cols)} numbers · stored as one byte each, ${wte.dtype}, scale ${wte.scale.toFixed(4)}, zero point ${wte.zeroPoint} · ${integer(wte.bytes)} bytes` },
-  { key: 'vector', label: 'the row is the vector', note: `${integer(wte.cols)} numbers; these are the first six · (byte − ${wte.zeroPoint}) × ${wte.scale.toFixed(4)} · the same six instrument A prints when the model is loaded` },
+  { key: 'vector', label: 'the row is the vector', note: `${integer(wte.cols)} numbers; these are the first six · (byte − ${wte.zeroPoint}) × ${wte.scale.toFixed(4)} · the same six the tokenizer prints when the model is loaded` },
   { key: 'stream', label: 'the stream', note: `its first stop: wte + wpe, ${start} long · every block adds to the same running vector · ${start} → ${finish} by the last wall` },
   { key: 'tensor', label: `one wall is one tensor · ${shortTensorName(wall.name)}`, tensorName: wall.name, note: `${integer(wall.rows)} rows × ${integer(wall.cols)} columns · stored as one signed byte each, ${wall.dtype}, scale ${wall.scale.toFixed(4)}, zero point ${wall.zeroPoint} · ${integer(wall.bytes)} bytes · frozen: no pass changes one` },
 ]
@@ -147,6 +147,6 @@ export default function LadderFigure() {
     <div className="inst-body"><Drawing name="wide" /><Drawing name="stacked" /></div>
     <figcaption>FIG.3 — {CAPTION}<Detail panels={PANELS} /></figcaption>
     {COMPANY && <TeachPair className="fact-company-note" show="a"
-      a="instrument A above prints stand-ins in this copy; this drawing prints the real row." b="" />}
+      a="the tokenizer above prints stand-ins in this copy; this drawing prints the real row." b="" />}
   </figure>
 }

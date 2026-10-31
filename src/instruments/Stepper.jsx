@@ -169,7 +169,7 @@ function Candidates({
           <p className="empty-note">
             {hasInput
               ? 'generation cap reached — RESET to run it again.'
-              : 'no input — type something into instrument A.'}
+              : 'no input — type something into the tokenizer.'}
           </p>
         )}
         {!pending &&
@@ -315,7 +315,7 @@ export default function Stepper({
   return (
     <figure className="instrument">
       <InstrumentHead
-        eyebrow="INSTRUMENT B"
+        eyebrow="FIG.6 — THE STEPPER"
         title="The forward pass and the KV rack"
         purpose="One step at a time: the shortlist for the next token, the sequence so far, and the K/V rack it reads from. The shortlist is the landing, the strip is the part so far, the rack is the model’s only memory within one conversation — one row per token per layer, written once, never rewritten."
         note={

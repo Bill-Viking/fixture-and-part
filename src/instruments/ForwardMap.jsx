@@ -1500,7 +1500,7 @@ export default function ForwardMap({
   const silent = registers ? registers.find((reg) => reg && reg.kept.length === 0) : null
 
   const note = () => {
-    if (n === 0) return 'no input — type something into instrument A'
+    if (n === 0) return 'no input — type something into the tokenizer'
     if (pending || waiting) return 'running distilgpt2…'
     if (!armed) return 'illustrative — the walls are the file’s own bytes; the fall is drawn, not computed'
     if (!live) return 'the walls are real — the fall is waiting on a pass'
@@ -2009,7 +2009,7 @@ export default function ForwardMap({
       at: draw ? { x: aperturePlateX, y: g.apertureY0 + g.apertureH / 2 } : null,
       tensor: 'transformer.wte.weight_quantized',
       instrument: 'stepper',
-      letter: 'B',
+      letter: 'stepper',
     })
   }, [say, draw, g, aperturePlateX])
 
@@ -2026,7 +2026,7 @@ export default function ForwardMap({
         at: { x: mid.x, y: mid.y },
         tensor: wallTensor(tr.layer),
         instrument: 'attention',
-        letter: 'C',
+        letter: 'attention inspector',
       })
     },
     [say, sequence, hero],
@@ -2043,7 +2043,7 @@ export default function ForwardMap({
         at: { x: bar.x, y: bar.top },
         tensor: 'transformer.wte.weight_quantized',
         instrument: 'stepper',
-        letter: 'B',
+        letter: 'stepper',
       })
     },
     [say, draw, finalTop, nextToken, decode],
@@ -2155,7 +2155,7 @@ export default function ForwardMap({
         },
         tensor: name,
         instrument: 'file',
-        letter: 'E',
+        letter: 'file',
       })
     },
     [cellAt, say, g],
@@ -2562,8 +2562,8 @@ export default function ForwardMap({
       : ''
     const fall = !live
       ? compact
-        ? `One stream a token. No pass has run, so every stream is drawn at one width and one light — no magnitude is claimed. The grain inside is the deterministic stand-in instrument D prints, 768 numbers binned into ${plan.count} filaments of ${plan.group}, and it is a stand-in, not a measurement. Spacing: ${spacing}.${chipNote} The last word is the followed word; click any token to make it one.`
-        : `One stream a token, falling through all six walls. No pass has run, so every stream is drawn at one width and one light: nothing here claims a magnitude. The grain inside a stream is the deterministic stand-in instrument D prints, its 768 numbers binned into ${plan.count} filaments of ${plan.group} dimensions each — a stand-in, and not a measurement. Spacing scales with the sentence: ${spacing}, and the drawing’s height never changes with it.${chipNote} The last word is the followed word, and clicking any token makes it the followed word instead.`
+        ? `One stream a token. No pass has run, so every stream is drawn at one width and one light — no magnitude is claimed. The grain inside is the deterministic stand-in the glass pass prints, 768 numbers binned into ${plan.count} filaments of ${plan.group}, and it is a stand-in, not a measurement. Spacing: ${spacing}.${chipNote} The last word is the followed word; click any token to make it one.`
+        : `One stream a token, falling through all six walls. No pass has run, so every stream is drawn at one width and one light: nothing here claims a magnitude. The grain inside a stream is the deterministic stand-in the glass pass prints, its 768 numbers binned into ${plan.count} filaments of ${plan.group} dimensions each — a stand-in, and not a measurement. Spacing scales with the sentence: ${spacing}, and the drawing’s height never changes with it.${chipNote} The last word is the followed word, and clicking any token makes it the followed word instead.`
       : compact
         ? `One stream a token. Width, light and grain are the real length (L2) of that token’s 768 numbers at each of the seven depths — ${field.lo.toFixed(2)} to ${count(Number(field.hi.toFixed(2)))} — on one log law shared by all ${n}; the widest is ${widest}. Inside, 768 dimensions become ${plan.count} filaments of ${plan.group}; a filament’s grain is the mean |value| of its own, against the brightest in that stream at that depth. Spacing: ${spacing}.${chipNote} Followed word: ${heroToken ?? '—'} — click any token. ${mist}`
         : `One stream a token, ${n} of them, through all six walls. Width, light and grain are the real length (L2) of that token’s 768-number vector at each of the seven depths — ${field.lo.toFixed(2)} at the rim up to ${count(Number(field.hi.toFixed(2)))} — on one log law shared by all ${n}, and the widest is ${widest}: usually the first piece, which carries the attention sink. Inside, the 768 dimensions are ${plan.count} filaments of ${plan.group}: a filament’s grain is the mean |value| of its own ${plan.group} there, against the brightest filament in that stream at that depth. Spacing scales with the sentence — ${spacing} — the drawing’s height never does.${chipNote} The followed word is ${heroToken ?? '—'}; click any token to change that. ${mist}`
@@ -2611,10 +2611,10 @@ export default function ForwardMap({
     // one borrows the same bracket rather than trailing a dash into the rest
     // of the sentence.
     const tookCompact = greedy
-      ? 'is what greedy decoding took (the top word every time once whitespace-only pieces and the end mark are set aside — instrument B&rsquo;s own skip — no temperature, no draw)'
+      ? 'is what greedy decoding took (the top word every time once whitespace-only pieces and the end mark are set aside — the stepper&rsquo;s own skip — no temperature, no draw)'
       : `is what the sampler took ${samplerSettings}`
     const tookWide = greedy
-      ? 'is what greedy decoding took (the top word every time once whitespace-only pieces and the end mark are set aside — instrument B&rsquo;s own skip — no temperature, no top-k, no draw)'
+      ? 'is what greedy decoding took (the top word every time once whitespace-only pieces and the end mark are set aside — the stepper&rsquo;s own skip — no temperature, no top-k, no draw)'
       : `is what the shipped sampler took ${samplerSettings}`
     const sameTrace = greedy
       ? 'same input → same trace, every time.'
@@ -2732,7 +2732,7 @@ export default function ForwardMap({
       onKeyDown={onSheetKeyDown}
     >
       <InstrumentHead
-        eyebrow="INSTRUMENT F"
+        eyebrow="FIG.4 — THE FORWARD PASS"
         title={COMPANY ? 'The forward pass, replayed' : 'The forward pass, live'}
         purpose="This is the model guessing the next word: your sentence falls through the six blocks once, and the landing at the foot is its guess — the eight words it rates highest, and the one it took. The walls are the fixture: the file’s own frozen tooling, one station for each of the six blocks. Your sentence is the part — one stream for each word, falling through the stations; every word passes through every station in order, and a stream never leaves its column. A transfer is the tooling touching the part — the solid curves, the only thing that crosses: attention picks a source in green and carries its value in amber. The followed word is the piece finished at the last station, rich enough to say what comes next."
         note={
@@ -2815,11 +2815,11 @@ export default function ForwardMap({
           <div className="mr-chiprow mr-openrow">
             <span className="mr-opens">
               OPEN
-              {openWindow('A', 'tokenizer', 'open instrument A, the tokenizer')}
-              {openWindow('B', 'stepper', 'open instrument B, the forward pass and the KV rack')}
-              {openWindow('C', 'attention', 'open instrument C, one head in detail')}
-              {openWindow('D', 'glass', 'open instrument D, the glass pass on this token')}
-              {openWindow('E', 'file', 'open instrument E, the file')}
+              {openWindow('FILE', 'file', 'open the file')}
+              {openWindow('TOKENIZER', 'tokenizer', 'open the tokenizer')}
+              {openWindow('STEPPER', 'stepper', 'open the stepper')}
+              {openWindow('ATTENTION', 'attention', 'open the attention inspector')}
+              {openWindow('GLASS', 'glass', 'open the glass pass')}
             </span>
           </div>
           <span className="map-ctl-note">
@@ -3373,7 +3373,7 @@ export default function ForwardMap({
                       at: { x: left ? x - room / 2 : x + room / 2, y },
                       tensor: wallTensor(reg.layer),
                       instrument: 'attention',
-                      letter: 'C',
+                      letter: 'attention inspector',
                     })
                   return (
                     // The plate says what it means when it is asked. A line
@@ -3800,13 +3800,13 @@ export default function ForwardMap({
             disabled={!partFacts}
             title={
               partFacts
-                ? `open ${partFacts.display} in instrument E, the file`
-                : 'opens the chosen tensor in instrument E — choose a wall, a cell or a plate first'
+                ? `open ${partFacts.display} in the file`
+                : 'opens the chosen tensor in the file — choose a wall, a cell or a plate first'
             }
             aria-label={
               partFacts
-                ? `open ${partFacts.display} in instrument E, the file`
-                : 'opens the chosen tensor in instrument E — choose a wall, a cell or a plate first'
+                ? `open ${partFacts.display} in the file`
+                : 'opens the chosen tensor in the file — choose a wall, a cell or a plate first'
             }
             onClick={() => partFacts && onOpenTensor(partFacts.name)}
           >
@@ -3823,24 +3823,24 @@ export default function ForwardMap({
             disabled={!inspect?.instrument}
             title={
               inspect?.instrument
-                ? `open instrument ${inspect.letter}, where this reading can be read at length`
-                : 'opens the instrument a reading came from — click something on the drawing first'
+                ? `open the ${inspect.letter}, where this reading can be read at length`
+                : 'opens the instrument ' + 'a reading came from — click something on the drawing first'
             }
             aria-label={
               inspect?.instrument
-                ? `open instrument ${inspect.letter}, where this reading can be read at length`
-                : 'opens the instrument a reading came from — click something on the drawing first'
+                ? `open the ${inspect.letter}, where this reading can be read at length`
+                : 'opens the instrument ' + 'a reading came from — click something on the drawing first'
             }
             onClick={() => inspect?.instrument && onOpenInstrument(inspect.instrument)}
           >
-            {inspect?.letter ? `OPEN ${inspect.letter}` : 'OPEN THE INSTRUMENT'}
+            {inspect?.letter ? `OPEN ${inspect.letter.split(' ')[0].toUpperCase()}` : 'OPEN THE INSTRUMENT'}
           </button>
         </div>
 
         <TeachPair
           className="teach dim"
           show={armed ? 'b' : 'a'}
-          a={`the six walls are real in this mode too: every cell is one byte of that block's attention weights, read out of the file when this page was built, stretched across the middle 96% of its own window. what is not real is the fall — no model is running, so every stream is drawn at one width, the grain inside it is the deterministic stand-in instrument D prints, and there is no attention to carry and no landing to reach. ${COMPANY ? "with a model in hand the same drawing would fill with this sentence's own numbers." : "load the real model and the same drawing fills with this sentence's own numbers."}`}
+          a={`the six walls are real in this mode too: every cell is one byte of that block's attention weights, read out of the file when this page was built, stretched across the middle 96% of its own window. what is not real is the fall — no model is running, so every stream is drawn at one width, the grain inside it is the deterministic stand-in the glass pass prints, and there is no attention to carry and no landing to reach. ${COMPANY ? "with a model in hand the same drawing would fill with this sentence's own numbers." : "load the real model and the same drawing fills with this sentence's own numbers."}`}
           b="one drawing, five readings, all of them real. the walls are the file's own weight bytes; a stream's width and light are the length of that token's 768-number vector at each depth; the filaments inside it are those 768 numbers grouped and averaged; a carrier is one attention weight out of the block's chosen head, read at the followed word's own row; and the landing is the softmax over all 50,257 words at the last position. the head rule, the floor under a transfer and both normalisations are stated in the legend, because a drawing that does not say what it is doing is a picture rather than an instrument."
         />
       </div>

@@ -163,7 +163,7 @@ export function rayLead(bar, argmaxToken, pickToken, decode = 'sampled') {
       : argmaxToken
         ? ` The machine’s own top is ${q(argmaxToken)}; ${took} ${q(pickToken ?? '—')}.`
         : ''
-  return `One candidate for the next word — ${q(bar.token)} at ${pc(bar.p)}: the last word’s finished vector held against this word’s own row of the table — the same 768 numbers instrument A shows for it — and shared out among all 50,257 by a softmax.${role}`
+  return `One candidate for the next word — ${q(bar.token)} at ${pc(bar.p)}: the last word’s finished vector held against this word’s own row of the table — the same 768 numbers the tokenizer (FIG.2) shows for it — and shared out among all 50,257 by a softmax.${role}`
 }
 
 export function rayDetail() {
@@ -309,7 +309,7 @@ export function buildTour({
     const only = stage(
       'empty',
       4000,
-      'There is nothing to run: the box in instrument A is empty.',
+      'There is nothing to run: the box in the tokenizer (FIG.2) is empty.',
       'Type a sentence and the streams appear.',
       at({ segs: lastSeg, carriers: 99, bars: 99, aperture: true, pick: true }),
     )
@@ -359,7 +359,7 @@ export function buildTour({
             `which carries the attention sink. Width, light and grain are that length, on one log law shared by ` +
             `all ${n} streams.`
         : `No pass has run, so the drawing has no length to draw: every stream is at one width and one light, and ` +
-            `the grain inside it is the deterministic stand-in instrument D prints. ` +
+            `the grain inside it is the deterministic stand-in the glass pass (FIG.8) prints. ` +
             (COMPANY
               ? `With a model in hand these would be this sentence’s own numbers.`
               : `Load the real model above and these become this sentence’s own numbers.`),

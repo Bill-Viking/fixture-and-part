@@ -164,7 +164,7 @@ export default function GlassPass({
   const shortlist = (stop) => (hasReading ? (live.stops[stop] ?? null) : null)
 
   const note = () => {
-    if (token === undefined) return 'no input — type something into instrument A.'
+    if (token === undefined) return 'no input — type something into the tokenizer.'
     if (!real) return `reading position ${lensIndex} — illustrative`
     if (stale) return 'sequence has moved — click a token to read again'
     if (!reading) return 'click a token to read its stack'
@@ -178,7 +178,7 @@ export default function GlassPass({
   return (
     <figure className="instrument">
       <InstrumentHead
-        eyebrow="INSTRUMENT D"
+        eyebrow="FIG.8 — THE GLASS PASS"
         title="The glass pass"
         purpose="One token’s running vector at each depth, and what the model would say next from there."
         note={
@@ -285,15 +285,15 @@ export default function GlassPass({
         <TeachPair
           className="lens-final"
           show={real ? 'b' : 'a'}
-          a="the last row is where the belief settles — hand-tuned so its winner is the token instrument B appends next."
-          b="the last row is the machine’s next-word distribution — the same numbers instrument B’s shortlist reads for this position, before the sampler skips whitespace, so ␣ and ⏎ pieces appear here and not there."
+          a="the last row is where the belief settles — hand-tuned so its winner is the token the stepper appends next."
+          b="the last row is the machine’s next-word distribution — the same numbers the stepper’s shortlist reads for this position, before the sampler skips whitespace, so ␣ and ⏎ pieces appear here and not there."
         />
 
         <TeachPair
           className="teach dim"
           show={real ? 'b' : 'a'}
-          a="illustrative lens. the shortlists are hand-tuned on the default sentence and deterministic otherwise; no model is running. the last row is pinned to the token instrument B commits, so the two instruments cannot disagree."
-          b="real lens. at each depth the half-finished vector is taken out and held up to the word table as if the pass had ended there; the last row is what the model does say — the same numbers instrument B’s shortlist reads for this position. in the model’s terms: its own running vector, pushed through its own final layernorm and its own embedding table used backwards."
+          a="illustrative lens. the shortlists are hand-tuned on the default sentence and deterministic otherwise; no model is running. the last row is pinned to the token the stepper commits, so the two instruments cannot disagree."
+          b="real lens. at each depth the half-finished vector is taken out and held up to the word table as if the pass had ended there; the last row is what the model does say — the same numbers the stepper’s shortlist reads for this position. in the model’s terms: its own running vector, pushed through its own final layernorm and its own embedding table used backwards."
         />
       </div>
 

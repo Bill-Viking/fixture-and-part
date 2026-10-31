@@ -532,7 +532,7 @@ export function blockTransfers(run, layer, hero, head) {
 if (import.meta.env.DEV) {
   globalThis.__mapCheck = async () => {
     const state = globalThis.__mapState
-    if (!state) return { error: 'instrument F has not published a state yet' }
+    if (!state) return { error: 'the forward pass has not published a state yet' }
     if (!state.real) return { error: 'the map is drawing the schematic, not a pass' }
     const model = await import('./realModel.js')
 

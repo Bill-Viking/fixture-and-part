@@ -51,7 +51,7 @@ export default function Tokenizer({
   return (
     <figure className="instrument" aria-labelledby={`${inputId}-cap`}>
       <InstrumentHead
-        eyebrow="INSTRUMENT A"
+        eyebrow="FIG.2 — THE TOKENIZER"
         title="The tokenizer"
         purpose="How your sentence becomes token ids, and the vector each token starts with."
         note={

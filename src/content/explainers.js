@@ -74,7 +74,7 @@ export const explainers = {
   },
   lens: {
     title: 'the glass pass',
-    body: 'every layer writes into one running vector, so that vector can be read part-way down the stack and asked what word it would commit to if the stack stopped there. the seven readings here are illustrative, and the last one is pinned to whatever instrument B is about to append.',
+    body: 'every layer writes into one running vector, so that vector can be read part-way down the stack and asked what word it would commit to if the stack stopped there. the seven readings here are illustrative, and the last one is pinned to whatever the stepper is about to append.',
   },
   lensReal: {
     title: 'the glass pass',

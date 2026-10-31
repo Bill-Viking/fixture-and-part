@@ -16,7 +16,7 @@ export default function ReadingLine({ text, label = 'reading' }) {
   return (
     <p className="inst-reading">
       {trimmed === '' ? (
-        `${label}: nothing yet — type a sentence into instrument A`
+        `${label}: nothing yet — type a sentence into the tokenizer`
       ) : (
         <>
           {label}: <b>&ldquo;{trimmed}&rdquo;</b>
