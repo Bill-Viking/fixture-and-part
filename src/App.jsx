@@ -442,6 +442,7 @@ export default function App() {
   }, [])
   // ASSUMES: only the page's exact sentence owns these numbers, never another eight-token text.
   const baked = COMPANY && bakedPass && text === DEFAULT_SENTENCE ? bakedPass : null
+  const bakedA = COMPANY && __BAKED_A__ && text === DEFAULT_SENTENCE ? __BAKED_A__ : null
   // Memoised because instrument D keys a reset off it: a fresh array every
   // render would throw the glass pass back to its default position on every
   // render rather than on every retokenization.
@@ -897,6 +898,7 @@ export default function App() {
       <Tokenizer
         text={text}
         tokens={baseTokens}
+        baked={bakedA}
         mode={mode}
         real={isReal}
         realIds={isReal ? realBase?.ids : null}
@@ -1046,7 +1048,7 @@ export default function App() {
         {COMPANY && (
           <Callout
             label="THE COMPANY COPY"
-            html={`This is the company copy of The Fixture and the Part. No language model runs here and nothing downloads: every number on this page was read from the model file when the page was built, plus one real pass of the page&rsquo;s own sentence, kept and replayed in instrument F. The full version runs a real model inside your browser, an ${mb(__FILE_PROVENANCE__.bytes)} download it keeps there. It is public at <a href="https://bill-viking.github.io/fixture-and-part/">bill-viking.github.io/fixture-and-part</a> — for a personal machine, never a company one.`}
+            html={`This is the company copy of The Fixture and the Part. No language model runs here and nothing downloads: every number on this page was read from the model file when the page was built, plus one real pass of the page&rsquo;s own sentence, kept and replayed in instruments A, D and F. The full version runs a real model inside your browser, an ${mb(__FILE_PROVENANCE__.bytes)} download it keeps there. It is public at <a href="https://bill-viking.github.io/fixture-and-part/">bill-viking.github.io/fixture-and-part</a> — for a personal machine, never a company one.`}
           />
         )}
         <div ref={sentinelRef} className="sentinel" aria-hidden="true" />

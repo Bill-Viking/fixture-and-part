@@ -27,17 +27,21 @@ function TokenText({ token }) {
 export default function Tokenizer({
   text,
   tokens,
+  baked,
   real,
   realIds,
   onTextChange,
   control,
 }) {
   const inputId = useId()
+  const pieces = baked ? baked.tokens : tokens
+  const ids = baked ? baked.ids : real ? realIds : null
 
   // In real mode both halves of a pill are the model's own: the BPE id it
   // reads, and the first six numbers of the row that id selects out of its
   // embedding table.
   const vectorFor = (token, i) => {
+    if (baked) return formatRealVector(baked.embeddings[i])
     if (!real) return formatVector(hashTokenToVector(token, 6))
     const id = realIds?.[i]
     const row = id === undefined ? null : realEmbedding(id)
@@ -55,9 +59,9 @@ export default function Tokenizer({
             <TeachPair
               as="span"
               wrapAs="span"
-              show={real ? 'b' : 'a'}
+              show={real || baked ? 'b' : 'a'}
               a="illustrative embeddings"
-              b="real bpe pieces, ids and embeddings"
+              b={COMPANY ? 'real bpe pieces, ids and embeddings — one pass, made when the page was built' : 'real bpe pieces, ids and embeddings'}
             />
           </span>
         }
@@ -81,29 +85,29 @@ export default function Tokenizer({
 
         <div className="label-row">
           <span className="field-label">tokens</span>
-          <InfoTag topic={real ? 'tokenReal' : 'token'} />
+          <InfoTag topic={real || baked ? 'tokenReal' : 'token'} />
           <span className="label-gap" />
           <TeachPair
             as="span"
             className="field-label"
-            show={real ? 'b' : 'a'}
+            show={real || baked ? 'b' : 'a'}
             a="embedding preview"
             b="embedding — first 6 of 768 dims"
           />
-          <InfoTag topic={real ? 'embeddingReal' : 'embedding'} />
-          {COMPANY && <NumberStatus source="standin" />}
+          <InfoTag topic={real || baked ? 'embeddingReal' : 'embedding'} />
+          {COMPANY && <NumberStatus source={baked ? 'pass' : 'standin'} changing />}
         </div>
 
         <div className="token-strip" role="list">
-          {tokens.length === 0 && (
+          {pieces.length === 0 && (
             <p className="empty-note">no tokens — type something above.</p>
           )}
-          {tokens.map((token, i) => (
+          {pieces.map((token, i) => (
             <div className="token-pill" role="listitem" key={`${token}-${i}`}>
               <span className="token-idx">
                 {i}
-                {real && realIds?.[i] !== undefined && (
-                  <span className="token-id"> &middot; id {realIds[i]}</span>
+                {ids?.[i] !== undefined && (
+                  <span className="token-id"> &middot; id {ids[i]}</span>
                 )}
               </span>
               <TokenText token={token} />
@@ -115,9 +119,9 @@ export default function Tokenizer({
         <p className="teach">one token &rarr; one vector.</p>
         <TeachPair
           className="teach dim"
-          show={real ? 'b' : 'a'}
+          show={real || baked ? 'b' : 'a'}
           a="first 6 of thousands of dimensions. values are a stable hash of the token string, not learned weights."
-          b="real gpt-2 bpe pieces. ␣ marks a leading space, so a piece without one continues the word before it. the numbers are the first 6 of the 768 distilgpt2 keeps for that id."
+          b={COMPANY ? 'real gpt-2 bpe pieces. ␣ marks a leading space, so a piece without one continues the word before it. the numbers are the first 6 of the 768 distilgpt2 keeps for that id, read in one pass when the page was built. type another sentence and the stand-ins return.' : 'real gpt-2 bpe pieces. ␣ marks a leading space, so a piece without one continues the word before it. the numbers are the first 6 of the 768 distilgpt2 keeps for that id.'}
         />
       </div>
 

@@ -24,6 +24,11 @@ const { provenance, manifest } = JSON.parse(
   readFileSync(new URL('./src/content/fileFacts.json', import.meta.url), 'utf8'),
 )
 
+// A's company-only preview must be ready before the lazy full pass arrives.
+const facts = process.env.VITE_COMPANY === '1'
+  ? JSON.parse(readFileSync(new URL('./src/content/passFacts.json', import.meta.url), 'utf8'))
+  : null
+
 // The company entry loads these faces after its local dress, under one deadline.
 // Keep the preconnects and leave the consumer HTML entirely untouched.
 const companyFonts = {
@@ -45,6 +50,12 @@ export default defineConfig(() => ({
   base: process.env.VITE_BASE || '/',
   plugins: [react(), ...(process.env.VITE_COMPANY === '1' ? [companyFonts] : [])],
   define: {
+    __BAKED_A__: JSON.stringify(facts ? {
+      sentence: facts.provenance.sentence,
+      ids: facts.run.ids,
+      tokens: facts.run.tokens,
+      embeddings: facts.run.embeddings,
+    } : null),
     __FILE_PARAMETERS__: JSON.stringify(manifest.parameters),
     __FILE_PROVENANCE__: JSON.stringify({
       sha256: provenance.sha256,
