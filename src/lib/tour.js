@@ -532,11 +532,11 @@ export function buildTour({
           ? `Greedy decoding took ${q(nextToken ?? '—')}${at_} — the top word every time, whitespace skipped.`
           : `The sampler took ${q(nextToken ?? '—')}${at_}.`,
         greedy
-          ? `No temperature, no top-k, no penalty, no draw: the rule is take the highest and nothing else. Blue ` +
+          ? `No temperature, no top-k, no penalty, no draw: the rule is take the highest and nothing else. The blue bar ` +
             `is what the machinery scored highest; amber is what STEP will append. Same sentence, same word, ` +
             `every time — which on a six-block model is also how it talks itself into a loop.`
           : `Temperature ${decoding.temperature}, top-k ${decoding.topK}, repetition penalty ` +
-            `${decoding.repetitionPenalty}, seed ${decoding.seed}. Blue is what the machinery scored highest; ` +
+            `${decoding.repetitionPenalty}, seed ${decoding.seed}. The blue bar is what the machinery scored highest; ` +
             `amber is what the draw actually took. Same sentence, same seed, same step of the generation — same ` +
             `word; the draw moves with the step, and the penalty charges the tokens already used.`,
         at({ segs: lastSeg, carriers, bars: splash.length, aperture: true, pick: true }),
