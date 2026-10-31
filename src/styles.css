@@ -282,6 +282,25 @@ figcaption{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:
 .mini-legend .sw{width:16px;height:8px;}
 .mini-legend .ml-note{color:var(--muted);font-style:normal;}
 
+/* Phone wayfinding is fixed from first paint; its list never enters flow. */
+.section-bar{
+  position:fixed;inset:0 0 auto;height:36px;z-index:40;
+  color:var(--ink);background:var(--paper);border-bottom:1px solid var(--moving);
+  font-family:var(--mono);font-size:11px;line-height:16px;
+}
+.section-bar-button{
+  display:block;width:100%;height:35px;padding:0 18px;
+  border:0;background:transparent;color:inherit;font:inherit;text-align:left;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;
+}
+.section-bar-list{
+  position:fixed;inset:36px 0 auto;max-height:calc(100dvh - 36px);overflow-y:auto;
+  background:var(--paper);border-bottom:1px solid var(--moving);
+}
+.section-bar-list ol{list-style:none;margin:0;padding:6px 0;}
+.section-bar-list a{display:block;padding:10px 18px;color:inherit;text-decoration:none;}
+.section-bar-list a[aria-current]{background:var(--moving-tint);}
+
 /* --- ink screens on paper ------------------------------------------------ */
 
 /* Where the graphic is a dense field of values rather than a labelled chart,
@@ -444,6 +463,10 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
   .loop-wide{display:none;}
   .loop-stacked{display:block;}
 }
+/* FIG.7 in the 2026-10-21 build note is now numbered FIG.9. */
+@media(max-width:359px){
+  .loop-stacked .lf-note{display:none;}
+}
 /* A drawing sheet: a hairline frame, flat fills, role colours, no shadow. */
 .lf-frame{fill:none;stroke:var(--hair);stroke-width:1;}
 .lf-box{fill:var(--frozen-tint);stroke:var(--frozen);stroke-width:2;}
@@ -584,6 +607,8 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
   color:var(--ink);letter-spacing:0;
 }
 .teach.dim{color:var(--muted);margin-top:8px;letter-spacing:0.02em;line-height:1.6;}
+/* One line reserved whether or not a trailing space was dropped. */
+.teach.dim.input-note{margin:6px 0 0;height:19px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
 
 /* Both wordings of a mode-dependent line occupy one grid cell, so the cell is
    always as tall as the taller of the two and swapping them moves nothing —
@@ -1480,7 +1505,7 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
    carries one line more than the rows themselves need: the line under them
    says what the coming STEP is about to do, and it is drawn whether or not
    there is anything to say. */
-.candidates{height:132px;margin-bottom:16px;}
+.candidates{display:grid;grid-template-rows:18px 94px auto;min-height:132px;margin-bottom:16px;}
 /* One reserved line. The two tokens named in it are the moving part, so they
    take the dark amber the law reserves for that role on paper; the rest of
    the sentence is a label and stays muted. */
@@ -1490,6 +1515,11 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .cand-choice b{color:var(--moving-ink);font-weight:500;}
+.cand-choice-box{display:grid;min-width:0;}
+.cand-choice-box > p{grid-area:1/1;min-width:0;}
+.cand-choice-box > .is-ghost{visibility:hidden;}
+/* The fragment explanation is always laid out, so sampling it adds no height. */
+.cand-choice.cand-byte{height:auto;min-height:16px;white-space:normal;overflow-wrap:anywhere;}
 .cand-head{display:flex;align-items:center;gap:8px;height:18px;}
 /* Both halves truncate rather than wrap: the head must stay one line tall
    at every width, since the panel's height is fixed. */
@@ -1521,8 +1551,8 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
    instead — still a fixed height for this breakpoint, so STEP still never
    shifts anything below the panel, just a taller reserved box here. */
 @media(max-width:480px){
-  .candidates{height:152px;}
-  .cand-head{height:auto;flex-wrap:wrap;row-gap:4px;}
+  .candidates{grid-template-rows:38px 94px auto;min-height:152px;}
+  .cand-head{height:38px;flex-wrap:wrap;align-content:start;row-gap:4px;}
   .cand-head .field-label{overflow:visible;text-overflow:clip;}
   .cand-note{margin-left:0;overflow:visible;text-overflow:clip;}
 }
@@ -2248,6 +2278,7 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
    reserved height and the point the cells start at are one number, here,
    rather than a copy of it in the script. */
 .file-canvas-box{
+  position:relative;
   --file-gutter-left:38px;--file-gutter-top:20px;--file-gutter-bottom:22px;
   height:calc(252px + var(--file-gutter-top) + var(--file-gutter-bottom));overflow:hidden;
 }
@@ -2287,7 +2318,7 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
 .file-curve svg{display:block;width:100%;height:108px;}
 .file-curve-fill{fill:var(--frozen-dim);}
 .file-curve-zero{fill:var(--frozen);}
-.file-curve-pick{fill:var(--moving);}
+.file-curve-pick{fill:var(--moving);stroke:var(--ink);stroke-width:0.75px;vector-effect:non-scaling-stroke;}
 .file-curve-axis{fill:var(--rule);}
 /* overflow:hidden because each tick below is a full-axis-wide box shoved to
    the right by a percentage of itself, so the one furthest right hung a whole
@@ -2393,7 +2424,15 @@ button.file-seg:hover{background:color-mix(in srgb,var(--frozen) 55%,var(--froze
 }
 
 @media(max-width:640px){
-  body{font-size:16px;}
+  body{font-size:16px;padding-top:36px;}
+  section[id]{scroll-margin-top:36px;}
+  .file-followed-row{position:absolute;left:0;width:2px;background:var(--moving-lit);pointer-events:none;}
+  .file-phone-key{height:34px;min-width:0;}
+  .file-phone-key .mini-legend{
+    position:static;display:flex;flex-direction:row;gap:12px;
+    width:max-content;max-width:100%;padding:7px 8px;
+    font-size:10px;line-height:12px;transform:none;transition:none;
+  }
   /* Instrument F: the same three reserved rows, with the chips small enough
      that twelve heads and the five windows fit the width. Reserved in both
      modes, so the mode swap moves nothing. The drawing itself needs no rule

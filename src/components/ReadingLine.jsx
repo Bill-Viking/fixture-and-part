@@ -11,15 +11,15 @@
  * so it can never move a pixel of what follows. Long text is truncated rather
  * than wrapped, for the same reason.
  */
-export default function ReadingLine({ text }) {
+export default function ReadingLine({ text, label = 'reading' }) {
   const trimmed = text.trim()
   return (
     <p className="inst-reading">
       {trimmed === '' ? (
-        'reading: nothing yet — type a sentence into instrument A'
+        `${label}: nothing yet — type a sentence into instrument A`
       ) : (
         <>
-          reading: <b>&ldquo;{trimmed}&rdquo;</b>
+          {label}: <b>&ldquo;{trimmed}&rdquo;</b>
         </>
       )}
     </p>

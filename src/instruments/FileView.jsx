@@ -509,6 +509,7 @@ export default function FileView({
   progress,
   onLoad,
   onProof,
+  phoneKey,
 }) {
   const [facts, setFacts] = useState(null)
   const [live, setLive] = useState(null)
@@ -1315,6 +1316,12 @@ export default function FileView({
   const standoutLine = () => {
     if (entry?.name !== WTE || marked.length === 0) return ''
     const n = marked.length
+    // The same CSS gutter that suppresses row and slot labels is the signal.
+    if (layout?.left === 0) {
+      return n === 1
+        ? 'one slot stands out; a wider window marks it'
+        : `${NUMBER_WORDS[n] ?? n} slots stand out; a wider window marks them`
+    }
     const lead = n === 1 ? 'one slot stands out: ' : `${NUMBER_WORDS[n] ?? n} slots stand out: `
     return (
       lead +
@@ -1709,6 +1716,16 @@ export default function FileView({
             onMouseMove={hoverCell}
             onMouseLeave={leaveCanvas}
           />
+          {layout?.left === 0 && litAt !== null && grid && (
+            <span
+              className="file-followed-row"
+              aria-hidden="true"
+              style={{
+                top: layout.top + litAt * layout.areaH / grid.rows,
+                height: layout.areaH / grid.rows,
+              }}
+            />
+          )}
         </div>
         <div className="file-blob-controls">
           {/* Before the model loads there is only the shipped page to show,
@@ -1762,6 +1779,7 @@ export default function FileView({
         <p className={`file-curve-pick-line${curvePick ? ' is-on' : ''}`}>
           {curvePick?.line ?? 'click a square in the window and its value is marked here, on the curve'}
         </p>
+        {phoneKey}
 
         <p
           className={`file-proof${proofLine.alert ? ' is-alert' : ''}`}

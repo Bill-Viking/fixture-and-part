@@ -73,7 +73,7 @@ export const MOTION = {
 export function silentLead(reg) {
   if (!reg) return ''
   return (
-    `Block ${reg.layer} draws no transfer: in its chosen head the hero sent ${w4(reg.selfWeight)} of its ` +
+    `Block ${reg.layer} draws no transfer: in its chosen head the followed word sent ${w4(reg.selfWeight)} of its ` +
     `attention straight back to itself.`
   )
 }
@@ -82,7 +82,7 @@ export function silentDetail(reg, sequence) {
   if (!reg) return ''
   const best = reg.best
     ? `Its best other source, ${q(sequence[reg.best.src])} at ${w4(reg.best.w)}, is under the floor of ${TRANSFER_FLOOR}`
-    : 'It has no other source to draw: the hero is the first piece, and the first piece can only read itself'
+    : 'It has no other source to draw: the followed word is the first piece, and the first piece can only read itself'
   return (
     `Self-attention is not a transfer — it is the stream continuing, and the stream is already drawn. ` +
     `${best}. Nothing was lowered to manufacture a carrier.`
@@ -96,7 +96,7 @@ export function silentWhy(reg, sequence) {
 
 /** What the aperture plate means. Shared by its click readout and the tour. */
 export function unembedLead() {
-  return 'UNEMBED · WTEᵀ — the word table, turned on its side.'
+  return 'UNEMBED · THE EMBEDDING TABLE, BACKWARDS — the word table, turned on its side.'
 }
 
 export function unembedDetail(vocab = 50257) {
@@ -124,15 +124,15 @@ export function unembedWhy(vocab = 50257) {
 export function carrierLead(tr, sequence, heroToken) {
   return (
     `Carrier — block ${tr.layer}, head ${tr.head}. Reading the sentence up to here, this head matched the ` +
-    `hero’s question against ${q(sequence[tr.src])}’s key and carried ${w4(tr.w)} of that piece’s value into ` +
+    `followed word’s question against ${q(sequence[tr.src])}’s key and carried ${w4(tr.w)} of that piece’s value into ` +
     `${q(heroToken)}’s own stream.`
   )
 }
 
 export function carrierDetail() {
   return (
-    `The weight is one number out of the block’s attention softmax at the hero’s row; the carrier’s width and ` +
-    `light are that number, and the hero runs brighter below where it lands.`
+    `The weight is one number out of the block’s attention softmax at the followed word’s row; the carrier’s width and ` +
+    `light are that number, and the followed word runs brighter below where it lands.`
   )
 }
 
@@ -327,9 +327,9 @@ export function buildTour({
       'sentence',
       4000,
       `The walls are the fixture and your sentence is the part falling through it: ${n} ` +
-        `piece${n === 1 ? '' : 's'}, one of them the hero — ${q(heroToken)} at position ${hero}.`,
+        `piece${n === 1 ? '' : 's'}, one of them the followed word — ${q(heroToken)} at position ${hero}.`,
       `The pieces are ${shown}${rest}, and each gets a stream of its own. Everything the tour draws from here ` +
-        `is aimed at the hero's stream, and clicking a different chip re-aims the whole drawing.`,
+        `is aimed at the followed word's stream, and clicking a different chip re-aims the whole drawing.`,
       at({}),
     ),
   )
@@ -351,7 +351,7 @@ export function buildTour({
       4400,
       live
         ? `Each piece becomes 768 numbers — its row of the word table (WTE) plus its row of the position table ` +
-            `(WPE) — and at the rim the hero’s are ${n2(field.rows[hero][0])} long.`
+            `(WPE) — and at the rim the followed word’s are ${n2(field.rows[hero][0])} long.`
         : `Each piece becomes 768 numbers: its row of the word table (WTE) plus its row of the position table ` +
             `(WPE).`,
       live
@@ -381,7 +381,7 @@ export function buildTour({
     const share = live && run ? headOutwardShares(run, l, hero)?.[head] ?? null : null
 
     const fallLead = live
-      ? `The streams fall through block ${l}, and the hero’s vector leaves it ${n2(after)} long, ${dir} ${n2(before)}.`
+      ? `The streams fall through block ${l}, and the followed word’s vector leaves it ${n2(after)} long, ${dir} ${n2(before)}.`
       : `The streams fall through block ${l}.`
     const fallDetail = live
       ? `${wallLine} A block writes its result back into the same running vector, so the seven stops are seven ` +
@@ -391,7 +391,7 @@ export function buildTour({
 
     const headLead =
       live && head != null
-        ? `Block ${l} is read from head ${head} of ${REAL_HEADS}, where the hero spends ` +
+        ? `Block ${l} is read from head ${head} of ${REAL_HEADS}, where the followed word spends ` +
           `${share != null ? pc(share) : '—'} of its attention on something other than itself.`
         : `Attention needs a pass, so no head is chosen here yet.`
     const headDetail =
@@ -399,7 +399,7 @@ export function buildTour({
         ? `That is the head sending the most attention away from the first piece and away from itself — the rule ` +
           `the legend states, and the one the HEAD chips overrule.`
         : `With the real model in hand each block picks the head that sends the most attention away from the ` +
-          `first piece and away from itself, and draws the hero’s own sources from it.`
+          `first piece and away from itself, and draws the followed word’s own sources from it.`
 
     stages.push(
       stage('fall', 3000, fallLead, fallDetail, at({ segs: l + 2, carriers, cue: l })),
@@ -443,12 +443,12 @@ export function buildTour({
         carriers += 1
         const lead =
           i === 0
-            ? `Block ${l}, head ${head} — ${q(sequence[source.src])} hands the hero ${w4(source.w)} of its value.`
+            ? `Block ${l}, head ${head} — ${q(sequence[source.src])} hands the followed word ${w4(source.w)} of its value.`
             : `And ${q(sequence[source.src])} hands it ${w4(source.w)} as well.`
         const detail =
           i === 0
             ? `The green tick is the key that matched; the amber carrier’s width and light are that weight; the ` +
-              `bloom is where the hero takes it in, and the hero runs brighter below it.`
+              `bloom is where the followed word takes it in, and the followed word runs brighter below it.`
             : `A block draws at most two, and only sources at or above ${TRANSFER_FLOOR} — everything under the ` +
               `floor is left out rather than drawn faint.`
         stages.push(stage('transfer', 3400, lead, detail, at({ segs: l + 2, carriers, cue: l })))

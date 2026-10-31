@@ -88,6 +88,15 @@ export const claimNotes = {
       { label: 'Kindt, Soeter & Sevenster 2014 · Disrupting reconsolidation of fear memory in humans by a noradrenergic β-blocker (the lab’s protocol; names the drug)', url: 'https://pubmed.ncbi.nlm.nih.gov/25549103/' },
     ],
   },
+  keeps: {
+    kind: 'evidence',
+    title: 'recalling also keeps',
+    body: 'Roediger & Karpicke 2006 (Psychological Science 17(3), 249–255): students who took a free-recall test on a passage remembered more of it a week later than students who re-read it, though re-reading won at five minutes and raised confidence more. Sevenster, Beckers & Kindt 2014 (Learning & Memory 21(11), 580–584): a learned fear in people reopened for change only when the reminder carried a prediction error — an expected shock that did not come; with no surprise the memory stayed as it was, and after four unreinforced reminders new learning began instead.',
+    sources: [
+      { label: 'Roediger & Karpicke 2006 · Test-enhanced learning', url: 'https://pubmed.ncbi.nlm.nih.gov/16507066/' },
+      { label: 'Sevenster, Beckers & Kindt 2014 · Prediction error demarcates the transition from retrieval, to reconsolidation, to new learning', url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC4201815/' },
+    ],
+  },
   rat: {
     kind: 'evidence',
     title: 'what the rat study measured',

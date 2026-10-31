@@ -14,6 +14,7 @@ import LedgerFigure from './figures/LedgerFigure.jsx'
 import HarnessReadout from './figures/HarnessReadout.jsx'
 import ModeControl from './components/ModeControl.jsx'
 import ClaimNotes from './components/ClaimNotes.jsx'
+import SectionBar from './components/SectionBar.jsx'
 import {
   DEFAULT_SENTENCE,
   MAX_GENERATED,
@@ -356,6 +357,19 @@ const readouts = {
 }
 
 export default function App() {
+  // The phone chrome is selected before first paint, using F's hook pattern.
+  const [phone, setPhone] = useState(() =>
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
+    window.matchMedia('(max-width: 640px)').matches,
+  )
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return undefined
+    const mq = window.matchMedia('(max-width: 640px)')
+    const changed = (event) => setPhone(event.matches)
+    mq.addEventListener('change', changed)
+    setPhone(mq.matches)
+    return () => mq.removeEventListener('change', changed)
+  }, [])
   const [text, setText] = useState(DEFAULT_SENTENCE)
   const [generated, setGenerated] = useState([])
   const [stepTick, setStepTick] = useState(0)
@@ -892,6 +906,7 @@ export default function App() {
         progress={progress}
         onLoad={handleLoad}
         onProof={handleProof}
+        phoneKey={phone ? <div className="file-phone-key"><MiniLegend visible={legendVisible} /></div> : null}
       />
     ),
     tokenizer: (
@@ -1030,7 +1045,8 @@ export default function App() {
 
   return (
     <>
-      <MiniLegend visible={legendVisible} />
+      <SectionBar phone={phone} sections={sections} pageName={header.titleHtml.replace(/<br>/g, ' ').replace(/<[^>]*>/g, '')} />
+      {!phone && <MiniLegend visible={legendVisible} />}
       <div className="wrap">
         <header>
           <Html as="h1" html={header.titleHtml} />

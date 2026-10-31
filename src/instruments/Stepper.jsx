@@ -3,6 +3,7 @@ import { COMPANY } from '../lib/company.js'
 import { memo, useEffect, useRef, useState } from 'react'
 import { LAYERS } from '../lib/toyModel.js'
 import { DECODING } from '../lib/realModel.js'
+import { labelOf } from '../lib/pieceLabel.js'
 import InfoTag from '../components/InfoTag.jsx'
 import KVInspector from '../components/KVInspector.jsx'
 import LoadNote from '../components/LoadNote.jsx'
@@ -18,18 +19,19 @@ const RUN_INTERVAL_MS = 800
  * is appended, which is the append-only lesson made literal.
  */
 const RackRow = memo(function RackRow({ index, token, selectedRole, onSelect }) {
+  const label = labelOf(token, 'raw byte')
   return (
     <li className="rack-row">
       <span className="rack-idx">{String(index).padStart(2, '0')}</span>
       <span className="rack-bolt" aria-hidden="true">
         &#9679;
       </span>
-      <span className="rack-token">{token}</span>
+      <span className="rack-token">{label}</span>
       <button
         type="button"
         className={`chip chip-k chip-btn${selectedRole === 'k' ? ' is-sel' : ''}`}
         aria-pressed={selectedRole === 'k'}
-        aria-label={`inspect the key of token ${index}, ${token}`}
+        aria-label={`inspect the key of token ${index}, ${label}`}
         onClick={() => onSelect(index, 'k')}
       >
         K
@@ -38,7 +40,7 @@ const RackRow = memo(function RackRow({ index, token, selectedRole, onSelect }) 
         type="button"
         className={`chip chip-v chip-btn${selectedRole === 'v' ? ' is-sel' : ''}`}
         aria-pressed={selectedRole === 'v'}
-        aria-label={`inspect the value of token ${index}, ${token}`}
+        aria-label={`inspect the value of token ${index}, ${label}`}
         onClick={() => onSelect(index, 'v')}
       >
         V
@@ -138,6 +140,7 @@ function Candidates({
   pending,
   decode,
   pick,
+  rawByte,
 }) {
   const choice = choiceLine({
     real,
@@ -191,18 +194,23 @@ function Candidates({
             </div>
           ))}
       </div>
-      <p className="cand-choice">
-        {choice == null ? (
-          ''
-        ) : choice.text ? (
-          choice.text
-        ) : (
-          <>
-            chose <b>{choice.token}</b> ({choice.chose.toFixed(2)}) over{' '}
-            <b>{choice.over}</b> ({choice.overWeight.toFixed(2)}) &mdash; sampled
-          </>
-        )}
-      </p>
+      <div className="cand-choice-box">
+        <p className={`cand-choice${rawByte ? ' is-ghost' : ''}`} aria-hidden={rawByte}>
+          {choice == null ? (
+            ''
+          ) : choice.text ? (
+            choice.text
+          ) : (
+            <>
+              chose <b>{choice.token}</b> ({choice.chose.toFixed(2)}) over{' '}
+              <b>{choice.over}</b> ({choice.overWeight.toFixed(2)}) &mdash; sampled
+            </>
+          )}
+        </p>
+        <p className={`cand-choice cand-byte${rawByte ? '' : ' is-ghost'}`} aria-hidden={!rawByte}>
+          a fragment of a character the model is building across several tokens
+        </p>
+      </div>
     </div>
   )
 }
@@ -309,7 +317,7 @@ export default function Stepper({
       <InstrumentHead
         eyebrow="INSTRUMENT B"
         title="The forward pass and the KV rack"
-        purpose="One step at a time: the shortlist for the next token, the sequence so far, and the K/V rack it reads from."
+        purpose="One step at a time: the shortlist for the next token, the sequence so far, and the K/V rack it reads from. The shortlist is the landing, the strip is the part so far, the rack is the model’s only memory within one conversation — one row per token per layer, written once, never rewritten."
         note={
           <LoadNote
             label={
@@ -338,7 +346,7 @@ export default function Stepper({
       />
 
       <div className="inst-body">
-        <ReadingLine text={text} />
+        <ReadingLine text={text} label="the sentence this pass reads" />
 
         <div className="controls">
           <button
@@ -384,6 +392,10 @@ export default function Stepper({
           pending={pending}
           decode={decode}
           pick={pick}
+          rawByte={real && !pending && (
+            labelOf(pick?.token ?? '', 'raw byte') === 'raw byte' ||
+            (generatedCount > 0 && labelOf(sequence.at(-1), 'raw byte') === 'raw byte')
+          )}
         />
 
         <div className="stepper-panes">
@@ -397,7 +409,7 @@ export default function Stepper({
                   className={`seq-token${i === sequence.length - 1 ? ' newest' : ''}`}
                   key={`${i}-${token}`}
                 >
-                  {token}
+                  {labelOf(token, 'raw byte')}
                 </span>
               ))}
             </div>

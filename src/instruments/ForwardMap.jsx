@@ -109,6 +109,7 @@ const SW = 1166
  * one of these and the other has to change with it.
  */
 const COMPACT_MQ = '(max-width: 640px)'
+const NARROW_MQ = '(max-width: 359px)'
 const FULL_MQ = '(min-width: 1200px)'
 
 /** Whether a query holds right now, or false where there is no window. */
@@ -171,7 +172,7 @@ const f2 = (x) => Math.round(x * 100) / 100
  * a model has loaded. That is what lets the sentence change without moving
  * the page.
  */
-function geometryFor(compact, full) {
+function geometryFor(compact, full, narrow = false) {
   /** One constant, one value per setting: the phone, the column, the sheet. */
   const per = (compactValue, columnValue, fullValue) =>
     compact ? compactValue : full ? fullValue : columnValue
@@ -352,9 +353,9 @@ function geometryFor(compact, full) {
   // over block 0 belongs to that block's carriers and callouts, and one line
   // at 10 px is wider than the phone's drawing.
   const gutter = per(0, 34, 16)
-  const stationFs = per(38, 22.5, 11)
+  const stationFs = per(narrow ? 48 : 38, 22.5, 11)
   const stationLine = stationFs * 1.3
-  const stationBand = compact ? 108 : 0
+  const stationBand = compact ? (narrow ? 128 : 108) : 0
   const stationX = compact ? 8 : (3 - gutter) / 2 - 0.26 * stationFs
   const stationY = compact ? -16 - stationLine : bandTop[0]
 
@@ -434,7 +435,7 @@ const TRACK = {
 const STATIONS_HEAD = 'SIX STATIONS, TOP TO BOTTOM —'
 const STATIONS_TAIL = 'EVERY WORD PASSES THROUGH ALL SIX'
 const CURVES_CURVE =
-  `SOLID CURVE — ONE HEAD CARRYING A SOURCE WORD’S VALUE INTO THE HERO · WIDTH = ITS SHARE ` +
+  `SOLID CURVE — ONE HEAD CARRYING A SOURCE WORD’S VALUE INTO THE FOLLOWED WORD · WIDTH = ITS SHARE ` +
   `OF ATTENTION · AT MOST TWO PER BLOCK, UNDER ${TRANSFER_FLOOR} NOT DRAWN ·`
 const CURVES_STREAM = `STRAIGHT STREAM — ONE WORD’S OWN NUMBERS, NEVER LEAVING ITS COLUMN`
 
@@ -1080,6 +1081,7 @@ export default function ForwardMap({
   onOpenTensor,
 }) {
   const [compact, setCompact] = useState(() => mqMatches(COMPACT_MQ))
+  const [narrow, setNarrow] = useState(() => mqMatches(NARROW_MQ))
   const [full, setFull] = useState(() => mqMatches(FULL_MQ))
   // Asked, not assumed: a reader who has turned animation off gets the tour as
   // a stepper — the same stops, the same words, the same buttons, no timer —
@@ -1116,6 +1118,7 @@ export default function ForwardMap({
     if (typeof window.matchMedia !== 'function') return undefined
     const offs = [
       [COMPACT_MQ, setCompact],
+      [NARROW_MQ, setNarrow],
       [FULL_MQ, setFull],
       [MOTION_MQ, setReduced],
     ].map(([query, set]) => {
@@ -1145,7 +1148,7 @@ export default function ForwardMap({
     }
   }, [])
 
-  const g = useMemo(() => geometryFor(compact, full), [compact, full])
+  const g = useMemo(() => geometryFor(compact, full, narrow), [compact, full, narrow])
   const n = sequence.length
   const hero = Math.min(Math.max(lensIndex, 0), Math.max(0, n - 1))
   const runKey = run?.key ?? null
@@ -1499,7 +1502,7 @@ export default function ForwardMap({
   const note = () => {
     if (n === 0) return 'no input — type something into instrument A'
     if (pending || waiting) return 'running distilgpt2…'
-    if (!armed) return 'illustrative — the walls are real, the fall is a schematic'
+    if (!armed) return 'illustrative — the walls are the file’s own bytes; the fall is drawn, not computed'
     if (!live) return 'the walls are real — the fall is waiting on a pass'
     return `real pass · ‖residual‖ ${field.lo.toFixed(1)} → ${field.hi.toFixed(1)} · ${
       plan.count
@@ -1512,8 +1515,19 @@ export default function ForwardMap({
   // is happening is stated on the drawing and in the legend, because the
   // reader is being asked to click these.
   const numberedChips = chipRoom(g.fs.chip, chipW - 6) < CHIP_MIN_CHARS
+  const sentenceLabel = compact
+    ? numberedChips
+      ? 'THE PART — ONE STREAM EACH, BY POSITION'
+      : 'THE PART — ONE STREAM EACH'
+    : numberedChips
+      ? 'THE PART — YOUR SENTENCE, ONE STREAM EACH, NUMBERED BY POSITION; CLICK ONE TO MAKE IT THE FOLLOWED WORD'
+      : 'THE PART — YOUR SENTENCE, ONE STREAM EACH; CLICK ONE TO MAKE IT THE FOLLOWED WORD'
+  const sentenceLabelFs = Math.min(
+    g.fs.note,
+    (SW - 16) / (sentenceLabel.length * (MONO_ADVANCE + TRACK.note)),
+  )
 
-  const APERTURE_NOTE = 'UNEMBED · WTEᵀ'
+  const APERTURE_NOTE = 'UNEMBED · THE EMBEDDING TABLE, BACKWARDS'
   // The plate is sized from its own words rather than from a number that was
   // right for the words it had when it was drawn: at 390 the note ran a third
   // of its length outside the box it was supposed to sit in.
@@ -1521,6 +1535,11 @@ export default function ForwardMap({
     compact ? 180 : 110,
     textWidth(APERTURE_NOTE, g.fs.aperture, TRACK.aperture) + 18,
   )
+  // Keep the words and their plate inside the sheet even when the last stream
+  // sits near its edge. The stream still meets the same point on the plate.
+  const aperturePlateX = draw
+    ? Math.max(8 + apertureW / 2, Math.min(SW - 8 - apertureW / 2, draw.apertureX))
+    : SW / 2
 
   const wall0 = windows ? wallWindow(windows, wallTensor(0)) : null
   const tensor0 = factsFor(wallTensor(0))
@@ -1590,7 +1609,7 @@ export default function ForwardMap({
         textWidth('HEAD 00', g.fs.reg, TRACK.label),
       )
       label(3, top + g.fs.reg * (1 - INK_ABOVE), regW + 10, g.fs.reg * (1.2 + INK_ABOVE + INK_BELOW))
-      const nameW = textWidth('24 × 64 WINDOW · i8', g.fs.tensor, TRACK.tensor)
+      const nameW = textWidth('24 × 64 OF 768 × 2304 BYTES', g.fs.tensor, TRACK.tensor)
       const nameY = top - (g.compact ? 34 : 24)
       const specY = top - (g.compact ? 16 : 10)
       label(
@@ -1607,7 +1626,7 @@ export default function ForwardMap({
       g.fs.reg * (1 + INK_ABOVE + INK_BELOW) + 6,
     )
     if (draw) {
-      label(draw.apertureX - apertureW / 2, g.apertureY0, apertureW, g.apertureH)
+      label(aperturePlateX - apertureW / 2, g.apertureY0, apertureW, g.apertureH)
     }
     if (draw && draw.n > 0) {
       const chipW = Math.min(g.compact ? 150 : 96, draw.slot - 6)
@@ -1632,7 +1651,7 @@ export default function ForwardMap({
       8,
       g.landTitleY + g.fs.quiet * (1.45 - INK_ABOVE),
       textWidth(
-        'the landing is the last word’s alone; XXXXXXXXXXXXXXX is the hero, so it stands back',
+        'the landing is the last word’s alone; XXXXXXXXXXXXXXX is the followed word, so it stands back',
         g.fs.quiet,
         TRACK.quiet,
       ),
@@ -1694,7 +1713,7 @@ export default function ForwardMap({
       }
     }
     return boxes
-  }, [callouts, g, draw, apertureW, registers, hero])
+  }, [callouts, g, draw, apertureW, aperturePlateX, registers, hero])
 
   // --- the narrated run -----------------------------------------------------
   //
@@ -1987,12 +2006,12 @@ export default function ForwardMap({
       kind: 'plate',
       text: unembedWhy(),
       lead: unembedLead(),
-      at: draw ? { x: draw.apertureX, y: g.apertureY0 + g.apertureH / 2 } : null,
+      at: draw ? { x: aperturePlateX, y: g.apertureY0 + g.apertureH / 2 } : null,
       tensor: 'transformer.wte.weight_quantized',
       instrument: 'stepper',
       letter: 'B',
     })
-  }, [say, draw, g])
+  }, [say, draw, g, aperturePlateX])
 
   const inspectCarrier = useCallback(
     (tr) => {
@@ -2529,11 +2548,11 @@ export default function ForwardMap({
     // carries on to the landing, and it is the last word's, hero or not.
     const mist = compact
       ? draw?.landingHere
-        ? 'Only the last word’s stream carries past the mist — the hero here.'
-        : 'Only the last word’s stream carries past the mist, dimmed; the hero is earlier.'
+        ? 'Only the last word’s stream carries past the mist — the followed word here.'
+        : 'Only the last word’s stream carries past the mist, dimmed; the followed word is earlier.'
       : draw?.landingHere
-        ? 'Below the last wall every stream fades into the mist but the last word’s — the hero here — which carries on to the landing.'
-        : 'Below the last wall every stream fades into the mist but the last word’s, which carries on to the landing dimmed: the hero is an earlier word.'
+        ? 'Below the last wall every stream fades into the mist but the last word’s — the followed word here — which carries on to the landing.'
+        : 'Below the last wall every stream fades into the mist but the last word’s, which carries on to the landing dimmed: the followed word is an earlier word.'
     // Two characters of a word is a different word, so under three characters
     // of room the chips stop pretending and the drawing says they have.
     const chipNote = numberedChips
@@ -2543,17 +2562,17 @@ export default function ForwardMap({
       : ''
     const fall = !live
       ? compact
-        ? `One stream a token. No pass has run, so every stream is drawn at one width and one light — no magnitude is claimed. The grain inside is the deterministic stand-in instrument D prints, 768 numbers binned into ${plan.count} filaments of ${plan.group}, and it is a stand-in, not a measurement. Spacing: ${spacing}.${chipNote} The last word is the hero; click any token to make it one.`
-        : `One stream a token, falling through all six walls. No pass has run, so every stream is drawn at one width and one light: nothing here claims a magnitude. The grain inside a stream is the deterministic stand-in instrument D prints, its 768 numbers binned into ${plan.count} filaments of ${plan.group} dimensions each — a stand-in, and not a measurement. Spacing scales with the sentence: ${spacing}, and the drawing’s height never changes with it.${chipNote} The last word is the hero, and clicking any token makes it the hero instead.`
+        ? `One stream a token. No pass has run, so every stream is drawn at one width and one light — no magnitude is claimed. The grain inside is the deterministic stand-in instrument D prints, 768 numbers binned into ${plan.count} filaments of ${plan.group}, and it is a stand-in, not a measurement. Spacing: ${spacing}.${chipNote} The last word is the followed word; click any token to make it one.`
+        : `One stream a token, falling through all six walls. No pass has run, so every stream is drawn at one width and one light: nothing here claims a magnitude. The grain inside a stream is the deterministic stand-in instrument D prints, its 768 numbers binned into ${plan.count} filaments of ${plan.group} dimensions each — a stand-in, and not a measurement. Spacing scales with the sentence: ${spacing}, and the drawing’s height never changes with it.${chipNote} The last word is the followed word, and clicking any token makes it the followed word instead.`
       : compact
-        ? `One stream a token. Width, light and grain are the real length (L2) of that token’s 768 numbers at each of the seven depths — ${field.lo.toFixed(2)} to ${count(Number(field.hi.toFixed(2)))} — on one log law shared by all ${n}; the widest is ${widest}. Inside, 768 dimensions become ${plan.count} filaments of ${plan.group}; a filament’s grain is the mean |value| of its own, against the brightest in that stream at that depth. Spacing: ${spacing}.${chipNote} Hero: ${heroToken ?? '—'} — click any token. ${mist}`
-        : `One stream a token, ${n} of them, through all six walls. Width, light and grain are the real length (L2) of that token’s 768-number vector at each of the seven depths — ${field.lo.toFixed(2)} at the rim up to ${count(Number(field.hi.toFixed(2)))} — on one log law shared by all ${n}, and the widest is ${widest}: usually the first piece, which carries the attention sink. Inside, the 768 dimensions are ${plan.count} filaments of ${plan.group}: a filament’s grain is the mean |value| of its own ${plan.group} there, against the brightest filament in that stream at that depth. Spacing scales with the sentence — ${spacing} — the drawing’s height never does.${chipNote} The hero is ${heroToken ?? '—'}; click any token to change that. ${mist}`
+        ? `One stream a token. Width, light and grain are the real length (L2) of that token’s 768 numbers at each of the seven depths — ${field.lo.toFixed(2)} to ${count(Number(field.hi.toFixed(2)))} — on one log law shared by all ${n}; the widest is ${widest}. Inside, 768 dimensions become ${plan.count} filaments of ${plan.group}; a filament’s grain is the mean |value| of its own, against the brightest in that stream at that depth. Spacing: ${spacing}.${chipNote} Followed word: ${heroToken ?? '—'} — click any token. ${mist}`
+        : `One stream a token, ${n} of them, through all six walls. Width, light and grain are the real length (L2) of that token’s 768-number vector at each of the seven depths — ${field.lo.toFixed(2)} at the rim up to ${count(Number(field.hi.toFixed(2)))} — on one log law shared by all ${n}, and the widest is ${widest}: usually the first piece, which carries the attention sink. Inside, the 768 dimensions are ${plan.count} filaments of ${plan.group}: a filament’s grain is the mean |value| of its own ${plan.group} there, against the brightest filament in that stream at that depth. Spacing scales with the sentence — ${spacing} — the drawing’s height never does.${chipNote} The followed word is ${heroToken ?? '—'}; click any token to change that. ${mist}`
 
     const heads = autoHeads
       ? autoHeads.map((h, l) => `b${l} h${block === l && headPick != null ? headPick : h}`).join(', ')
       : ''
     const nearMiss = silent
-      ? ` Block ${silent.layer} draws nothing, and the number beside the hero is what it sent to itself: ${silent.selfWeight.toFixed(4)}${
+      ? ` Block ${silent.layer} draws nothing, and the number beside the followed word is what it sent to itself: ${silent.selfWeight.toFixed(4)}${
           silent.best
             ? `, against its best other source ${sequence[silent.best.src]} at ${silent.best.w.toFixed(4)}`
             : ''
@@ -2561,11 +2580,11 @@ export default function ForwardMap({
       : ''
     const transfers = !live
       ? compact
-        ? (COMPANY ? `There is no attention to draw without a pass, so no carriers are drawn. With a model in hand each block would read the hero’s own row: green tick = the key that matched, amber carrier = the weight.` : `There is no attention to draw without a pass, so no carriers are drawn. Load the real model and each block reads the hero’s own row: green tick = the key that matched, amber carrier = the weight.`)
-        : `There is no attention until a pass has run, so no carrier is drawn here. With the real model in hand, each block takes the head that sends the most attention away from the first token and away from itself, and draws the hero’s own sources at or above ${TRANSFER_FLOOR}, at most 2: a green tick at the key that matched, an amber carrier whose width and light are that weight, and a brighter hero below the absorption.`
+        ? (COMPANY ? `There is no attention to draw without a pass, so no carriers are drawn. With a model in hand each block would read the followed word’s own row: green tick = the key that matched, amber carrier = the weight.` : `There is no attention to draw without a pass, so no carriers are drawn. Load the real model and each block reads the followed word’s own row: green tick = the key that matched, amber carrier = the weight.`)
+        : `There is no attention until a pass has run, so no carrier is drawn here. With the real model in hand, each block takes the head that sends the most attention away from the first token and away from itself, and draws the followed word’s own sources at or above ${TRANSFER_FLOOR}, at most 2: a green tick at the key that matched, an amber carrier whose width and light are that weight, and a brighter followed word below the absorption.`
       : compact
-        ? `Per block, from the head that sends the most attention away from the first token and away from itself (${heads}), the hero’s own sources at or above ${TRANSFER_FLOOR}, at most 2. Self-attention is never a transfer — it is the stream continuing. Green tick = the key that matched; the carrier’s width and light are that weight; the hero runs brighter below each absorption.${nearMiss} Carriers keep to the dark air and pass behind every other stream. The twelve squares beside an open register are lit by the share of the hero’s attention that leaves itself in each head.`
-        : `Per block, from the head that sends the most attention away from the first token and away from itself (${heads}) — the HEAD chips overrule that rule for an open block — the hero’s own sources at or above ${TRANSFER_FLOOR}, at most 2. Self-attention is never a transfer: it is the stream continuing, and it is drawn as the stream. Green tick = the key that matched; the amber carrier’s width and light are that real weight; the hero runs brighter below each absorption, and that brightness is the weight too.${nearMiss} Carriers keep to the dark air above the walls and drop into the hero down one dimmed lane; where a carrier meets another stream it passes behind it. With one register open the other five stand back, and the twelve squares beside it are lit by the share of the hero’s attention that leaves itself in each head — which is what a head chip lets you read a different one of.`
+        ? `Per block, from the head that sends the most attention away from the first token and away from itself (${heads}), the followed word’s own sources at or above ${TRANSFER_FLOOR}, at most 2. Self-attention is never a transfer — it is the stream continuing. Green tick = the key that matched; the carrier’s width and light are that weight; the followed word runs brighter below each absorption.${nearMiss} Carriers keep to the dark air and pass behind every other stream. The twelve squares beside an open register are lit by the share of the followed word’s attention that leaves itself in each head.`
+        : `Per block, from the head that sends the most attention away from the first token and away from itself (${heads}) — the HEAD chips overrule that rule for an open block — the followed word’s own sources at or above ${TRANSFER_FLOOR}, at most 2. Self-attention is never a transfer: it is the stream continuing, and it is drawn as the stream. Green tick = the key that matched; the amber carrier’s width and light are that real weight; the followed word runs brighter below each absorption, and that brightness is the weight too.${nearMiss} Carriers keep to the dark air above the walls and drop into the followed word down one dimmed lane; where a carrier meets another stream it passes behind it. With one register open the other five stand back, and the twelve squares beside it are lit by the share of the followed word’s attention that leaves itself in each head — which is what a head chip lets you read a different one of.`
 
     const argmaxLine = finalTop && splash
       ? `${finalTop.token} at ${((splash.find((s) => s.id === finalTop.id)?.p ?? 0) * 100).toFixed(1)}%`
@@ -2606,11 +2625,11 @@ export default function ForwardMap({
         ? (COMPANY ? `The last position’s vector against all 50,257 words. It needs a pass; this copy carries one, for the page’s own sentence.` : `The last position’s vector against all 50,257 words. It needs a pass — load the real model and the bars are this sentence’s own softmax.`)
         : (COMPANY ? `Where the last position’s vector meets all 50,257 words. There is no distribution without a pass, so no bar is drawn; with a model in hand the bars would be this sentence’s own softmax, top ${g.splashN}.` : `Where the last position’s vector meets all 50,257 words. There is no distribution without a pass, so no bar is drawn: load the real model and the bars become this sentence’s own softmax, top ${g.splashN}.`)
       : compact
-        ? `The last position’s alone, and the last position’s stream is the one that reaches it${draw?.landingHere ? ' — the hero here' : ', dimmed — the hero is earlier'}. The ${g.splashN} bars are this pass’s own softmax over all 50,257 words. ${argmaxLine} is the machine’s own top, drawn blue; ${pickBar ? `${pickBar.token} at ${(pickBar.p * 100).toFixed(1)}%` : (nextToken ?? '—')} ${tookCompact} and carries the amber mark. ${SameTrace}`
+        ? `The last position’s alone, and the last position’s stream is the one that reaches it${draw?.landingHere ? ' — the followed word here' : ', dimmed — the followed word is earlier'}. The ${g.splashN} bars are this pass’s own softmax over all 50,257 words. ${argmaxLine} is the machine’s own top, drawn blue; ${pickBar ? `${pickBar.token} at ${(pickBar.p * 100).toFixed(1)}%` : (nextToken ?? '—')} ${tookCompact} and carries the amber mark. ${SameTrace}`
         : `It is the last position’s alone, and the last position’s own stream is the one that reaches it — ${
             draw?.landingHere
-              ? 'which is where the hero is'
-              : 'so an earlier hero leaves it standing back, its own fall ending in the mist with the rest'
+              ? 'which is where the followed word is'
+              : 'so an earlier followed word leaves it standing back, its own fall ending in the mist with the rest'
           }. The ${g.splashN} bars are this pass’s own softmax over all 50,257 words, top ${g.splashN}, counted from the last position’s vector and from nothing else. ${argmaxLine} is the machine’s own top and is drawn blue; ${
             pickBar ? `${pickBar.token} at ${(pickBar.p * 100).toFixed(1)}%` : (nextToken ?? '—')
           } ${tookWide} and carries the amber mark. A bar’s height is its probability and the rows of dots are how that height is counted. Chance appears nowhere above it: ${sameTrace}`
@@ -2713,13 +2732,13 @@ export default function ForwardMap({
       <InstrumentHead
         eyebrow="INSTRUMENT F"
         title="The forward pass, live"
-        purpose="This is the model guessing the next word: your sentence falls through the six blocks once, and the landing at the foot is its guess — the eight words it rates highest, and the one it took. The walls are the fixture: the file’s own frozen tooling, one station for each of the six blocks. Your sentence is the part — one stream for each word, falling through the stations; every word passes through every station in order, and a stream never leaves its column. A transfer is the tooling touching the part — the solid curves, the only thing that crosses: attention picks a source in green and carries its value in amber. The hero is the piece finished at the last station, rich enough to say what comes next."
+        purpose="This is the model guessing the next word: your sentence falls through the six blocks once, and the landing at the foot is its guess — the eight words it rates highest, and the one it took. The walls are the fixture: the file’s own frozen tooling, one station for each of the six blocks. Your sentence is the part — one stream for each word, falling through the stations; every word passes through every station in order, and a stream never leaves its column. A transfer is the tooling touching the part — the solid curves, the only thing that crosses: attention picks a source in green and carries its value in amber. The followed word is the piece finished at the last station, rich enough to say what comes next."
         note={
           <LoadNote
             label={
               armed
                 ? architectureNote(manifest)
-                : (COMPANY ? 'the walls are real — the fall is a schematic for any sentence but the page’s own' : 'the walls are real in both modes — the fall needs the model')
+                : (COMPANY ? 'illustrative — the walls are the file’s own bytes; the fall is drawn, not computed' : 'the walls are real in both modes — the fall needs the model')
             }
             status={modelStatus}
             progress={progress}
@@ -2925,7 +2944,7 @@ export default function ForwardMap({
             viewBox={`${g.vbX} ${g.vbY} ${g.vbW} ${g.vbH}`}
             role="img"
             aria-label={`one pass of distilgpt2 drawn as a memory room: six full-width walls of real weight bytes, ${n} granular token streams falling through them, the attention transfers into ${
-              heroToken ?? 'the hero'
+              heroToken ?? 'the followed word'
             }, and the landing on the last position’s top ${g.splashN} next words`}
           >
             <defs>
@@ -3123,13 +3142,10 @@ export default function ForwardMap({
             {Array.from({ length: REAL_LAYERS }, (_, l) => {
               const top = g.bandTop[l]
               const name = wallTensor(l)
-              const wall = windows ? wallWindow(windows, name) : null
               const tensor = factsFor(name)
               const on = part === name
               const short = tensor ? tensor.display.replace(`h.${l}.`, '') : 'attn.c_attn'
-              const spec = `${wall?.rows ?? 24} × ${wall?.cols ?? 64} WINDOW · ${
-                tensor?.dtype ?? 'i8'
-              }`
+              const spec = '24 × 64 OF 768 × 2304 BYTES'
               const nameY = top - (compact ? 34 : 24)
               const specY = top - (compact ? 16 : 10)
               const nameW = Math.max(
@@ -3403,14 +3419,8 @@ export default function ForwardMap({
               : null}
 
             {/* --- the sentence, across the top --- */}
-            <text className="mr-note" x="8" y={g.fs.note + 6} style={{ fontSize: g.fs.note }}>
-              {compact
-                ? numberedChips
-                  ? 'THE PART — ONE STREAM EACH, BY POSITION'
-                  : 'THE PART — ONE STREAM EACH'
-                : numberedChips
-                  ? 'THE PART — YOUR SENTENCE, ONE STREAM EACH, NUMBERED BY POSITION; CLICK ONE TO MAKE IT THE HERO'
-                  : 'THE PART — YOUR SENTENCE, ONE STREAM EACH; CLICK ONE TO MAKE IT THE HERO'}
+            <text className="mr-note" x="8" y={g.fs.note + 6} style={{ fontSize: sentenceLabelFs }}>
+              {sentenceLabel}
             </text>
             {draw
               ? draw.xs.map((x, i) => {
@@ -3421,7 +3431,7 @@ export default function ForwardMap({
                       className={on ? 'mr-tok is-hero' : 'mr-tok'}
                       role="button"
                       tabIndex={0}
-                      aria-label={`make position ${i}, ${sequence[i]}, the hero`}
+                      aria-label={`make position ${i}, ${sequence[i]}, the followed word`}
                       aria-pressed={on}
                       onClick={() => onSelect(i)}
                       onKeyDown={(e) => {
@@ -3524,7 +3534,7 @@ export default function ForwardMap({
                   className="mr-plate mr-aperture-plate mr-said"
                   role="button"
                   tabIndex={0}
-                  aria-label="what UNEMBED · WTEᵀ means, and the word table it reads back out of the file"
+                  aria-label={`what ${APERTURE_NOTE} means, and the word table it reads back out of the file`}
                   aria-pressed={part === 'transformer.wte.weight_quantized'}
                   onClick={() => sayUnembed()}
                   onKeyDown={(e) => {
@@ -3536,7 +3546,7 @@ export default function ForwardMap({
                 >
                   <title>{unembedWhy()}</title>
                   <rect
-                    x={f2(draw.apertureX - apertureW / 2)}
+                    x={f2(aperturePlateX - apertureW / 2)}
                     y={g.apertureY0}
                     width={f2(apertureW)}
                     height={g.apertureH}
@@ -3546,7 +3556,7 @@ export default function ForwardMap({
                   />
                   <rect
                     className="mr-aperture"
-                    x={f2(draw.apertureX - apertureW / 2)}
+                    x={f2(aperturePlateX - apertureW / 2)}
                     y={g.apertureY0}
                     width={f2(apertureW)}
                     height={g.apertureH}
@@ -3554,7 +3564,7 @@ export default function ForwardMap({
                   />
                   <text
                     className="mr-aperture-note"
-                    x={draw.apertureX}
+                    x={aperturePlateX}
                     y={g.apertureY0 + g.apertureH * 0.68}
                     textAnchor="middle"
                     style={{ fontSize: g.fs.aperture }}
@@ -3633,8 +3643,8 @@ export default function ForwardMap({
                 style={{ fontSize: g.fs.quiet }}
               >
                 {compact
-                  ? `the landing is the last word’s alone — hero: ${heroToken}`
-                  : `the landing is the last word’s alone; ${heroToken} is the hero, so it stands back`}
+                  ? `the landing is the last word’s alone — followed word: ${heroToken}`
+                  : `the landing is the last word’s alone; ${heroToken} is the followed word, so it stands back`}
               </text>
             ) : null}
             {/* What a solid curve is and what a straight stream is: the one
@@ -3829,7 +3839,7 @@ export default function ForwardMap({
           className="teach dim"
           show={armed ? 'b' : 'a'}
           a={`the six walls are real in this mode too: every cell is one byte of that block's attention weights, read out of the file when this page was built, stretched across the middle 96% of its own window. what is not real is the fall — no model is running, so every stream is drawn at one width, the grain inside it is the deterministic stand-in instrument D prints, and there is no attention to carry and no landing to reach. ${COMPANY ? "with a model in hand the same drawing would fill with this sentence's own numbers." : "load the real model and the same drawing fills with this sentence's own numbers."}`}
-          b="one drawing, five readings, all of them real. the walls are the file's own weight bytes; a stream's width and light are the length of that token's 768-number vector at each depth; the filaments inside it are those 768 numbers grouped and averaged; a carrier is one attention weight out of the block's chosen head, read at the hero's own row; and the landing is the softmax over all 50,257 words at the last position. the head rule, the floor under a transfer and both normalisations are stated in the legend, because a drawing that does not say what it is doing is a picture rather than an instrument."
+          b="one drawing, five readings, all of them real. the walls are the file's own weight bytes; a stream's width and light are the length of that token's 768-number vector at each depth; the filaments inside it are those 768 numbers grouped and averaged; a carrier is one attention weight out of the block's chosen head, read at the followed word's own row; and the landing is the softmax over all 50,257 words at the last position. the head rule, the floor under a transfer and both normalisations are stated in the legend, because a drawing that does not say what it is doing is a picture rather than an instrument."
         />
       </div>
 

@@ -83,6 +83,12 @@ export default function Tokenizer({
           onChange={(e) => onTextChange(e.target.value)}
         />
 
+        <p className="teach dim input-note" aria-live="polite">
+          {real && /\s$/.test(text)
+            ? 'the space at the end was dropped: GPT-2 keeps a word’s space with the word'
+            : '\u00a0'}
+        </p>
+
         <div className="label-row">
           <span className="field-label">tokens</span>
           <InfoTag topic={real || baked ? 'tokenReal' : 'token'} />

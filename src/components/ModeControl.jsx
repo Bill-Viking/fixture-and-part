@@ -42,7 +42,7 @@ export default function ModeControl({
           <span className="mode-state">no model · nothing downloads</span>
         </div>
         <div className="mode-row mode-load is-company">
-          <span className="mode-hint">company copy · no model here · the numbers are stand-ins except where a label says they are the file’s own</span>
+          <span className="mode-hint">company copy · no model here · the numbers are stand-ins, except where a label says the file’s own or one real pass</span>
         </div>
       </div>
     )

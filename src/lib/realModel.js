@@ -271,6 +271,9 @@ const embeddingCache = new Map()
 /** Real GPT-2 BPE. Returns ids and their printable pieces. */
 export async function realTokenize(text) {
   const { tokenizer } = requireReady()
+  // A typed trailing space would become a lone ␣ token GPT-2 almost never
+  // sees (it keeps a word's space with the word); instrument A says so.
+  text = text.replace(/\s+$/, '')
   if (!text) return { ids: [], tokens: [] }
   const encoded = await tokenizer(text, { add_special_tokens: false })
   const ids = Array.from(encoded.input_ids.data, Number)
