@@ -2678,11 +2678,13 @@ export default function ForwardMap({
     [legend, g],
   )
 
+  // The company copy never runs a model: its head says so before the numbers.
+  const model = COMPANY ? 'distilgpt2 · one pass, made when the page was built' : 'real distilgpt2'
   const fine = live
-    ? `real distilgpt2 · ${REAL_LAYERS} blocks · ${REAL_HEADS} heads · d ${REAL_HIDDEN}${
+    ? `${model} · ${REAL_LAYERS} blocks · ${REAL_HEADS} heads · d ${REAL_HIDDEN}${
         manifest ? ` · ${(manifest.parameters / 1e6).toFixed(1)}M parameters` : ''
-      } · one pass on the sentence above, ${COMPANY ? 'run once when this copy was built' : 'run in this browser'} · nothing in the picture is a stand-in: the only marks that carry no number are the aperture outline, the bloom around the light, and the sweep that travels down the sheet while it runs itself.`
-    : `real distilgpt2 · ${REAL_LAYERS} blocks · ${REAL_HEADS} heads · d ${REAL_HIDDEN}${
+      } · one pass on the sentence above${COMPANY ? '' : ', run in this browser'} · nothing in the picture is a stand-in: the only marks that carry no number are the aperture outline, the bloom around the light, and the sweep that travels down the sheet while it runs itself.`
+    : `${model} · ${REAL_LAYERS} blocks · ${REAL_HEADS} heads · d ${REAL_HIDDEN}${
         manifest ? ` · ${(manifest.parameters / 1e6).toFixed(1)}M parameters` : ''
       } · the walls are the real file in every mode; the fall, the transfers and the landing wait on a pass. The only marks that carry no number are the aperture outline, the bloom around the light, and the sweep that travels down the sheet while it runs itself.`
   const fineLines = useMemo(
@@ -2731,7 +2733,7 @@ export default function ForwardMap({
     >
       <InstrumentHead
         eyebrow="INSTRUMENT F"
-        title="The forward pass, live"
+        title={COMPANY ? 'The forward pass, replayed' : 'The forward pass, live'}
         purpose="This is the model guessing the next word: your sentence falls through the six blocks once, and the landing at the foot is its guess — the eight words it rates highest, and the one it took. The walls are the fixture: the file’s own frozen tooling, one station for each of the six blocks. Your sentence is the part — one stream for each word, falling through the stations; every word passes through every station in order, and a stream never leaves its column. A transfer is the tooling touching the part — the solid curves, the only thing that crosses: attention picks a source in green and carries its value in amber. The followed word is the piece finished at the last station, rich enough to say what comes next."
         note={
           <LoadNote
