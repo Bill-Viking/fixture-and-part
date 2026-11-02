@@ -3,6 +3,43 @@
 
 ## Now
 
+HANDOFF CAPTURE (hub button-up 2026-11-01, mechanical — verbatim tail, no model read): claude be9dfe12-92c5-4b40-9671-cbd9b2e585ab · last message 2026-10-31T21:06:41-07:00
+  the thread's own title: ARCH — F&P: the next cut shipped (A's real pass, labels, phone, notes); FP-TX-005 handed · 2026-10-31
+  lane F&P (the folder's only lane) · FABLE · 1204.6 min ago at the capture
+  the repo, read before this capture: 1 untracked, not carried: .claude/worktrees/
+  the last exchange, verbatim:
+  --- [2026-10-31T23:33:23.680Z] ASSISTANT
+  **FIXTURE⊕PART** `MAC · FABLE · HIGH`
+
+  Yes, the post is written: the draft I showed you in full is it, waiting in the Substack folder, checked accurate against today's page. What is left is your read, two optional wording touches, and the word "publish". That is a reading-and-polish stretch, not a rewrite, so High is enough; Extra only if you want the whole post reworked from a blank page, and nothing you have said asks for that.
+
+  The post belongs to the Substack window, which already holds its draft, its sources and my two notes. One move:
+
+  🟧 **CLAUDE CODE CHAT BOX · Mac · THIS WINDOW: the sidebar session titled "ACT — Substack/Politics: s3 — Harrow Alley verdict (MAC)"** · Fable · High
+
+  `` …[+356 chars]
+
+  --- [2026-11-01T03:39:14.916Z] USER
+  <task-notification>
+  <task-id>bkjts6yrl</task-id>
+  <tool-use-id>toolu_01XLZQxt64mJtF2kYdRpFZfH</tool-use-id>
+  <status>stopped</status>
+  <summary>Background shell command didn't finish before the previous session ended</summary>
+  <note>No completion record was found for it in the previous session. It may have been stopped (via the UI, Monitor timeout, or agent teardown — these leave no transcript marker), or it may have been running when the previous Claude Code process exited. Check the output file for partial results before assuming it completed.</note>
+  </task-notification>
+
+  --- [2026-11-01T04:05:47.079Z] USER
+  substack published.
+
+  --- [2026-11-01T04:06:41.269Z] ASSISTANT
+  **FIXTURE⊕PART** `MAC · FABLE · HIGH`
+
+  Recorded: the first post is out, the page it links is live and phone-first in all three copies, and the Substack lane has the note to file the link at its next wake. Fable reads 84 percent of the week, so this window stays quiet from here; the opener for the next sitting is written.
+
+  Your two moves left, whenever you take them: the iPhone model-load test on the public page, and the GitHub Support request. Mine: none until your word.
+  this block quotes; it does not explain. A session with a model may upgrade it to plain words (`buttonup.py capture --work-order`).
+
+
 THE INAUGURAL SUBSTACK POST IS PUBLISHED — 2026-10-31 16:4x (Bill's word in this window: «substack published.»): the post about this page, drafted in the Substack lane from the page at 40a5e65 and checked against today's page before publishing (accurate; no line quoting anything that changed today). The page it links is the live public copy, phone-first as of today. The Substack lane keeps the post's own record.
 
 FP-TX-007 LANDED ON THE OFFICE GITLAB — 2026-10-31 16:26 (Bill's scan 16:29, read by a Sonnet reader; filed `~/ferry-staging/2026-10-31/scans-in/FP-TX-007-resume-scan-2026-10-31-1629.pdf`): the first run stopped at step 4 — the app's permission classifier blocked the swap command; on manual mode and Bill's «try again» the session swapped the files, committed `c2cb1d1` (4 files), pushed main, pipeline `11140701` passed, both temp folders deleted; README, .gitlab-ci.yml and DESCRIPTION.txt untouched (line-ending diffs only, left unstaged). RULED LANDED. The office copy now carries everything of today: A's one real pass, the five labels, the phone bar and paint, the reading notes, F «replayed», the instruments named. LESSON for the sheet: the swap step (delete public/, copy, re-hash) trips the auto-mode classifier at the office; the next landing sheet splits it into plain copy steps or says «on manual mode» up front.
