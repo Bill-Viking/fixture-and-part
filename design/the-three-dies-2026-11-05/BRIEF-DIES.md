@@ -1,0 +1,62 @@
+to: astra
+kind: mechanical
+complexity: complex
+reason: a new drawn figure in two fixed layouts (wide, stacked) from a written geometry, with one build-time fact read and a page-wide figure renumber — drawn work across nine files, not a words edit
+touches:
+- src/figures/DiesFigure.jsx (new)
+- src/figures/factDrawing.jsx (only if a primitive is missing)
+- src/figures/figFormat.js (only if a helper is missing)
+- src/styles.css
+- src/company.css (only if a company rule would recolour the new figure)
+- vite.config.js (one new define, read at config load)
+- src/content/essay.js (ONLY: one figure block inserted, and the FIG numbers inside existing strings)
+- src/App.jsx (ONLY: one line in the `figures` map, one import, and FIG numbers inside existing strings)
+- src/instruments/AttentionInspector.jsx, src/instruments/GlassPass.jsx, src/figures/LoopFigure.jsx, src/lib/tour.js, src/content/explainers.js, src/lib/forwardMap.js, README.md (ONLY the FIG number strings)
+---
+# BRIEF — FIG.7 THE THREE DIES: a drawing for section 04, in the shape of FIG.3 and FIG.9 (2026-11-05)
+
+Quality bar: the machine notices, the human never checks; one plain sentence at the moment it is needed; the state visible on the surface; nothing superfluous. Principles served: make the interface truthful · ship the whole product · prove quality before declaring completion.
+
+Rules, the same as `design/the-figures-look-2026-10-30/BRIEF-A.md`: never commit, stage or push; no browser, no GUI, no network; build the public copy with `npx vite build --configLoader native` (→ `dist`) and the company copy with `VITE_COMPANY=1 npx vite build --configLoader native --outDir dist-co`; `npm run lint` stays at its one existing warning; every string that reaches the page is VERBATIM from the WORDS section below — the file's own character encoding only (the page uses `’`, `—`, `·`, `×`, `␣`); protected files untouched (`src/content/*.json`, `src/lib/*` except the FIG strings named above, `scripts/*`, `src/instruments/*` except the FIG strings, `src/components/*`, the start `.command` files, STATUS.md, OPENER.md, everything under `design/` except your report); CLS 0 — the drawing keeps a reserved size in the stylesheet that equals its viewBox's proportion, so nothing moves after load at any band; anything unclear: stop that item, say so in the report, continue with the rest.
+
+Report: `design/the-three-dies-2026-11-05/BRIEF-DIES-REPORT.md` — per part what changed (file, lines); the two viewBoxes with their CSS reserves; the text floor arithmetic per band; the string table (every WORDS string, where it sits, byte-equal yes/no); the seven weights the drawing prints beside the seven weights the attention inspector prints for the same layer and head (they must be equal to the printed precision); the full renumber table (every FIG.N string before → after, file and line); the lint line; the two build results; `git status --short` last; final line `DONE — …` or `FAIL — …`.
+
+## What this figure is
+
+A static SVG drawing, FIG.7 — THE THREE DIES, placed in section 04 (`id: '04'`, "Query, Key, Value") directly after its FIRST paragraph (the one that begins "Attention is a lookup system"), before the second paragraph. It is a drawing, not an instrument: nothing in it runs, nothing is focusable, nothing moves. It is built exactly like FIG.9 (`src/figures/LoopFigure.jsx`) and FIG.3 (`src/figures/LadderFigure.jsx`): one data description, two always-mounted layouts (`wide`, `stacked`) with fixed viewBoxes chosen by breakpoint alone, the stylesheet giving each SVG the same ratio as its viewBox and showing one at a time (stacked at ≤ 640 px, capped at 360 px wide, centred), `InstrumentHead` with the badge `FIG.7 — THE THREE DIES`, a `<figcaption>` whose text is the CAPTION string. Paint roles never change: steel `--frozen` = frozen weights (the dies), amber `--moving` = values in flight (the token's row, Q, V, the poured shares), green `--keys` = keys (K, the spines). The company copy keeps this drawing's palette and geometry (company.css, "Drawings retain the original palette, fonts and geometry"); one component renders in both copies.
+
+Text floor, the page's standing law: the smallest text in the wide layout renders at 10 px or more at a 641 px window, where the figure is 559 px wide (12.2 units at viewBox width 680 = 10.0 px; FIG.9 uses 13.4 for labels and 12.2 for notes); the stacked layout at 390 px renders 308 px wide (viewBox width 300: 12 units = 12.3 px, 10.5 units = 10.8 px). Keep those sizes unless you widen a viewBox, in which case redo the arithmetic and show it.
+
+The one fact read at build time: the page's own sentence and one head's attention row for the token `␣down` (position 6). `vite.config.js` already reads `src/content/passFacts.json` at config load when `VITE_COMPANY === '1'`; read it in BOTH copies now (it is in the repository; the file is not touched) and add one define, `__DIES_FACTS__`, carrying: `tokens` (the eight token strings from `run.tokens`, as they are, `␣` included), `layer: 0`, `head: 0` (the layer and head the attention inspector opens on — `src/App.jsx` lines 410–411 — so the drawing and the instrument below it agree), `position: 6` (the token `␣down`, the sentence's last word — not the final `.`), and `weights`: the seven softmax weights of that token's row (positions 0–6, the row includes its own position) at that layer and head, decoded from `run.attention` the SAME way the attention inspector decodes it for real mode (find that decoder in `src/lib/` or the instrument; reuse it, never a second decoder — if it is a browser-only path, port the arithmetic into a small pure Node-side function in `scripts/`? NO: scripts/ is protected; put the pure function in `src/figures/figFormat.js` and call it from vite.config.js, which may import from there). Round each weight to two decimals for printing; the seven must sum to 1.00 ± 0.01 (say the raw sum in the report). The figure imports nothing at runtime: it reads `__DIES_FACTS__` like FIG.1 reads `__FILE_PROVENANCE__`.
+
+The three column ranges on the dies come from the model's own c_attn shape: the block's `attn.c_attn` weight is `768 × 2304`, and the three dies are its three thirds — columns 0–767 (query), 768–1535 (key), 1536–2303 (value). Read 768 and 2304 from `src/content/fileFacts.json` (`manifest.tensors`, the entry named `transformer.h.0.attn.c_attn.weight_quantized`, its `dims`) at config load and put them in the same define; never hard-code them in the figure.
+
+## The drawing — two frames, one row in wide, two rows in stacked
+
+FRAME 1 — THE DIES (left half in wide; top in stacked). The token's row: one amber strip, labelled with the token text `␣down` (the sentence's last word, token index 6; the final `.` is not the subject) and the note `one row · 768 numbers`. The strip is pressed through three steel dies drawn side by side as three tall slabs with a fine grid texture (the `ff-byte-ground` look, no byte window — a plain hatched rect is enough), labelled under each: `q die`, `k die`, `v die`, and under those the mono column ranges `cols 0–767`, `cols 768–1535`, `cols 1536–2303`, and one line under all three: `h.0 attn.c_attn · 768 × 2,304 · one wall, three dies` (the numbers from the define, formatted with `integer`). Three parts come out below the dies: a short amber bar `Q · what I am looking for`, a short green bar `K · what I answer to`, a short amber bar `V · what I hand over`. Arrows (`Arrow`/`Arrowhead` primitives): strip → each die (three), each die → its part (three).
+
+FRAME 2 — THE LOOKUP (right half in wide; bottom in stacked). A shelf: the earlier tokens as books standing in a row, one per token from index 0 to 6 (`The`, `␣engine`, `␣roared`, `␣and`, `␣it`, `␣shut`, `␣down` — seven, the row includes the token's own position, as the inspector's note says), each book a tall rect whose spine (a green bar along its left edge) carries the token text in mono and whose body is amber hatched (the value, the contents). Above the shelf the new token's query: one amber bar labelled `Q of ␣down, held against every spine`. Under each book its weight in mono, two decimals (`.41`, `.07`, …, from `weights`), and the width of a second amber bar under each book proportional to that weight — the seven bars drawn on ONE baseline so they read as shares of one budget, with the line `shares of one budget · they add to 1.00` under them. Below, one amber box labelled `␣down, after the lookup` with seven thin amber arrows pouring into it from the seven bars (stroke width proportional to the weight, minimum 0.6 units). Everything is drawn from the data description — token count, weights, widths — never hand-placed per token.
+
+Wide layout: viewBox `0 0 680 H` with H what the two frames need (FIG.9 is 312 tall; expect 360–420); frame 1 at x 0–300, frame 2 at x 330–680, a thin `ff-guide` rule between. Stacked: viewBox `0 0 300 H2`, frame 1 then frame 2, each at full width. Set `.dies-wide{aspect-ratio:680/H}` and `.dies-stacked{aspect-ratio:300/H2;max-width:360px;margin:0 auto}` next to the loop's rules in `src/styles.css`, with the same breakpoint switch as `.loop-*`.
+
+## WORDS — every string on the figure, verbatim
+
+- BADGE: `FIG.7 — THE THREE DIES`
+- TITLE (InstrumentHead title): `One token, three dies, one lookup`
+- READING (the reading line, as FIG.9 has one): `A drawing, not an instrument: nothing here runs. One token of the page’s own sentence, pressed through the three dies of one block and looked up against the words before it, with the weights one head really gave them.`
+- CAPTION: `FIG.7 — A drawing, not an instrument: nothing here runs. The weights are real: layer 0, head 0, the page’s own sentence.` (the layer and head numbers formatted from the define, not typed)
+- Frame 1: `one row · 768 numbers` · `q die` · `k die` · `v die` · `cols 0–767` · `cols 768–1535` · `cols 1536–2303` · `h.0 attn.c_attn · 768 × 2,304 · one wall, three dies` · `Q · what I am looking for` · `K · what I answer to` · `V · what I hand over` (the numbers from the define, `integer` formatting)
+- Frame 2: `Q of ␣down, held against every spine` · the seven token strings as they are · the seven weights as `.NN` · `shares of one budget · they add to 1.00` · `␣down, after the lookup`
+- `<title>` elements for hover: frame 1 `the three dies: one wall of frozen weights, h.0 attn.c_attn, cut into its query, key and value thirds`; frame 2 `the lookup: one head’s softmax weights for ␣down over the words before it, layer 0 head 0`
+
+## The renumber — the page numbers its figures in reading order
+
+Inserting FIG.7 in section 04 moves the three after it: the attention inspector FIG.7 → FIG.8, the glass pass FIG.8 → FIG.9, the loop FIG.9 → FIG.10. Sweep EVERY `FIG.7`, `FIG.8`, `FIG.9` string in the repository (the files are listed in `touches`; `git grep -n 'FIG\.[0-9]'` finds them all, including the two callout strings in essay.js that say "the glass pass (FIG.8)", the tour's lines, the README's two tables and its figure list) and change only the number; the report's renumber table lists every one. Do the sweep in a fixed order (9 → 10 first, then 8 → 9, then 7 → 8, then add the new 7) so no string is renumbered twice. The README's instrument table (line 43 on) gets one new row for FIG.7 in reading order: `| FIG.7 | The three dies | 04 — The lookup | a drawing: one token pressed through the query, key and value dies of one block, then looked up against the words before it with one head’s real weights |`, and the file list (line 158 on) one new line `src/figures/DiesFigure.jsx       FIG.7 — the three dies (section 04)`.
+
+## Mounting
+
+`src/content/essay.js`: in the section with `id: '04'`, insert `{ type: 'figure', name: 'dies' },` directly after the first `{ type: 'p', … }` block. `src/App.jsx`: import `DiesFigure` beside the other figure imports and add `dies: <DiesFigure />,` to the `figures` map. Nothing else in either file changes except the FIG numbers of the sweep.
+
+## Done when
+
+Both builds pass; lint at its one warning; every WORDS string is byte-equal in the built markup (the report's table); the seven printed weights equal the inspector's row for layer 0 head 0 at position 6; the renumber table is complete and `git grep -c 'FIG\.7 — THE ATTENTION'` is 0 while `'FIG.8 — THE ATTENTION'` is 1; the stylesheet reserves equal the viewBoxes; `git status --short` shows only the files in `touches` plus the report.
