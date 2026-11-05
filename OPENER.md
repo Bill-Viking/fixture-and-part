@@ -2,7 +2,7 @@ lane: F&P
 written: 2026-11-05T09:30-08:00
 by: ACT — F&P: s4 — the landing scan, then the pick
 on: MAC
-head: 0a331ad
+head: 7ed3a84
 status_updated: 2026-11-05T09:30:00-08:00
 where: FIG.7 the three dies briefed; the Opus run builds, proves, deploys, cuts
 next: machine
