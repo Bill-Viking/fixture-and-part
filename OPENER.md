@@ -2,7 +2,7 @@ lane: F&P
 written: 2026-11-05T10:40-08:00
 by: ACT — F&P: s5 — FIG.7 the three dies, the Opus run
 on: MAC
-head: PENDING
+head: 4fcae7d
 status_updated: 2026-11-05T10:40:00-08:00
 where: FIG.7 live and landed (FP-TX-010); next: Bill picks, Fable briefs
 next: bill
