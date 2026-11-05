@@ -70,6 +70,16 @@ export const claimNotes = {
       { label: 'Meng, Bau, Andonian & Belinkov 2022 · Locating and editing factual associations in GPT', url: 'https://arxiv.org/abs/2202.05262' },
     ],
   },
+  weightspace: {
+    kind: 'evidence',
+    title: 'reading the weights as text',
+    body: 'a group at MIT CSAIL gave GPT-6 Astra the 17,253 weights of a small game-playing network as plain text, and it named the game the network had been trained on, four times out of four. given a 171,664-weight driving network and one failed run, it rewrote 3.5% of the weights in a single reply and the car then succeeded in all 1,024 test runs. given the weights of Qwen3.5-0.8B in a python notebook with fifty forward passes and no training, it subtracted one direction from two layers’ outputs — 131,072 weights, 0.016% of the file — and the model’s MATH-500 score rose from 7.9% to 48.1%. this is a blog post, not a reviewed paper; the authors say the capabilities are «exciting but still limited», that an edit «could remove an obstacle that hid an ability, but it could not add an ability the model lacked», and no experiment touched a model’s own weights. critics the next day said the post mixes two things, reading raw weights with no tools and ordinary research done with code.',
+    sources: [
+      { label: 'Takehi, Teoh, Zhang & Khattab 2026 · Sparks of weight-space programming (blog post, MIT CSAIL)', url: 'https://rikiyat.github.io/blog/weight-space-programming/' },
+      { label: 'Willison 2026 · a reading of the no-tools half, with the critics named', url: 'https://simonwillison.net/2026/Nov/3/qwen-can-interpret-model-weights/' },
+      { label: 'the authors’ prompts and logs', url: 'https://github.com/RikiyaT/lm_understand-logs' },
+    ],
+  },
   lens: {
     kind: 'evidence',
     title: 'the glass window is a probe',
