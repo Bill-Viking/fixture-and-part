@@ -2,8 +2,8 @@ lane: F&P
 written: 2026-11-05T08:40-08:00
 by: ACT — F&P: s4 — the landing scan, then the pick
 on: MAC
-head: e875948
-status_updated: 2026-11-04T20:05:00-08:00
+head: 4897528
+status_updated: 2026-11-05T08:40:00-08:00
 where: superposition passage live both copies; FP-TX-009 laid, not landed
 next: bill
 depends_on: nothing
