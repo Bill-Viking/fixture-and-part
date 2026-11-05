@@ -4,7 +4,7 @@ by: ACT — F&P: s4 — the landing scan, then the pick
 on: MAC
 head: 4897528
 status_updated: 2026-11-05T08:40:00-08:00
-where: superposition passage live both copies; FP-TX-009 laid, not landed
+where: superposition passage live both copies; FP-TX-009 landed; next is his pick
 next: bill
 depends_on: nothing
 open_in: fixture-and-part (reuse) · fresh Claude session · ACT — F&P: s4 — the landing scan, then the pick
