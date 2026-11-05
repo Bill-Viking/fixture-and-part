@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { bakedAttentionWeights } from './src/figures/figFormat.js'
 
 // Base path is configurable for static hosting.
 //
@@ -24,10 +25,25 @@ const { provenance, manifest } = JSON.parse(
   readFileSync(new URL('./src/content/fileFacts.json', import.meta.url), 'utf8'),
 )
 
-// A's company-only preview must be ready before the lazy full pass arrives.
-const facts = process.env.VITE_COMPANY === '1'
-  ? JSON.parse(readFileSync(new URL('./src/content/passFacts.json', import.meta.url), 'utf8'))
-  : null
+// The drawing's one real row is ready in both copies' first paint. A's
+// preview remains company-only; the full pass stays a lazy runtime chunk.
+const facts = JSON.parse(readFileSync(new URL('./src/content/passFacts.json', import.meta.url), 'utf8'))
+const layer = 0
+const head = 0
+const position = 6
+const dims = manifest.tensors.find(
+  (tensor) => tensor.name === `transformer.h.${layer}.attn.c_attn.weight_quantized`,
+)?.dims
+const weights = bakedAttentionWeights(facts.run, layer, head, position)
+// ASSUMES: this drawing describes the saved eight-token sentence and a QKV
+// wall with three equal thirds. Fail the build if that source contract moves.
+if (facts.run.tokens.length !== 8 || facts.run.tokens[position] !== '␣down' ||
+    dims?.length !== 2 || dims[1] !== dims[0] * 3 ||
+    weights.some((weight) => !Number.isFinite(weight) || weight < 0 || weight > 1) ||
+    Math.abs(weights.reduce((sum, weight) => sum + weight, 0) - 1) > 0.00001 ||
+    Math.abs(weights.reduce((sum, weight) => sum + Number(weight.toFixed(2)), 0) - 1) > 0.010001) {
+  throw new Error('The three dies facts no longer match the drawing contract')
+}
 
 // The company entry loads these faces after its local dress, under one deadline.
 // Keep the preconnects and leave the consumer HTML entirely untouched.
@@ -50,7 +66,8 @@ export default defineConfig(() => ({
   base: process.env.VITE_BASE || '/',
   plugins: [react(), ...(process.env.VITE_COMPANY === '1' ? [companyFonts] : [])],
   define: {
-    __BAKED_A__: JSON.stringify(facts ? {
+    __DIES_FACTS__: JSON.stringify({ tokens: facts.run.tokens, layer, head, position, weights, dims }),
+    __BAKED_A__: JSON.stringify(process.env.VITE_COMPANY === '1' ? {
       sentence: facts.provenance.sentence,
       ids: facts.run.ids,
       tokens: facts.run.tokens,

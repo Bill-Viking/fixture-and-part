@@ -64,7 +64,7 @@ export default function AttentionInspector({
   return (
     <figure className="instrument">
       <InstrumentHead
-        eyebrow="FIG.7 — THE ATTENTION INSPECTOR"
+        eyebrow="FIG.8 — THE ATTENTION INSPECTOR"
         title="The attention inspector"
         purpose="Which earlier tokens the chosen token reads, and how much of its attention each one gets."
         note={
@@ -295,7 +295,7 @@ export default function AttentionInspector({
       </div>
 
       <figcaption>
-        FIG.7 — One head&rsquo;s view of one lookup. Softmax forces the weights
+        FIG.8 — One head&rsquo;s view of one lookup. Softmax forces the weights
         to a budget of 1.0.
       </figcaption>
     </figure>

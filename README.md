@@ -44,8 +44,9 @@ Three colours carry that thesis through every figure:
 | FIG.2 | The tokenizer | 02 — Fixture & part | the tokenizer strip: your sentence cut into the pieces the model reads |
 | FIG.4 | The forward pass, live | 02 — Fixture & part | a drawing of the whole model with your sentence running down through it |
 | FIG.6 | The forward pass and the KV rack | 03 — The moment | one forward pass per token, and the KV rack it leaves behind |
-| FIG.7 | The attention inspector | 04 — The lookup | which earlier tokens each head attends to, at a layer you pick |
-| FIG.8 | The glass pass | 04 — The lookup | the residual stream at one position, read through the logit lens |
+| FIG.7 | The three dies | 04 — The lookup | a drawing: one token pressed through the query, key and value dies of one block, then looked up against the words before it with one head’s real weights |
+| FIG.8 | The attention inspector | 04 — The lookup | which earlier tokens each head attends to, at a layer you pick |
+| FIG.9 | The glass pass | 04 — The lookup | the residual stream at one position, read through the logit lens |
 
 ## Run it on your machine
 
@@ -161,10 +162,11 @@ src/figures/LadderFigure.jsx       FIG.3 — the ladder (section 02)
 src/instruments/ForwardMap.jsx     the forward pass, live  FIG.4     (section 02)
 src/figures/LedgerFigure.jsx       FIG.5 — the ledger (section 03)
 src/instruments/Stepper.jsx        the stepper             FIG.6     (section 03)
+src/figures/DiesFigure.jsx       FIG.7 — the three dies (section 04)
 src/instruments/AttentionInspector.jsx
-                                   the attention inspector FIG.7     (section 04)
-src/instruments/GlassPass.jsx      the glass pass          FIG.8     (section 04)
-src/figures/LoopFigure.jsx         FIG.9 — the loop (section 10)
+                                   the attention inspector FIG.8     (section 04)
+src/instruments/GlassPass.jsx      the glass pass          FIG.9     (section 04)
+src/figures/LoopFigure.jsx         FIG.10 — the loop (section 10)
 src/figures/HarnessReadout.jsx     the harness, read at build (section 10)
 src/lib/forwardMap.js              F — the architecture, band by band, and the
                                    three scalars per pass the drawing moves on

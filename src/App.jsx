@@ -9,6 +9,7 @@ import GlassPass from './instruments/GlassPass.jsx'
 import ForwardMap from './instruments/ForwardMap.jsx'
 import FileView from './instruments/FileView.jsx'
 import LoopFigure from './figures/LoopFigure.jsx'
+import DiesFigure from './figures/DiesFigure.jsx'
 import LadderFigure from './figures/LadderFigure.jsx'
 import LedgerFigure from './figures/LedgerFigure.jsx'
 import HarnessReadout from './figures/HarnessReadout.jsx'
@@ -343,6 +344,7 @@ function realQueryIndex(text, tokens) {
  * state and run nothing, so they are made once, here, outside the app.
  */
 const figures = {
+  dies: <DiesFigure />,
   ladder: <LadderFigure />,
   ledger: <LedgerFigure />,
   loop: <LoopFigure />,
@@ -1064,7 +1066,7 @@ export default function App() {
         {COMPANY && (
           <Callout
             label="THE COMPANY COPY"
-            html={`This is the company copy of The Fixture and the Part. No language model runs here and nothing downloads: every number on this page was read from the model file when the page was built, plus one real pass of the page&rsquo;s own sentence, kept and replayed in the tokenizer (FIG.2), the glass pass (FIG.8) and the forward pass (FIG.4). The full version runs a real model inside your browser, an ${mb(__FILE_PROVENANCE__.bytes)} download it keeps there. It is public at <a href="https://bill-viking.github.io/fixture-and-part/">bill-viking.github.io/fixture-and-part</a> — for a personal machine, never a company one.`}
+            html={`This is the company copy of The Fixture and the Part. No language model runs here and nothing downloads: every number on this page was read from the model file when the page was built, plus one real pass of the page&rsquo;s own sentence, kept and replayed in the tokenizer (FIG.2), the glass pass (FIG.9) and the forward pass (FIG.4). The full version runs a real model inside your browser, an ${mb(__FILE_PROVENANCE__.bytes)} download it keeps there. It is public at <a href="https://bill-viking.github.io/fixture-and-part/">bill-viking.github.io/fixture-and-part</a> — for a personal machine, never a company one.`}
           />
         )}
         <div ref={sentinelRef} className="sentinel" aria-hidden="true" />

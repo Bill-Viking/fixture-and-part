@@ -441,7 +441,7 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 .inst-body{padding:18px 16px 20px;}
 .instrument figcaption{padding:0 16px 14px;margin-top:0;}
 
-/* The head's title with a "?" badge after it. Only FIG.9 has one. The
+/* The head's title with a "?" badge after it. Only FIG.10 has one. The
    badge rides with the title's last word, so it can never wrap onto a line
    of its own. It sits 1px low rather than the badge's usual 3px: at -3px it
    pushed the title's 24px line to 25.5px, at -1px the title measures 24px a
@@ -449,7 +449,7 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
 .inst-title-tail{white-space:nowrap;}
 .inst-title-tail .info-tag{margin-left:8px;vertical-align:-1px;}
 
-/* --- FIG.9, the loop: a drawing, not an instrument ----------------------- */
+/* --- FIG.10, the loop: a drawing, not an instrument ----------------------- */
 
 /* Two layouts of one drawing, each with a fixed viewBox chosen from the
    breakpoint alone, and each SVG given its viewBox's own ratio here, so its
@@ -463,10 +463,29 @@ button.inst-note:hover{background:color-mix(in srgb,var(--moving) 30%,var(--movi
   .loop-wide{display:none;}
   .loop-stacked{display:block;}
 }
-/* FIG.7 in the 2026-10-21 build note is now numbered FIG.9. */
+/* FIG.8 in the 2026-10-21 build note is now numbered FIG.10. */
 @media(max-width:359px){
   .loop-stacked .lf-note{display:none;}
 }
+/* FIG.7 — the three dies: fixed reserves, matching the two viewBoxes. */
+.dies-svg{display:block;width:100%;height:auto;overflow:visible;}
+.dies-wide{aspect-ratio:680/414;}
+.dies-stacked{display:none;aspect-ratio:300/848;max-width:360px;margin:0 auto;}
+@media(max-width:640px){
+  .dies-wide{display:none;}
+  .dies-stacked{display:block;}
+}
+.dies-tone-moving{color:var(--moving-ink);}
+.dies-tone-keys{color:var(--keys);}
+.dies-svg .dies-flow{stroke:currentColor;}
+.dies-svg .ff-head,.dies-svg .dies-part-label{fill:currentColor;}
+.dies-key-part{fill:var(--keys);stroke:var(--keys);stroke-width:0.5;}
+.dies-steel-grid{fill:none;stroke:var(--frozen);stroke-width:0.4;opacity:0.4;}
+.dies-book,.dies-landing{fill:var(--moving-tint);stroke:var(--moving-ink);stroke-width:0.8;}
+.dies-value-hatch{fill:none;stroke:var(--moving);stroke-width:1;}
+.dies-spine{fill:var(--keys-tint);stroke:var(--keys);stroke-width:0.8;}
+.dies-spine-text{font-family:var(--mono);fill:var(--keys);}
+
 /* A drawing sheet: a hairline frame, flat fills, role colours, no shadow. */
 .lf-frame{fill:none;stroke:var(--hair);stroke-width:1;}
 .lf-box{fill:var(--frozen-tint);stroke:var(--frozen);stroke-width:2;}

@@ -359,7 +359,7 @@ export function buildTour({
             `which carries the attention sink. Width, light and grain are that length, on one log law shared by ` +
             `all ${n} streams.`
         : `No pass has run, so the drawing has no length to draw: every stream is at one width and one light, and ` +
-            `the grain inside it is the deterministic stand-in the glass pass (FIG.8) prints. ` +
+            `the grain inside it is the deterministic stand-in the glass pass (FIG.9) prints. ` +
             (COMPANY
               ? `With a model in hand these would be this sentence’s own numbers.`
               : `Load the real model above and these become this sentence’s own numbers.`),
