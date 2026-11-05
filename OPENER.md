@@ -1,11 +1,11 @@
 lane: F&P
-written: 2026-11-05T09:30-08:00
-by: ACT — F&P: s4 — the landing scan, then the pick
+written: 2026-11-05T10:25-08:00
+by: ACT — F&P: s5 — FIG.7 the three dies, the Opus run
 on: MAC
-head: 7ed3a84
-status_updated: 2026-11-05T09:30:00-08:00
-where: FIG.7 the three dies briefed; the Opus run builds, proves, deploys, cuts
-next: machine
+head: 1b0d5d7
+status_updated: 2026-11-05T10:25:00-08:00
+where: FIG.7 live both copies; FP-TX-010 laid, waiting on the office landing
+next: bill
 depends_on: nothing
 open_in: fixture-and-part (reuse) · fresh Claude session · ACT — F&P: s5 — FIG.7 the three dies, the Opus run
 model: OPUS · HIGH
